@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Отпуск в Италии</title>
+<style>
+:root{
+  --ac:#6f7a45; --ac2:#c8923c; --ol:#7c8450;
+  --bg:#eef0da; --card:#ffffff; --line:#e0dcc4; --ink:#3b3228; --muted:#847a63; --soft:#faf8ec; --track:#e6e2c8;
+  --serif:Georgia,'Iowan Old Style','Palatino Linotype',serif;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:ui-monospace,'SF Mono',Consolas,'Liberation Mono',monospace;
+}
+:root[data-theme="dark"]{ --bg:#1e1c15; --card:#2a2921; --line:#3c3a2e; --ink:#eae6d6; --muted:#a49a7d; --soft:#242319; --track:#38361f; }
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --bg:#1e1c15; --card:#2a2921; --line:#3c3a2e; --ink:#eae6d6; --muted:#a49a7d; --soft:#242319; --track:#38361f; }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;transition:background .2s ease,color .2s ease}
+a{color:var(--ac)}
+button{font-family:inherit}
+input,textarea{font-family:inherit;color:var(--ink)}
+input:focus,textarea:focus,select:focus{outline:2px solid var(--ac2);outline-offset:1px}
+::placeholder{color:var(--muted);opacity:.8}
+::selection{background:var(--ac);color:#fff}
+button:focus-visible,a:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
+.wrap{max-width:1080px;margin:0 auto;padding:0 22px}
+.serif{font-family:var(--serif)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px}
+.muted{color:var(--muted)}
+.eyebrow{display:flex;align-items:center;gap:10px;color:var(--ac);font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:600}
+.eyebrow .rule{width:24px;height:1px;background:var(--ac);display:inline-block}
+header{padding:36px 0 0}
+.head-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px}
+h1{font-family:var(--serif);font-weight:700;font-size:clamp(30px,4.6vw,50px);line-height:1.04;margin:10px 0 0;letter-spacing:-.01em;text-wrap:balance}
+.lede{margin:12px 0 0;font-size:15px;color:var(--muted);max-width:460px;line-height:1.5}
+.head-stats{display:flex;gap:12px;flex-wrap:wrap}
+.stat-box{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 20px;min-width:92px}
+.stat-box .num{font-family:var(--mono);font-size:32px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.stat-box .lbl{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:5px}
+.icon-btn{display:grid;place-items:center;width:44px;height:44px;background:var(--card);border:1px solid var(--line);border-radius:14px;color:var(--ink);cursor:pointer}
+.icon-btn:hover{border-color:var(--ac)}
+.icon-btn svg{width:18px;height:18px}
+.theme-dots{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:0 14px}
+.theme-dot{width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid transparent}
+.theme-dot.active{border-color:var(--ink)}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-top:28px;border-bottom:1px solid var(--line)}
+nav.tabs button{display:flex;align-items:center;gap:7px;border:none;background:none;cursor:pointer;font-size:14.5px;font-weight:600;padding:11px 15px;margin-bottom:-1px;border-bottom:2px solid transparent;color:var(--muted)}
+nav.tabs button svg{width:14px;height:14px;flex:none}
+nav.tabs button.active{color:var(--ac);border-bottom-color:var(--ac)}
+nav.tabs button:hover:not(.active){color:var(--ink)}
+main{padding:26px 0 90px}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.tabpanel{animation:fadeUp .35s ease both}
+h2.section{font-family:var(--serif);font-weight:700;font-size:21px;margin:32px 0 4px;text-wrap:balance}
+.section-note{margin:0 0 14px;font-size:12.5px;color:var(--muted)}
+.grid-2{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}
+.grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.grid-lodge{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.grid-sights{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.grid-budget-top{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:18px}
+@media (max-width:720px){ .grid-2{grid-template-columns:1fr} .head-row{align-items:flex-start} }
+.photo-slot{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--soft);cursor:pointer;background-size:cover;background-position:center;display:flex;align-items:flex-end}
+.photo-slot .hint{margin:auto;color:var(--muted);font-size:12.5px;text-align:center;padding:16px;font-family:var(--mono)}
+.photo-slot.has-img .hint{display:none}
+.photo-slot .caption{width:100%;padding:20px;background:linear-gradient(to top,rgba(30,25,15,.75),transparent);color:#fff;display:none}
+.photo-slot.has-img .caption{display:block}
+.photo-slot .caption .cap-title{font-family:var(--serif);font-size:24px;font-weight:700}
+.photo-slot .caption .cap-sub{font-size:12.5px;opacity:.85;margin-top:2px}
+.stat-card{padding:18px 20px}
+.stat-card .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.stat-card .v{font-family:var(--serif);font-size:32px;font-weight:700;margin-top:6px;line-height:1}
+.progress-track{height:8px;border-radius:6px;background:var(--track);margin-top:11px;overflow:hidden}
+.progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--ac),var(--ac2))}
+.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px;margin-top:2px}
+.mini-grid .mv{font-family:var(--serif);font-size:22px;font-weight:700}
+.mini-grid .ml{font-size:11.5px;color:var(--muted)}
+.weather-card{padding:15px 17px}
+.weather-card .city{font-weight:600;font-size:14.5px}
+.weather-card .temps{display:flex;align-items:baseline;gap:7px;margin-top:7px}
+.weather-card .day{font-family:var(--serif);font-size:27px;font-weight:700;color:var(--ac2)}
+.weather-card .night{font-size:12.5px;color:var(--muted)}
+.weather-card .note{font-size:11.5px;color:var(--muted);margin-top:5px}
+.map-box{position:relative;background:var(--track);border:1px solid var(--line);border-radius:16px;padding:22px}
+.map-pins{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.pin{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 13px 7px 8px}
+.pin .n{width:20px;height:20px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;font-size:10.5px;font-weight:700;flex:none}
+.pin .c{font-weight:600;font-size:13px}
+.pin .d{font-size:11.5px;color:var(--muted)}
+.arrow{color:var(--muted);opacity:.6}
+.day-card{overflow:hidden}
+.day-head{display:flex;align-items:center;gap:13px;padding:13px 18px;border-bottom:1px solid var(--track)}
+.day-head .dnum{font-family:var(--serif);font-size:21px;font-weight:700;line-height:1;text-align:center;min-width:48px}
+.day-head .dmon{font-size:10.5px;color:var(--muted);text-transform:uppercase;text-align:center;min-width:48px;margin-top:2px}
+.day-head .dcity{font-weight:600;font-size:15px}
+.day-head .dweek{font-size:11.5px;color:var(--muted)}
+.day-head .ddone{font-size:11.5px;color:var(--ol);font-weight:600;white-space:nowrap}
+.day-body{padding:6px 10px 12px}
+.item-row{display:flex;align-items:center;gap:11px;padding:8px 7px;border-radius:9px}
+.item-row:hover{background:var(--soft)}
+.chk{width:20px;height:20px;flex:none;border-radius:6px;cursor:pointer;display:grid;place-items:center;font-size:12px;font-weight:700;border:1.5px solid var(--line);background:var(--card);color:transparent}
+.chk.done{background:var(--ol);border-color:var(--ol);color:#fff}
+.item-title{flex:1;font-size:14px}
+.item-title.done{color:var(--muted);text-decoration:line-through}
+.rm-btn{border:none;background:none;color:var(--line);cursor:pointer;font-size:17px;line-height:1;padding:3px 7px}
+.rm-btn:hover{color:var(--ac)}
+.inline-add{display:flex;gap:7px;padding:7px 7px 2px}
+.txt{border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:13.5px;background:var(--soft);color:var(--ink)}
+.txt-flex{flex:1;min-width:0}
+.btn-add{border:none;background:var(--ac);color:#fff;border-radius:9px;padding:0 15px;font-weight:600;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.btn-add:hover{background:var(--ac2)}
+.lodge-card{overflow:hidden;display:flex;flex-direction:column}
+.lodge-photo{height:150px}
+.badge{position:absolute;top:11px;left:11px;font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.03em;color:#fff}
+.lodge-body{padding:15px 17px 17px;display:flex;flex-direction:column;gap:9px;flex:1}
+.lodge-city-in{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ac);font-weight:700;border:none;background:none;width:100%;padding:1px 0}
+.lodge-name-in{font-family:var(--serif);font-size:18px;font-weight:700;border:none;background:none;width:100%;padding:1px 0;color:var(--ink)}
+.lodge-row2{display:flex;gap:8px}
+.lodge-row2 input{flex:1;min-width:0;font-size:12.5px;color:var(--muted);border:none;background:none;padding:1px 0}
+.lodge-row2 input.price{flex:none;width:70px;font-weight:600;color:var(--ink);text-align:right}
+.status-row{display:flex;gap:6px;flex-wrap:wrap}
+.status-chip{border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:999px;cursor:pointer}
+.status-chip.active{background:var(--ac);border-color:var(--ac);color:#fff}
+.lodge-note-in{border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:12.5px;background:var(--soft);margin-top:1px}
+.lodge-foot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;gap:8px}
+.lodge-link-in{flex:1;font-size:12px;border:none;background:none;color:var(--ac);min-width:0}
+.add-lodge-btn{border:2px dashed var(--line);background:none;border-radius:16px;min-height:210px;color:var(--muted);font-size:14.5px;font-weight:600;cursor:pointer;display:grid;place-items:center}
+.add-lodge-btn:hover{border-color:var(--ac);color:var(--ac)}
+.cancel-row{padding:14px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.cancel-name{font-weight:600;font-size:14.5px}
+.cancel-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.cancel-right{text-align:right;min-width:140px}
+.cancel-k{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.cancel-date{font-family:var(--serif);font-weight:700;font-size:18px;margin-top:1px}
+.chip{display:inline-block;font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px;margin-top:5px;white-space:nowrap}
+.sight-row{display:flex;align-items:flex-start;gap:11px;padding:12px 14px}
+.sight-name{font-weight:600;font-size:14.5px}
+.sight-name.done{color:var(--muted);text-decoration:line-through}
+.sight-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+.form-bar{padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.expense-row{display:flex;align-items:center;gap:13px;padding:13px 18px;border-bottom:1px solid var(--track)}
+.expense-row:last-of-type{border-bottom:none}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.exp-label{font-weight:600;font-size:14.5px}
+.exp-cat{font-size:11.5px;color:var(--muted)}
+.exp-amt{font-family:var(--serif);font-weight:700;font-size:17px}
+.exp-form{display:flex;gap:8px;flex-wrap:wrap;padding:13px 18px;background:var(--soft)}
+.notes-area{width:100%;min-height:300px;border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:14.5px;line-height:1.6;background:var(--soft);resize:vertical}
+.link-row{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--track);border-radius:10px}
+.link-dot{width:7px;height:7px;border-radius:50%;background:var(--ac2);flex:none}
+.link-row a{flex:1;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.link-add{display:flex;flex-direction:column;gap:8px;margin-top:11px}
+.link-add .row{display:flex;gap:8px}
+.svg-icon{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="head-row">
+      <div>
+        <div class="eyebrow"><span class="rule"></span>Италия · осень 2026</div>
+        <h1>Отпуск с семьёй<br>в Италии</h1>
+        <p class="lede" id="lede"></p>
+      </div>
+      <div class="head-stats">
+        <div class="theme-dots" id="themeDots"></div>
+        <button class="icon-btn" id="darkToggle" title="Светлая / тёмная тема"></button>
+        <div class="stat-box"><div class="num" id="daysLeft" style="color:var(--ac)"></div><div class="lbl">дней до выезда</div></div>
+        <div class="stat-box"><div class="num" id="nights" style="color:var(--ol)"></div><div class="lbl">ночей</div></div>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+  </header>
+  <main id="main"></main>
+</div>
+<input type="file" id="photoInput" accept="image/*" style="display:none">
+<script>
+const ICONS = {
+  compass:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><circle cx="12" cy="12" r="9.5"/><path d="M15 9l-2.2 5.8L8 17l2.2-5.8z"/></svg>',
+  route:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M6 8.4V13a3 3 0 0 0 3 3h6a3 3 0 0 1 3 1.6"/></svg>',
+  bed:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"/><path d="M3 18v2M21 18v2M3 12V7a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v3"/></svg>',
+  calx:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><rect x="3.5" y="4.5" width="17" height="16" rx="2"/><path d="M3.5 9.5h17M8 3v3M16 3v3M9.5 13.5l5 5m0-5l-5 5"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><path d="M12 21s7-6.3 7-11.5A7 7 0 0 0 5 9.5C5 14.7 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.3"/></svg>',
+  wallet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><rect x="3" y="6.5" width="18" height="13" rx="2.2"/><path d="M3 10h18M16 14.2h2.4"/></svg>',
+  note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><path d="M6 3.5h9l3.5 3.5V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V7a1 1 0 0 0 1 1h3.5M8 12h8M8 15.5h5"/></svg>',
+  sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7"/></svg>',
+  moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5z"/></svg>',
+  cam:'перетащите / нажмите, чтобы добавить фото'
+};
+
+const THEMES = {
+  'Терракота': {ac:'#b95c3f', ac2:'#cf9440', bgL:'#f4ead9', bgD:'#211a15'},
+  'Охра':      {ac:'#c8892f', ac2:'#b95c3f', bgL:'#f6eeda', bgD:'#20190f'},
+  'Олива':     {ac:'#6f7a45', ac2:'#c8923c', bgL:'#eef0da', bgD:'#1e1c15'},
+};
+
+const MON = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+const WD = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+const uid = () => Math.random().toString(36).slice(2,9);
+
+function seed(){
+  const days = [];
+  let cur = new Date('2026-09-25T00:00:00');
+  const end = new Date('2026-10-12T00:00:00');
+  let i = 0;
+  while (cur <= end) {
+    days.push({ id:'d'+i, dayNum:cur.getDate(), month:MON[cur.getMonth()], weekday:WD[cur.getDay()], city:'', items:[], draft:'' });
+    cur = new Date(cur.getTime()+86400000); i++;
+  }
+  if (days[0]) { days[0].city = 'Прага → Зальцбург (Австрия)'; days[0].items = [ {id:'i1', title:'Выезд из Праги', done:false}, {id:'i2', title:'Заезд в Санкт-Георген, заселение 14:00–21:00', done:false} ]; }
+  if (days[1]) { days[1].city = 'Зальцбург → дальше'; days[1].items = [ {id:'i3', title:'Выселение до 10:00, продолжаем путь', done:false} ]; }
+
+  return {
+    trip: { start:'2026-09-25', end:'2026-10-12', people:2, dogs:2 },
+    days,
+    lodging: [
+      { id:'l1', city:'Зальцбург, Австрия', name:'Individual room surrounded by nature', dates:'25–26 сен · 1 ночь', price:'€65', status:'бронь', freeCancel:'2026-08-25', link:'https://www.booking.com/Share-27nA3f', notes:'Апартаменты с 1 спальней. Адрес: Helmberger Str. 21, Санкт-Георген (Зальцбург). Вид на сад, сауна, стиральная машина, отопление. Гость: Natalia Munykina.' },
+    ],
+    sights: [],
+    expenses: [],
+    links: [
+      { id:'k1', title:'Правила ввоза собак в ЕС', url:'https://' },
+      { id:'k2', title:'Бронь: Individual room (Зальцбург)', url:'https://www.booking.com/Share-27nA3f' },
+    ],
+    notes: 'Выезжаем из Праги 25.09.\nСобаки: переноски, миски, ветпаспорта, чипы, поводки. Проверить pet-friendly жильё и кафе.\nДокументы: страховка, копии паспортов, зелёная карта на авто.\n',
+  };
+}
+
+let data = load('italy_trip_v1', null) || seed();
+let photos = load('italy_photos_v1', {});
+let ui = load('italy_ui_v1', {tab:'overview', dark:null, theme:'Олива'});
+let draft = {};
+
+function load(key, fallback){ try { const raw = JSON.parse(localStorage.getItem(key)); return raw === null || raw === undefined ? fallback : raw; } catch(e){ return fallback; } }
+function saveData(){ try { localStorage.setItem('italy_trip_v1', JSON.stringify(data)); } catch(e){} }
+function saveUi(){ try { localStorage.setItem('italy_ui_v1', JSON.stringify(ui)); } catch(e){} }
+function savePhotos(){ try { localStorage.setItem('italy_photos_v1', JSON.stringify(photos)); } catch(e){ console.warn('photo storage full', e); } }
+
+function mut(fn){ fn(data); saveData(); render(); }
+
+function applyTheme(){
+  const t = THEMES[ui.theme] || THEMES['Олива'];
+  const root = document.documentElement;
+  root.style.setProperty('--ac', t.ac);
+  root.style.setProperty('--ac2', t.ac2);
+  const isDark = ui.dark === null ? window.matchMedia('(prefers-color-scheme: dark)').matches : ui.dark;
+  if (ui.dark === true) root.setAttribute('data-theme','dark');
+  else if (ui.dark === false) root.setAttribute('data-theme','light');
+  else root.removeAttribute('data-theme');
+}
+
+function fmtDate(iso){ if(!iso) return ''; return new Date(iso+'T00:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'}); }
+
+function downscale(file, cb){
+  const reader = new FileReader();
+  reader.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 1000;
+      const scale = Math.min(1, maxW/img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width*scale; canvas.height = img.height*scale;
+      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+      cb(canvas.toDataURL('image/jpeg',0.82));
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+let pendingPhotoKey = null;
+document.getElementById('photoInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file || !pendingPhotoKey) return;
+  downscale(file, (dataUrl) => { photos[pendingPhotoKey] = dataUrl; savePhotos(); render(); });
+  e.target.value = '';
+});
+
+function openPhotoPicker(key){ pendingPhotoKey = key; document.getElementById('photoInput').click(); }
+
+const TABS = [
+  ['overview','Обзор','compass'],
+  ['route','Маршрут','route'],
+  ['lodging','Жильё','bed'],
+  ['cancel','Отмена','calx'],
+  ['sights','Места','pin'],
+  ['budget','Бюджет','wallet'],
+  ['notes','Заметки','note'],
+];
+
+function renderTabs(){
+  document.getElementById('tabs').innerHTML = TABS.map(([id,label,icon]) =>
+    `<button data-action="tab" data-tab="${id}" class="${ui.tab===id?'active':''}">${ICONS[icon]}${label}</button>`
+  ).join('');
+}
+
+function renderThemeDots(){
+  document.getElementById('themeDots').innerHTML = Object.entries(THEMES).map(([name,t]) =>
+    `<span class="theme-dot ${ui.theme===name?'active':''}" data-action="theme" data-theme="${name}" style="background:${t.ac}" title="${name}"></span>`
+  ).join('');
+}
+
+function computeWeather(){
+  return [
+    {city:'Рим', day:24, night:13, note:'тепло, солнечно'},
+    {city:'Флоренция', day:23, night:12, note:'ясно, свежо утром'},
+    {city:'Сиена · Тоскана', day:22, night:11, note:'приятно для прогулок'},
+    {city:'Чинкве-Терре', day:21, night:14, note:'мягко у моря'},
+  ];
+}
+
+function photoStyle(key){
+  return photos[key] ? `background-image:url('${photos[key]}')` : '';
+}
+
+function renderOverview(){
+  const cities = [...new Set(data.lodging.map(l=>l.city))];
+  const routeItems = data.days.reduce((a,x)=>a+x.items.length,0);
+  const routeDone = data.days.reduce((a,x)=>a+x.items.filter(i=>i.done).length,0);
+  const sightsTotal = data.sights.length, sightsDone = data.sights.filter(s=>s.done).length;
+  const totalCount = routeItems + sightsTotal, doneCount = routeDone + sightsDone;
+  const pct = totalCount ? Math.round(doneCount/totalCount*100) : 0;
+  const budgetTotal = data.expenses.reduce((a,e)=>a+(+e.amount||0),0);
+  const partyLabel = `${data.trip.people}+${data.trip.dogs}`;
+  const mapPins = data.lodging.map((l,idx)=>({n:idx+1, city:l.city, dates:l.dates}));
+
+  return `
+  <div class="grid-2">
+    <div class="photo-slot ${photos.hero?'has-img':''}" style="min-height:300px;${photoStyle('hero')}" data-action="photo" data-key="hero">
+      <span class="hint">${ICONS.cam}</span>
+      <div class="caption"><div class="cap-title serif">La dolce vita</div><div class="cap-sub">${cities.join('  ·  ') || 'маршрут ещё не задан'}</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card stat-card">
+        <div class="k">Готовность к поездке</div>
+        <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px">
+          <span class="v" style="color:var(--ac)">${pct}%</span>
+          <span style="font-size:12.5px;color:var(--muted)">${doneCount} из ${totalCount} задач</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="card stat-card" style="flex:1">
+        <div class="k" style="margin-bottom:8px">Коротко о поездке</div>
+        <div class="mini-grid">
+          <div><div class="mv">${cities.length}</div><div class="ml">города</div></div>
+          <div><div class="mv">${sightsDone}/${sightsTotal}</div><div class="ml">места</div></div>
+          <div><div class="mv">${partyLabel}</div><div class="ml">люди и собаки</div></div>
+          <div><div class="mv">€${Math.round(budgetTotal/1000*10)/10}k</div><div class="ml">бюджет</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section">Погода в конце сентября</h2>
+  <p class="section-note">Средние дневные и ночные температуры по городам маршрута.</p>
+  <div class="grid-auto">
+    ${computeWeather().map(w=>`
+      <div class="card weather-card">
+        <div class="city">${w.city}</div>
+        <div class="temps"><span class="day serif">${w.day}°</span><span class="night">ночью ${w.night}°</span></div>
+        <div class="note">${w.note}</div>
+      </div>`).join('')}
+  </div>
+
+  <h2 class="section">Карта маршрута</h2>
+  <div class="map-box">
+    <div class="map-pins">
+      ${mapPins.map(p=>`<span class="pin"><span class="n">${p.n}</span><span class="c">${esc(p.city)}</span><span class="d">${esc(p.dates)}</span></span><span class="arrow">→</span>`).join('') || '<span class="muted" style="font-size:13px">пока нет вариантов жилья — добавьте их на вкладке «Жильё»</span>'}
+      ${mapPins.length ? '<span class="muted" style="font-size:13px">домой</span>' : ''}
+    </div>
+    <div class="photo-slot ${photos.map?'has-img':''}" style="margin-top:16px;height:150px;border-style:dashed;${photoStyle('map')}" data-action="photo" data-key="map">
+      <span class="hint">карта / скриншот маршрута</span>
+    </div>
+  </div>`;
+}
+
+function renderRoute(){
+  return data.days.map(day=>{
+    const done = day.items.filter(x=>x.done).length;
+    return `
+    <div class="card day-card">
+      <div class="day-head">
+        <div><div class="dnum serif">${day.dayNum}</div><div class="dmon">${day.month}</div></div>
+        <div style="flex:1"><div class="dcity">${esc(day.city) || '<span class=\"muted\">город не выбран</span>'}</div><div class="dweek">${day.weekday}</div></div>
+        <div class="ddone">${day.items.length ? done+'/'+day.items.length : ''}</div>
+      </div>
+      <div class="day-body">
+        ${day.items.map(it=>`
+          <div class="item-row">
+            <button class="chk ${it.done?'done':''}" data-action="toggleItem" data-day="${day.id}" data-item="${it.id}">${it.done?'✓':''}</button>
+            <span class="item-title ${it.done?'done':''}">${esc(it.title)}</span>
+            <button class="rm-btn" data-action="removeItem" data-day="${day.id}" data-item="${it.id}">×</button>
+          </div>`).join('')}
+        <div class="inline-add">
+          <input class="txt txt-flex" data-action="dayDraft" data-day="${day.id}" data-key-enter="addItem" value="${escAttr(day.draft||'')}" placeholder="добавить пункт плана…">
+          <button class="btn-add" data-action="addItem" data-day="${day.id}">Добавить</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderLodging(){
+  const statusColors = { 'хочу':['#efe4cf','#8a7d6b'], 'бронь':['#e6ead2','#6f7a45'], 'оплачено':['#f0ddd4','#b95c3f'] };
+  const cards = data.lodging.map(lg=>{
+    const [bg,col] = statusColors[lg.status] || statusColors['хочу'];
+    return `
+    <div class="card lodge-card">
+      <div class="photo-slot lodge-photo ${photos[lg.id]?'has-img':''}" style="${photoStyle(lg.id)}" data-action="photo" data-key="${lg.id}">
+        <span class="hint" style="font-size:11px">фото жилья</span>
+        <span class="badge" style="background:${col}">${esc(lg.status)}</span>
+      </div>
+      <div class="lodge-body">
+        <input class="lodge-city-in" data-action="lodgeField" data-id="${lg.id}" data-field="city" value="${escAttr(lg.city)}" placeholder="город">
+        <input class="lodge-name-in" data-action="lodgeField" data-id="${lg.id}" data-field="name" value="${escAttr(lg.name)}" placeholder="название жилья">
+        <div class="lodge-row2">
+          <input data-action="lodgeField" data-id="${lg.id}" data-field="dates" value="${escAttr(lg.dates)}" placeholder="даты · ночей">
+          <input class="price" data-action="lodgeField" data-id="${lg.id}" data-field="price" value="${escAttr(lg.price)}" placeholder="€">
+        </div>
+        <div class="status-row">
+          ${['хочу','бронь','оплачено'].map(k=>`<button class="status-chip ${lg.status===k?'active':''}" data-action="setStatus" data-id="${lg.id}" data-status="${k}">${k}</button>`).join('')}
+        </div>
+        <input class="txt lodge-note-in" data-action="lodgeField" data-id="${lg.id}" data-field="notes" value="${escAttr(lg.notes)}" placeholder="заметка / удобства…">
+        <div class="lodge-foot">
+          <input class="lodge-link-in" data-action="lodgeField" data-id="${lg.id}" data-field="link" value="${escAttr(lg.link)}" placeholder="https://ссылка на объявление">
+          <button class="rm-btn" data-action="removeLodge" data-id="${lg.id}">удалить</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="grid-lodge">${cards}<button class="add-lodge-btn" data-action="addLodge">+ добавить вариант жилья</button></div>`;
+}
+
+function renderCancel(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const rows = data.lodging.map(lg=>{
+    const iso = lg.freeCancel || '';
+    let label='дата не указана', color='#8a7d6b', bg='#efe4cf', order=1e9;
+    if (iso){
+      const dl = Math.round((new Date(iso+'T00:00:00') - today)/86400000);
+      order = dl;
+      if (dl<0){ label='отмена уже платная'; color='#b95c3f'; bg='#f0ddd4'; }
+      else if (dl===0){ label='сегодня последний день'; color='#c8892f'; bg='#f6ead0'; }
+      else if (dl<=7){ label=`осталось ${dl} дн. — скоро платно`; color='#c8892f'; bg='#f6ead0'; }
+      else { label=`бесплатно ещё ${dl} дн.`; color='#6f7a45'; bg='#e6ead2'; }
+    }
+    return {lg, iso, label, color, bg, order};
+  }).sort((a,b)=>a.order-b.order);
+  if (!rows.length) return '<p class="muted" style="font-size:14px">Добавьте жильё на вкладке «Жильё», и сроки отмены появятся здесь.</p>';
+  return `<p class="section-note">Сроки бесплатной отмены по каждому жилью — раньше сверху.</p>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    ${rows.map(r=>`
+      <div class="card cancel-row">
+        <div style="flex:1;min-width:180px"><div class="cancel-name">${esc(r.lg.name)}</div><div class="cancel-sub">${esc(r.lg.city)} · ${esc(r.lg.dates)}</div></div>
+        <div class="cancel-right">
+          <div class="cancel-k">бесплатно до</div>
+          <div class="cancel-date serif">${r.iso ? fmtDate(r.iso) : '— не указана'}</div>
+          <div><span class="chip" style="background:${r.bg};color:${r.color}">${r.label}</span></div>
+        </div>
+        <input class="txt" type="date" data-action="lodgeField" data-id="${r.lg.id}" data-field="freeCancel" value="${r.iso}">
+      </div>`).join('')}
+  </div>`;
+}
+
+function renderSights(){
+  return `
+  <div class="card form-bar">
+    <input class="txt" style="width:140px" data-action="draft" data-key="sCity" value="${escAttr(draft.sCity||'')}" placeholder="город">
+    <input class="txt txt-flex" style="min-width:180px" data-action="draft" data-key="sName" data-key-enter="addSight" value="${escAttr(draft.sName||'')}" placeholder="что посмотреть / куда сходить">
+    <input class="txt" style="width:140px" data-action="draft" data-key="sCat" value="${escAttr(draft.sCat||'')}" placeholder="категория">
+    <button class="btn-add" data-action="addSight">Добавить</button>
+  </div>
+  <div class="grid-sights">
+    ${data.sights.map(st=>`
+      <div class="card sight-row">
+        <button class="chk ${st.done?'done':''}" data-action="toggleSight" data-id="${st.id}">${st.done?'✓':''}</button>
+        <div style="flex:1">
+          <div class="sight-name ${st.done?'done':''}">${esc(st.name)}</div>
+          <div class="sight-sub">${esc(st.city)} · ${esc(st.category)}</div>
+        </div>
+        <button class="rm-btn" data-action="removeSight" data-id="${st.id}">×</button>
+      </div>`).join('') || '<p class="muted" style="font-size:14px">Пока пусто — добавьте первое место выше.</p>'}
+  </div>`;
+}
+
+function renderBudget(){
+  const dotColors = { 'транспорт':'#b95c3f','проживание':'#cf9440','еда':'#7c8450','развлечения':'#c88a6a','собаки':'#9a7b4f' };
+  const total = data.expenses.reduce((a,e)=>a+(+e.amount||0),0);
+  const perPerson = Math.round(total/(data.trip.people||2));
+  const nights = Math.round((new Date(data.trip.end)-new Date(data.trip.start))/86400000);
+  const perDay = Math.round(total/(nights||1));
+  return `
+  <div class="grid-budget-top">
+    <div class="card stat-card" style="background:var(--ac);color:#fff;border:none">
+      <div class="k" style="color:#fff;opacity:.85">Всего</div><div class="v" style="color:#fff">€${total.toLocaleString('ru-RU')}</div>
+    </div>
+    <div class="card stat-card"><div class="k">На человека</div><div class="v" style="color:var(--ol)">€${perPerson.toLocaleString('ru-RU')}</div></div>
+    <div class="card stat-card"><div class="k">В день</div><div class="v" style="color:var(--ac2)">€${perDay.toLocaleString('ru-RU')}</div></div>
+  </div>
+  <div class="card" style="overflow:hidden">
+    ${data.expenses.map(e=>`
+      <div class="expense-row">
+        <span class="dot" style="background:${dotColors[e.category]||'#b95c3f'}"></span>
+        <div style="flex:1"><div class="exp-label">${esc(e.label)}</div><div class="exp-cat">${esc(e.category)}</div></div>
+        <div class="exp-amt serif">€${(+e.amount||0).toLocaleString('ru-RU')}</div>
+        <button class="rm-btn" data-action="removeExpense" data-id="${e.id}">×</button>
+      </div>`).join('') || '<div style="padding:16px 18px" class="muted">Расходов пока нет.</div>'}
+    <div class="exp-form">
+      <input class="txt txt-flex" style="min-width:150px" data-action="draft" data-key="eLabel" value="${escAttr(draft.eLabel||'')}" placeholder="статья расхода">
+      <input class="txt" style="width:140px" data-action="draft" data-key="eCat" value="${escAttr(draft.eCat||'')}" placeholder="категория">
+      <input class="txt" type="number" style="width:100px" data-action="draft" data-key="eAmount" data-key-enter="addExpense" value="${escAttr(draft.eAmount||'')}" placeholder="€">
+      <button class="btn-add" data-action="addExpense">Добавить</button>
+    </div>
+  </div>`;
+}
+
+function renderNotes(){
+  return `
+  <div class="grid-2">
+    <div class="card" style="padding:20px 22px">
+      <div class="serif" style="font-size:19px;font-weight:700;margin-bottom:12px">Заметки</div>
+      <textarea class="notes-area" data-action="notes" placeholder="важное, о собаках, документы, что не забыть…">${esc(data.notes)}</textarea>
+    </div>
+    <div class="card" style="padding:20px 22px">
+      <div class="serif" style="font-size:19px;font-weight:700;margin-bottom:12px">Полезные ссылки</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        ${data.links.map(ln=>`
+          <div class="link-row">
+            <span class="link-dot"></span>
+            <a href="${escAttr(ln.url)}" target="_blank" rel="noopener">${esc(ln.title)}</a>
+            <button class="rm-btn" data-action="removeLink" data-id="${ln.id}">×</button>
+          </div>`).join('')}
+      </div>
+      <div class="link-add">
+        <input class="txt" data-action="draft" data-key="lTitle" value="${escAttr(draft.lTitle||'')}" placeholder="название">
+        <div class="row">
+          <input class="txt txt-flex" data-action="draft" data-key="lUrl" data-key-enter="addLink" value="${escAttr(draft.lUrl||'')}" placeholder="https://…">
+          <button class="btn-add" data-action="addLink">+</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function esc(s){ return String(s??'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function escAttr(s){ return String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function render(){
+  applyTheme();
+  renderTabs();
+  renderThemeDots();
+
+  const start = new Date(data.trip.start), end = new Date(data.trip.end);
+  const today = new Date(); today.setHours(0,0,0,0);
+  document.getElementById('daysLeft').textContent = Math.max(0, Math.round((start-today)/86400000));
+  document.getElementById('nights').textContent = Math.round((end-start)/86400000);
+  document.getElementById('lede').textContent = `${fmtDate(data.trip.start)} — ${fmtDate(data.trip.end)} · выезжаем из Праги, ${data.trip.people} человека и ${data.trip.dogs} собаки. Планируем маршрут, жильё, места и бюджет.`;
+
+  const isDark = ui.dark === null ? window.matchMedia('(prefers-color-scheme: dark)').matches : ui.dark;
+  document.getElementById('darkToggle').innerHTML = isDark ? ICONS.sun : ICONS.moon;
+
+  let html = '';
+  if (ui.tab==='overview') html = renderOverview();
+  else if (ui.tab==='route') html = renderRoute();
+  else if (ui.tab==='lodging') html = renderLodging();
+  else if (ui.tab==='cancel') html = renderCancel();
+  else if (ui.tab==='sights') html = renderSights();
+  else if (ui.tab==='budget') html = renderBudget();
+  else if (ui.tab==='notes') html = renderNotes();
+  document.getElementById('main').innerHTML = `<div class="tabpanel">${html}</div>`;
+}
+
+function addDayItem(dayId){
+  mut(d => { const day = d.days.find(x=>x.id===dayId); if (day && (day.draft||'').trim()){ day.items.push({id:uid(), title:day.draft.trim(), done:false}); day.draft=''; } });
+}
+function addSight(){
+  const name = (draft.sName||'').trim();
+  if (!name) return;
+  const city = (draft.sCity||'Без города').trim(), category = (draft.sCat||'разное').trim();
+  draft.sName=''; draft.sCity=''; draft.sCat='';
+  mut(d => { d.sights.push({id:uid(), name, city, category, done:false}); });
+}
+function addExpense(){
+  const label = (draft.eLabel||'').trim();
+  if (!label) return;
+  const category = (draft.eCat||'разное').trim(), amount = +draft.eAmount||0;
+  draft.eLabel=''; draft.eCat=''; draft.eAmount='';
+  mut(d => { d.expenses.push({id:uid(), label, category, amount}); });
+}
+function addLink(){
+  const title = (draft.lTitle||'').trim();
+  if (!title) return;
+  const url = (draft.lUrl||'https://').trim();
+  draft.lTitle=''; draft.lUrl='';
+  mut(d => { d.links.push({id:uid(), title, url}); });
+}
+
+document.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+  if (action==='tab'){ ui.tab = el.dataset.tab; saveUi(); render(); }
+  else if (action==='theme'){ ui.theme = el.dataset.theme; saveUi(); render(); }
+  else if (action==='photo'){ openPhotoPicker(el.dataset.key); }
+  else if (action==='toggleItem'){ const {day,item}=el.dataset; mut(d=>{ const dy=d.days.find(x=>x.id===day); const it=dy&&dy.items.find(x=>x.id===item); if(it) it.done=!it.done; }); }
+  else if (action==='removeItem'){ const {day,item}=el.dataset; mut(d=>{ const dy=d.days.find(x=>x.id===day); if(dy) dy.items=dy.items.filter(x=>x.id!==item); }); }
+  else if (action==='addItem'){ addDayItem(el.dataset.day); }
+  else if (action==='setStatus'){ const {id,status}=el.dataset; mut(d=>{ const l=d.lodging.find(x=>x.id===id); if(l) l.status=status; }); }
+  else if (action==='removeLodge'){ mut(d=>{ d.lodging = d.lodging.filter(x=>x.id!==el.dataset.id); }); }
+  else if (action==='addLodge'){ mut(d=>{ const id=uid(); d.lodging.push({id, city:'Новый город', name:'Название жилья', dates:'даты · ночей', price:'€', status:'хочу', freeCancel:'', link:'', notes:''}); }); }
+  else if (action==='toggleSight'){ mut(d=>{ const s=d.sights.find(x=>x.id===el.dataset.id); if(s) s.done=!s.done; }); }
+  else if (action==='removeSight'){ mut(d=>{ d.sights = d.sights.filter(x=>x.id!==el.dataset.id); }); }
+  else if (action==='addSight'){ addSight(); }
+  else if (action==='addExpense'){ addExpense(); }
+  else if (action==='removeExpense'){ mut(d=>{ d.expenses = d.expenses.filter(x=>x.id!==el.dataset.id); }); }
+  else if (action==='addLink'){ addLink(); }
+  else if (action==='removeLink'){ mut(d=>{ d.links = d.links.filter(x=>x.id!==el.dataset.id); }); }
+});
+
+document.getElementById('darkToggle').addEventListener('click', () => {
+  const isDark = ui.dark === null ? window.matchMedia('(prefers-color-scheme: dark)').matches : ui.dark;
+  ui.dark = !isDark; saveUi(); render();
+});
+
+document.addEventListener('input', (e) => {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+  if (action==='dayDraft'){ const day=el.dataset.day; const d=data.days.find(x=>x.id===day); if(d){ d.draft = el.value; saveData(); } }
+  else if (action==='lodgeField'){ const {id,field}=el.dataset; const l=data.lodging.find(x=>x.id===id); if(l){ l[field]=el.value; saveData(); if(field==='status'){} } }
+  else if (action==='notes'){ data.notes = el.value; saveData(); }
+  else if (action==='draft'){ draft[el.dataset.key] = el.value; }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  const el = e.target.closest('[data-key-enter]');
+  if (!el) return;
+  const action = el.dataset.keyEnter;
+  if (action==='addItem') addDayItem(el.dataset.day);
+  else if (action==='addSight') addSight();
+  else if (action==='addExpense') addExpense();
+  else if (action==='addLink') addLink();
+});
+
+render();
+</script>
+</body>
+</html>
