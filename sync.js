@@ -8,8 +8,8 @@
  */
 (() => {
   'use strict';
-  const SUPABASE_URL = '';      // напр. 'https://abcdefgh.supabase.co'
-  const SUPABASE_ANON_KEY = ''; // anon/public ключ проекта
+  const SUPABASE_URL = 'https://hxcavgtlucyoqudbrgse.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_IyGTMYZyxWXr0GoctL83YA_wSgoSj1-';
 
   const LS_KEY = 'italy_trip';
   const ROW_ID = 'main';
@@ -21,7 +21,6 @@
   const ENDPOINT = SUPABASE_URL.replace(/\/$/, '') + '/rest/v1/trip_state';
   const HEADERS = {
     apikey: SUPABASE_ANON_KEY,
-    Authorization: 'Bearer ' + SUPABASE_ANON_KEY,
     'Content-Type': 'application/json',
   };
 
@@ -55,10 +54,13 @@
     }, PUSH_DEBOUNCE_MS);
   }
 
-  const origSet = localStorage.setItem.bind(localStorage);
-  localStorage.setItem = (key, value) => {
-    origSet(key, value);
-    if (key === LS_KEY && !suppress) schedulePush();
+  // Важно: присваивание localStorage.setItem = ... не работает — Storage
+  // сохранит функцию как данные. Патчим прототип.
+  const nativeSet = Storage.prototype.setItem;
+  const origSet = (key, value) => nativeSet.call(localStorage, key, value);
+  Storage.prototype.setItem = function (key, value) {
+    nativeSet.call(this, key, value);
+    if (this === window.localStorage && key === LS_KEY && !suppress) schedulePush();
   };
 
   // Приложение читает localStorage только на старте, поэтому чтобы показать

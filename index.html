@@ -767,7 +767,7 @@ class Component extends DCLogic {
     this.loadPhotos();
   }
   componentDidUpdate(prevProps, prevState) {
-    if (prevState.data !== this.state.data) {
+    if (!prevState || prevState.data !== this.state.data) {
       try { localStorage.setItem('italy_trip', JSON.stringify({ v: this.SEED_V, data: this.state.data })); } catch (e) {}
     }
   }
