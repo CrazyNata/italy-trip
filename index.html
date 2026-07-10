@@ -1,653 +1,1155 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Отпуск в Италии</title>
-<style>
-:root{
-  --ac:#6f7a45; --ac2:#c8923c; --ol:#7c8450;
-  --bg:#eef0da; --card:#ffffff; --line:#e0dcc4; --ink:#3b3228; --muted:#847a63; --soft:#faf8ec; --track:#e6e2c8;
-  --serif:Georgia,'Iowan Old Style','Palatino Linotype',serif;
-  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-  --mono:ui-monospace,'SF Mono',Consolas,'Liberation Mono',monospace;
-}
-:root[data-theme="dark"]{ --bg:#1e1c15; --card:#2a2921; --line:#3c3a2e; --ink:#eae6d6; --muted:#a49a7d; --soft:#242319; --track:#38361f; }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){ --bg:#1e1c15; --card:#2a2921; --line:#3c3a2e; --ink:#eae6d6; --muted:#a49a7d; --soft:#242319; --track:#38361f; }
-}
-*{box-sizing:border-box}
-html,body{margin:0;padding:0}
-body{background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;transition:background .2s ease,color .2s ease}
-a{color:var(--ac)}
-button{font-family:inherit}
-input,textarea{font-family:inherit;color:var(--ink)}
-input:focus,textarea:focus,select:focus{outline:2px solid var(--ac2);outline-offset:1px}
-::placeholder{color:var(--muted);opacity:.8}
-::selection{background:var(--ac);color:#fff}
-button:focus-visible,a:focus-visible{outline:2px solid var(--ac2);outline-offset:2px}
-.wrap{max-width:1080px;margin:0 auto;padding:0 22px}
-.serif{font-family:var(--serif)}
-.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
-.card{background:var(--card);border:1px solid var(--line);border-radius:16px}
-.muted{color:var(--muted)}
-.eyebrow{display:flex;align-items:center;gap:10px;color:var(--ac);font-size:12px;letter-spacing:.18em;text-transform:uppercase;font-weight:600}
-.eyebrow .rule{width:24px;height:1px;background:var(--ac);display:inline-block}
-header{padding:36px 0 0}
-.head-row{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px}
-h1{font-family:var(--serif);font-weight:700;font-size:clamp(30px,4.6vw,50px);line-height:1.04;margin:10px 0 0;letter-spacing:-.01em;text-wrap:balance}
-.lede{margin:12px 0 0;font-size:15px;color:var(--muted);max-width:460px;line-height:1.5}
-.head-stats{display:flex;gap:12px;flex-wrap:wrap}
-.stat-box{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 20px;min-width:92px}
-.stat-box .num{font-family:var(--mono);font-size:32px;font-weight:700;letter-spacing:-.02em;line-height:1}
-.stat-box .lbl{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:5px}
-.icon-btn{display:grid;place-items:center;width:44px;height:44px;background:var(--card);border:1px solid var(--line);border-radius:14px;color:var(--ink);cursor:pointer}
-.icon-btn:hover{border-color:var(--ac)}
-.icon-btn svg{width:18px;height:18px}
-.theme-dots{display:flex;gap:8px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:0 14px}
-.theme-dot{width:16px;height:16px;border-radius:50%;cursor:pointer;border:2px solid transparent}
-.theme-dot.active{border-color:var(--ink)}
-nav.tabs{display:flex;gap:4px;flex-wrap:wrap;margin-top:28px;border-bottom:1px solid var(--line)}
-nav.tabs button{display:flex;align-items:center;gap:7px;border:none;background:none;cursor:pointer;font-size:14.5px;font-weight:600;padding:11px 15px;margin-bottom:-1px;border-bottom:2px solid transparent;color:var(--muted)}
-nav.tabs button svg{width:14px;height:14px;flex:none}
-nav.tabs button.active{color:var(--ac);border-bottom-color:var(--ac)}
-nav.tabs button:hover:not(.active){color:var(--ink)}
-main{padding:26px 0 90px}
-@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.tabpanel{animation:fadeUp .35s ease both}
-h2.section{font-family:var(--serif);font-weight:700;font-size:21px;margin:32px 0 4px;text-wrap:balance}
-.section-note{margin:0 0 14px;font-size:12.5px;color:var(--muted)}
-.grid-2{display:grid;grid-template-columns:1.5fr 1fr;gap:18px}
-.grid-auto{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
-.grid-lodge{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.grid-sights{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
-.grid-budget-top{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin-bottom:18px}
-@media (max-width:720px){ .grid-2{grid-template-columns:1fr} .head-row{align-items:flex-start} }
-.photo-slot{position:relative;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--soft);cursor:pointer;background-size:cover;background-position:center;display:flex;align-items:flex-end}
-.photo-slot .hint{margin:auto;color:var(--muted);font-size:12.5px;text-align:center;padding:16px;font-family:var(--mono)}
-.photo-slot.has-img .hint{display:none}
-.photo-slot .caption{width:100%;padding:20px;background:linear-gradient(to top,rgba(30,25,15,.75),transparent);color:#fff;display:none}
-.photo-slot.has-img .caption{display:block}
-.photo-slot .caption .cap-title{font-family:var(--serif);font-size:24px;font-weight:700}
-.photo-slot .caption .cap-sub{font-size:12.5px;opacity:.85;margin-top:2px}
-.stat-card{padding:18px 20px}
-.stat-card .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.stat-card .v{font-family:var(--serif);font-size:32px;font-weight:700;margin-top:6px;line-height:1}
-.progress-track{height:8px;border-radius:6px;background:var(--track);margin-top:11px;overflow:hidden}
-.progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--ac),var(--ac2))}
-.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 10px;margin-top:2px}
-.mini-grid .mv{font-family:var(--serif);font-size:22px;font-weight:700}
-.mini-grid .ml{font-size:11.5px;color:var(--muted)}
-.weather-card{padding:15px 17px}
-.weather-card .city{font-weight:600;font-size:14.5px}
-.weather-card .temps{display:flex;align-items:baseline;gap:7px;margin-top:7px}
-.weather-card .day{font-family:var(--serif);font-size:27px;font-weight:700;color:var(--ac2)}
-.weather-card .night{font-size:12.5px;color:var(--muted)}
-.weather-card .note{font-size:11.5px;color:var(--muted);margin-top:5px}
-.map-box{position:relative;background:var(--track);border:1px solid var(--line);border-radius:16px;padding:22px}
-.map-pins{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
-.pin{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 13px 7px 8px}
-.pin .n{width:20px;height:20px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;font-size:10.5px;font-weight:700;flex:none}
-.pin .c{font-weight:600;font-size:13px}
-.pin .d{font-size:11.5px;color:var(--muted)}
-.arrow{color:var(--muted);opacity:.6}
-.day-card{overflow:hidden}
-.day-head{display:flex;align-items:center;gap:13px;padding:13px 18px;border-bottom:1px solid var(--track)}
-.day-head .dnum{font-family:var(--serif);font-size:21px;font-weight:700;line-height:1;text-align:center;min-width:48px}
-.day-head .dmon{font-size:10.5px;color:var(--muted);text-transform:uppercase;text-align:center;min-width:48px;margin-top:2px}
-.day-head .dcity{font-weight:600;font-size:15px}
-.day-head .dweek{font-size:11.5px;color:var(--muted)}
-.day-head .ddone{font-size:11.5px;color:var(--ol);font-weight:600;white-space:nowrap}
-.day-body{padding:6px 10px 12px}
-.item-row{display:flex;align-items:center;gap:11px;padding:8px 7px;border-radius:9px}
-.item-row:hover{background:var(--soft)}
-.chk{width:20px;height:20px;flex:none;border-radius:6px;cursor:pointer;display:grid;place-items:center;font-size:12px;font-weight:700;border:1.5px solid var(--line);background:var(--card);color:transparent}
-.chk.done{background:var(--ol);border-color:var(--ol);color:#fff}
-.item-title{flex:1;font-size:14px}
-.item-title.done{color:var(--muted);text-decoration:line-through}
-.rm-btn{border:none;background:none;color:var(--line);cursor:pointer;font-size:17px;line-height:1;padding:3px 7px}
-.rm-btn:hover{color:var(--ac)}
-.inline-add{display:flex;gap:7px;padding:7px 7px 2px}
-.txt{border:1px solid var(--line);border-radius:9px;padding:8px 11px;font-size:13.5px;background:var(--soft);color:var(--ink)}
-.txt-flex{flex:1;min-width:0}
-.btn-add{border:none;background:var(--ac);color:#fff;border-radius:9px;padding:0 15px;font-weight:600;font-size:13.5px;cursor:pointer;white-space:nowrap}
-.btn-add:hover{background:var(--ac2)}
-.lodge-card{overflow:hidden;display:flex;flex-direction:column}
-.lodge-photo{height:150px}
-.badge{position:absolute;top:11px;left:11px;font-size:10.5px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.03em;color:#fff}
-.lodge-body{padding:15px 17px 17px;display:flex;flex-direction:column;gap:9px;flex:1}
-.lodge-city-in{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ac);font-weight:700;border:none;background:none;width:100%;padding:1px 0}
-.lodge-name-in{font-family:var(--serif);font-size:18px;font-weight:700;border:none;background:none;width:100%;padding:1px 0;color:var(--ink)}
-.lodge-row2{display:flex;gap:8px}
-.lodge-row2 input{flex:1;min-width:0;font-size:12.5px;color:var(--muted);border:none;background:none;padding:1px 0}
-.lodge-row2 input.price{flex:none;width:70px;font-weight:600;color:var(--ink);text-align:right}
-.status-row{display:flex;gap:6px;flex-wrap:wrap}
-.status-chip{border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:999px;cursor:pointer}
-.status-chip.active{background:var(--ac);border-color:var(--ac);color:#fff}
-.lodge-note-in{border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:12.5px;background:var(--soft);margin-top:1px}
-.lodge-foot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;gap:8px}
-.lodge-link-in{flex:1;font-size:12px;border:none;background:none;color:var(--ac);min-width:0}
-.add-lodge-btn{border:2px dashed var(--line);background:none;border-radius:16px;min-height:210px;color:var(--muted);font-size:14.5px;font-weight:600;cursor:pointer;display:grid;place-items:center}
-.add-lodge-btn:hover{border-color:var(--ac);color:var(--ac)}
-.cancel-row{padding:14px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:14px}
-.cancel-name{font-weight:600;font-size:14.5px}
-.cancel-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
-.cancel-right{text-align:right;min-width:140px}
-.cancel-k{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-.cancel-date{font-family:var(--serif);font-weight:700;font-size:18px;margin-top:1px}
-.chip{display:inline-block;font-size:11px;font-weight:700;padding:4px 11px;border-radius:999px;margin-top:5px;white-space:nowrap}
-.sight-row{display:flex;align-items:flex-start;gap:11px;padding:12px 14px}
-.sight-name{font-weight:600;font-size:14.5px}
-.sight-name.done{color:var(--muted);text-decoration:line-through}
-.sight-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
-.form-bar{padding:12px 14px;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
-.expense-row{display:flex;align-items:center;gap:13px;padding:13px 18px;border-bottom:1px solid var(--track)}
-.expense-row:last-of-type{border-bottom:none}
-.dot{width:9px;height:9px;border-radius:50%;flex:none}
-.exp-label{font-weight:600;font-size:14.5px}
-.exp-cat{font-size:11.5px;color:var(--muted)}
-.exp-amt{font-family:var(--serif);font-weight:700;font-size:17px}
-.exp-form{display:flex;gap:8px;flex-wrap:wrap;padding:13px 18px;background:var(--soft)}
-.notes-area{width:100%;min-height:300px;border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:14.5px;line-height:1.6;background:var(--soft);resize:vertical}
-.link-row{display:flex;align-items:center;gap:9px;padding:9px 11px;border:1px solid var(--track);border-radius:10px}
-.link-dot{width:7px;height:7px;border-radius:50%;background:var(--ac2);flex:none}
-.link-row a{flex:1;font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.link-add{display:flex;flex-direction:column;gap:8px;margin-top:11px}
-.link-add .row{display:flex;gap:8px}
-.svg-icon{display:block}
-</style>
+<script src="./sync.js"></script>
+<script src="./support.js"></script>
 </head>
 <body>
-<div class="wrap">
-  <header>
-    <div class="head-row">
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Mulish:wght@400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#eaf1f1;font-family:'Mulish',system-ui,sans-serif;color:var(--ink,#3b3228);-webkit-font-smoothing:antialiased}
+  a{color:var(--ac,#b95c3f);text-decoration:none}
+  a:hover{color:var(--ac2,#cf9440)}
+  input,textarea,select,button{font-family:inherit}
+  input:focus,textarea:focus,select:focus{outline:none}
+  ::placeholder{color:#b3a690}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .slot-wrap image-slot{width:100%;height:100%;display:block}
+</style>
+</helmet>
+
+<div style="{{ rootStyle }}">
+
+  <!-- ========== HEADER ========== -->
+  <header style="max-width:1120px;margin:0 auto;padding:38px 24px 0">
+    <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px">
       <div>
-        <div class="eyebrow"><span class="rule"></span>Италия · осень 2026</div>
-        <h1>Отпуск с семьёй<br>в Италии</h1>
-        <p class="lede" id="lede"></p>
+        <div style="display:flex;align-items:center;gap:10px;color:var(--ac,#b95c3f);font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:600">
+          <span style="width:26px;height:1px;background:var(--ac,#b95c3f);display:inline-block"></span>Италия · осень 2026
+        </div>
+        <h1 style="font-family:'Marcellus',serif;font-weight:600;font-size:clamp(44px,6.4vw,74px);line-height:1;margin:10px 0 0;letter-spacing:-.015em">Отпуск с семьёй<br>в Италии <span style="font-style:normal">🍋</span></h1>
+        <p style="margin:14px 0 0;font-size:15px;color:var(--muted,#7a6d59);max-width:460px">25 сентября — 12 октября · выезжаем из Праги вдвоём с 2 собаками. В Риме встречаем родственников — и нас становится 4 человека и 2 собаки. Планируем маршрут, жильё, места и бюджет.</p>
       </div>
-      <div class="head-stats">
-        <div class="theme-dots" id="themeDots"></div>
-        <button class="icon-btn" id="darkToggle" title="Светлая / тёмная тема"></button>
-        <div class="stat-box"><div class="num" id="daysLeft" style="color:var(--ac)"></div><div class="lbl">дней до выезда</div></div>
-        <div class="stat-box"><div class="num" id="nights" style="color:var(--ol)"></div><div class="lbl">ночей</div></div>
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:14px;padding:0 14px">
+          <sc-for list="{{ themeSwatches }}" as="sw" hint-placeholder-count="3">
+            <button onClick="{{ onSetTheme }}" data-theme="{{ sw.key }}" title="{{ sw.key }}" style="{{ sw.style }}"></button>
+          </sc-for>
+        </div>
+        <button onClick="{{ onToggleDark }}" title="Светлая / тёмная тема" style="display:grid;place-items:center;padding:0 16px;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:14px;color:var(--ink);cursor:pointer;font-size:17px"><i class="{{ darkIcon }}"></i></button>
+        <div style="text-align:center;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:14px;padding:14px 20px;min-width:96px">
+          <div style="font-family:'Space Mono',ui-monospace,monospace;font-size:46px;font-weight:700;letter-spacing:-.02em;color:var(--ac,#b95c3f);line-height:1">{{ daysLeft }}</div>
+          <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#8a7d6b);margin-top:4px">дней до выезда</div>
+        </div>
+        <div style="text-align:center;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:14px;padding:14px 20px;min-width:96px">
+          <div style="font-family:'Space Mono',ui-monospace,monospace;font-size:46px;font-weight:700;letter-spacing:-.02em;color:var(--ol,#7c8450);line-height:1">{{ nights }}</div>
+          <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#8a7d6b);margin-top:4px">ночей</div>
+        </div>
       </div>
     </div>
-    <nav class="tabs" id="tabs"></nav>
+
+    <!-- NAV -->
+    <nav style="display:flex;gap:4px;flex-wrap:wrap;margin-top:26px;border-bottom:1px solid var(--line,#e7dcc7)">
+      <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="6">
+        <button onClick="{{ onTab }}" data-tab="{{ tab.id }}" style="{{ tab.style }}"><i class="{{ tab.icon }}" style="margin-right:8px;font-size:14px;width:17px;text-align:center"></i>{{ tab.label }}</button>
+      </sc-for>
+    </nav>
   </header>
-  <main id="main"></main>
+
+  <main style="max-width:1120px;margin:0 auto;padding:28px 24px 90px">
+
+    <!-- ============ ОБЗОР ============ -->
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+    <div style="animation:fadeUp .4s ease both">
+      <div onClick="{{ onHeroClick }}" style="position:relative;border-radius:18px;overflow:hidden;min-height:340px;border:1px solid var(--line,#e7dcc7);cursor:zoom-in">
+        <!-- slide 1: Зальцбург -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp0 }};transition:opacity .6s ease;z-index:{{ heroZ0 }}">
+          <img src="images/hero-salzburg.png" alt="Зальцбург" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇦🇹 Первая остановка · 25 сентября</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Зальцбург на рассвете</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Крепость Хоэнзальцбург над бирюзовой Зальцах — с этого города начинается наше путешествие</div>
+          </div>
+        </div>
+        <!-- slide 2: Верона -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp1 }};transition:opacity .6s ease;z-index:{{ heroZ1 }}">
+          <img src="images/hero-verona.png" alt="Верона" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇮🇹 Вторая остановка · 26 сентября</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Верона — город Ромео и Джульетты</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Розовый мрамор Арена ди Верона и уютные улочки по пути на юг Италии</div>
+          </div>
+        </div>
+        <!-- slide 3: Рим -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp2 }};transition:opacity .6s ease;z-index:{{ heroZ2 }}">
+          <img src="images/hero-rome.png" alt="Рим" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇮🇹 Третья остановка · 27 сентября</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Рим — Вечный город</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Здесь мы встречаем родственников — теперь нас четверо и две собаки: три дня Колизея, пиний (римских сосен) и вечерних прогулок</div>
+          </div>
+        </div>
+        <!-- slide 4: Пиза -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp3 }};transition:opacity .6s ease;z-index:{{ heroZ3 }}">
+          <img src="images/hero-pisa.png" alt="Пиза" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇮🇹 По пути · 30 сентября</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Пиза — короткая остановка</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Заезжаем к Пьяцца-деи-Мираколи и падающей башне по дороге из Рима в Фильине</div>
+          </div>
+        </div>
+        <!-- slide 5: Фильине -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp4 }};transition:opacity .6s ease;z-index:{{ heroZ4 }}">
+          <img src="images/hero-figline.png" alt="Фильине-Вальдарно" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇮🇹 Тоскана · 30 сентября</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Фильине-Вальдарно</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Тихий тосканский городок с аркадами на Пьяцца Марсилио Фичино — ночёвка среди холмов Валь-д’Арно</div>
+          </div>
+        </div>
+        <!-- slide 6: Сан-Марино -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp5 }};transition:opacity .6s ease;z-index:{{ heroZ5 }}">
+          <img src="images/hero-sanmarino.png" alt="Сан-Марино" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇸🇲 По пути · 1 октября</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Сан-Марино</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Древнейшая республика на вершине Монте-Титано — башни и виды на холмы по дороге к Кьодже</div>
+          </div>
+        </div>
+        <!-- slide 7: Кьоджа -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp6 }};transition:opacity .6s ease;z-index:{{ heroZ6 }}">
+          <img src="images/hero-chioggia.png" alt="Кьоджа" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇮🇹 Пятая остановка · 1 октября</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Кьоджа — маленькая Венеция</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Рыбацкий городок с каналами, лодками и мостами в лагуне рядом с Венецией</div>
+          </div>
+        </div>
+        <!-- slide 8: Милан -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp7 }};transition:opacity .6s ease;z-index:{{ heroZ7 }}">
+          <img src="images/hero-milan.png" alt="Милан" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇮🇹 Шестая остановка · 3 октября</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Милан — столица моды</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Величественный Дуомо и Галерея Виктора Эммануила II перед дорогой в Альпы</div>
+          </div>
+        </div>
+        <!-- slide 9: Комо -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp8 }};transition:opacity .6s ease;z-index:{{ heroZ8 }}">
+          <img src="images/hero-como.png" alt="Озеро Комо" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇮🇹 Из Милана · радиальная поездка</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Озеро Комо</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Бирюзовая вода, виллы и разноцветные городки у подножия Альп — вылазка на день из Милана</div>
+          </div>
+        </div>
+        <!-- slide 10: Вальдидентро -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp9 }};transition:opacity .6s ease;z-index:{{ heroZ9 }}">
+          <img src="images/hero-valdidentro.png" alt="Вальдидентро" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇮🇹 Альпы · 6 октября</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Вальдидентро</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Альпийская долина с зелёными лугами и снежными вершинами — тишина и горный воздух перед Мюнхеном</div>
+          </div>
+        </div>
+        <!-- slide 11: Стельвио -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp10 }};transition:opacity .6s ease;z-index:{{ heroZ10 }}">
+          <img src="images/hero-stelvio.png" alt="Перевал Стельвио" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇮🇹 Из Вальдидентро · радиальная поездка</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Перевал Стельвио</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Легендарный серпантин с 48 поворотами — один из самых высоких автоперевалов Альп</div>
+          </div>
+        </div>
+        <!-- slide 12: Мюнхен -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp11 }};transition:opacity .6s ease;z-index:{{ heroZ11 }}">
+          <img src="images/hero-munich.png" alt="Мюнхен" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇩🇪 Последняя остановка · 8 октября</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Мюнхен — перед домом</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Мариенплац и башни Фрауэнкирхе — последняя ночёвка перед возвращением в Прагу</div>
+          </div>
+        </div>
+        <!-- slide 13: Прага -->
+        <div style="position:absolute;inset:0;opacity:{{ heroOp12 }};transition:opacity .6s ease;z-index:{{ heroZ12 }}">
+          <img src="images/hero-prague.png" alt="Прага" style="width:100%;height:100%;object-fit:cover;display:block" />
+          <div style="position:absolute;left:0;bottom:0;right:0;padding:24px;background:linear-gradient(to top,rgba(45,36,26,.72),transparent);pointer-events:none">
+            <div style="display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.16);backdrop-filter:blur(4px);color:#fff;font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:600;padding:4px 11px;border-radius:999px">🇨🇿 Дом · 12 октября</div>
+            <div style="color:#fff;font-family:'Marcellus',serif;font-size:30px;font-weight:600;margin-top:8px">Прага — домой</div>
+            <div style="color:rgba(255,255,255,.85);font-size:13px;margin-top:2px">Карлов мост и Пражский Град — возвращение домой, круг замкнулся</div>
+          </div>
+        </div>
+        <!-- spacer keeps height -->
+        <img src="images/hero-salzburg.png" alt="" aria-hidden="true" style="width:100%;min-height:340px;object-fit:cover;display:block;visibility:hidden" />
+        <button onClick="{{ onHeroPrev }}" title="Назад" style="position:absolute;top:50%;left:12px;transform:translateY(-50%);width:38px;height:38px;border:none;border-radius:50%;background:rgba(24,18,12,.5);color:#fff;cursor:pointer;font-size:15px;display:grid;place-items:center;z-index:5"><i class="fa-solid fa-chevron-left"></i></button>
+        <button onClick="{{ onHeroNext }}" title="Вперёд" style="position:absolute;top:50%;right:12px;transform:translateY(-50%);width:38px;height:38px;border:none;border-radius:50%;background:rgba(24,18,12,.5);color:#fff;cursor:pointer;font-size:15px;display:grid;place-items:center;z-index:5"><i class="fa-solid fa-chevron-right"></i></button>
+        <div style="position:absolute;top:16px;right:16px;display:flex;gap:6px;z-index:5">
+          <span style="{{ heroDot0 }}"></span>
+          <span style="{{ heroDot1 }}"></span>
+          <span style="{{ heroDot2 }}"></span>
+          <span style="{{ heroDot3 }}"></span>
+          <span style="{{ heroDot4 }}"></span>
+          <span style="{{ heroDot5 }}"></span>
+          <span style="{{ heroDot6 }}"></span>
+          <span style="{{ heroDot7 }}"></span>
+          <span style="{{ heroDot8 }}"></span>
+          <span style="{{ heroDot9 }}"></span>
+          <span style="{{ heroDot10 }}"></span>
+          <span style="{{ heroDot11 }}"></span>
+          <span style="{{ heroDot12 }}"></span>
+        </div>
+      </div>
+
+      <!-- Погода -->
+      <h2 style="font-family:'Marcellus',serif;font-weight:600;font-size:22px;margin:34px 0 4px">Погода сейчас</h2>
+      <p style="margin:0 0 16px;font-size:13px;color:var(--muted,#8a7d6b)">Текущая погода во всех городах маршрута — обновляется при загрузке страницы.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px">
+        <sc-for list="{{ weather }}" as="w" hint-placeholder-count="8">
+          <div style="position:relative;border-radius:16px;overflow:hidden;height:150px;border:1px solid var(--line,#e7dcc7);background:var(--track,#f0e5d1)">
+            <sc-if value="{{ w.hasPhoto }}" hint-placeholder-val="{{ false }}">
+              <img src="{{ w.photo }}" alt="{{ w.city }}" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover" />
+            </sc-if>
+            <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(24,18,12,.82),rgba(24,18,12,.1) 52%,rgba(24,18,12,.42));pointer-events:none"></div>
+            <div style="position:absolute;left:0;right:0;top:0;padding:13px 15px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none">
+              <span style="font-family:'Space Mono',ui-monospace,monospace;font-size:34px;font-weight:700;color:#fff;line-height:1;text-shadow:0 1px 8px rgba(0,0,0,.6)">{{ w.day }}°</span>
+              <span style="width:34px;height:34px;flex:none;border-radius:10px;background:rgba(255,255,255,.18);backdrop-filter:blur(4px);display:grid;place-items:center"><i class="{{ w.icon }}" style="color:#fff;font-size:16px"></i></span>
+            </div>
+            <div style="position:absolute;left:0;right:0;bottom:0;padding:13px 15px;pointer-events:none">
+              <div style="font-weight:700;font-size:15px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 6px rgba(0,0,0,.6)" title="{{ w.city }}">{{ w.city }}</div>
+              <div style="font-size:12px;color:rgba(255,255,255,.82);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;text-shadow:0 1px 5px rgba(0,0,0,.55)">{{ w.desc }} · сейчас</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- Карта -->
+      <h2 style="font-family:'Marcellus',serif;font-weight:600;font-size:22px;margin:34px 0 4px">Карта маршрута</h2>
+      <p style="margin:0 0 16px;font-size:13px;color:var(--muted,#8a7d6b)">Нажмите на город, чтобы открыть его на Google Maps.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:16px">
+        <sc-for list="{{ mapPins }}" as="p" hint-placeholder-count="8">
+          <a href="{{ p.mapUrl }}" target="_blank" rel="noopener" onClick="{{ onOpenExt }}" data-url="{{ p.mapUrl }}" style="display:flex;align-items:center;gap:11px;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:12px;padding:11px 14px;text-decoration:none;color:var(--ink);cursor:pointer" style-hover="border-color:var(--ac,#b95c3f)">
+            <span style="width:24px;height:24px;flex:none;border-radius:50%;background:var(--ac,#b95c3f);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700">{{ p.n }}</span>
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.city }}</span>
+              <span style="display:block;font-size:12px;color:var(--muted,#8a7d6b)">{{ p.dates }}</span>
+            </span>
+            <i class="fa-solid fa-arrow-up-right-from-square" style="color:var(--muted,#8a7d6b);font-size:11px"></i>
+          </a>
+        </sc-for>
+      </div>
+      <div style="position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line,#e7dcc7);height:440px;background:var(--track,#efe4cf)">
+        <iframe src="{{ mapEmbedUrl }}" title="Маршрут поездки" style="width:100%;height:100%;border:0;display:block" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        <div style="position:absolute;right:14px;bottom:14px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+          <button onClick="{{ onCopyMap }}" data-url="{{ mapOpenUrl }}" title="Скопировать ссылку на карту" style="display:inline-flex;align-items:center;gap:7px;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);color:var(--ink);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,.14);cursor:pointer"><i class="{{ copyIcon }}"></i>{{ copyLabel }}</button>
+          <a href="{{ mapOpenUrl }}" target="_blank" rel="noopener" title="Открыть маршрут в Google Maps" style="display:inline-flex;align-items:center;gap:7px;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);color:var(--ink);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,.14);text-decoration:none"><i class="fa-solid fa-arrow-up-right-from-square"></i>Открыть в Google Maps</a>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ МАРШРУТ ============ -->
+    <sc-if value="{{ isRoute }}" hint-placeholder-val="{{ true }}">
+    <div style="animation:fadeUp .4s ease both;position:relative;border-radius:20px;padding:20px;background:radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf);border:1px solid var(--line,#e7dcc7);overflow:hidden">
+      <div style="position:absolute;inset:0;pointer-events:none;opacity:.5;background-image:radial-gradient(var(--line,#d8c9ac) 1.1px, transparent 1.1px);background-size:22px 22px"></div>
+      <div style="position:relative;display:flex;flex-direction:column;gap:16px">
+      <sc-for list="{{ days }}" as="day" hint-placeholder-count="4">
+        <div style="background:var(--paper,#fbf2df);border:1px solid var(--line,#e7dcc7);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(59,50,40,.05)">
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 20px;background:{{ day.headBg }};border-bottom:1px solid var(--track,#efe4cf)">
+            <div style="text-align:center;min-width:52px">
+              <div style="font-family:'Marcellus',serif;font-size:22px;font-weight:700;line-height:1">{{ day.dayNum }}</div>
+              <div style="font-size:11px;color:var(--muted,#8a7d6b);text-transform:uppercase">{{ day.month }}</div>
+            </div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:16px"><span style="font-size:17px;line-height:1">{{ day.flags }}</span><span>{{ day.city }}</span></div>
+              <div style="font-size:12px;color:var(--muted,#8a7d6b)">{{ day.weekday }}</div>
+            </div>
+            <div style="font-size:12px;color:var(--ol,#7c8450);font-weight:600">{{ day.doneLabel }}</div>
+            <sc-if value="{{ day.hasDayMap }}" hint-placeholder-val="{{ false }}">
+              <a href="{{ day.dayMapUrl }}" target="_blank" rel="noopener" title="Открыть маршрут дня на Google Maps" style="display:inline-flex;align-items:center;gap:6px;background:var(--ac,#b95c3f);color:#fff;border-radius:9px;padding:7px 12px;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap"><i class="fa-solid fa-route"></i>маршрут</a>
+              <button onClick="{{ onCopyDayMap }}" data-day="{{ day.id }}" data-url="{{ day.dayMapUrl }}" title="Скопировать ссылку на маршрут" style="border:none;background:none;cursor:pointer;color:var(--muted,#8a7d6b);font-size:14px;padding:6px" style-hover="color:var(--ac,#b95c3f)"><i class="{{ day.copyIcon }}"></i></button>
+              <button onClick="{{ onSetDayMap }}" data-day="{{ day.id }}" title="Изменить ссылку" style="border:none;background:none;cursor:pointer;color:var(--muted,#c4b5a0);font-size:13px;padding:6px" style-hover="color:var(--ac,#b95c3f)"><i class="fa-solid fa-pencil"></i></button>
+            </sc-if>
+            <sc-if value="{{ day.noDayMap }}" hint-placeholder-val="{{ true }}">
+              <button onClick="{{ onSetDayMap }}" data-day="{{ day.id }}" title="Добавить ссылку на маршрут дня" style="display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line,#e7dcc7);background:var(--card,#fff);color:var(--muted,#8a7d6b);border-radius:9px;padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap" style-hover="border-color:var(--ac,#b95c3f);color:var(--ac,#b95c3f)"><i class="fa-solid fa-route"></i>+ карта</button>
+            </sc-if>
+          </div>
+          <div style="padding:8px 12px 14px">
+            <sc-for list="{{ day.items }}" as="item" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;gap:12px;padding:9px 8px;border-radius:10px" style-hover="background:var(--soft,#faf4e8)">
+                <button onClick="{{ onToggleItem }}" data-day="{{ day.id }}" data-item="{{ item.id }}" style="{{ item.boxStyle }}">{{ item.check }}</button>
+                <span style="flex:1;font-size:15px;{{ item.textStyle }}">{{ item.title }}</span>
+                <span style="font-size:17px;font-weight:700;color:var(--ink,#3b3228);font-variant-numeric:tabular-nums;white-space:nowrap;min-width:110px;text-align:right">{{ item.time }}</span>
+                <sc-if value="{{ item.hasMap }}" hint-placeholder-val="{{ false }}">
+                  <a href="{{ item.mapUrl }}" target="_blank" title="Открыть на карте" style="display:inline-flex;align-items:center;gap:5px;color:var(--ac,#b95c3f);font-size:13px;font-weight:600;padding:4px 6px;text-decoration:none;white-space:nowrap"><i class="fa-solid fa-location-dot"></i>карта</a>
+                </sc-if>
+                <button onClick="{{ onRemoveItem }}" data-day="{{ day.id }}" data-item="{{ item.id }}" style="border:none;background:none;color:#c4b5a0;cursor:pointer;font-size:18px;line-height:1;padding:4px 8px" style-hover="color:var(--ac,#b95c3f)">×</button>
+              </div>
+            </sc-for>
+            <div style="display:flex;gap:8px;padding:8px 8px 2px;flex-wrap:wrap">
+              <input value="{{ day.draft }}" onInput="{{ onDayDraft }}" data-day="{{ day.id }}" onKeyDown="{{ onDayKey }}" placeholder="добавить пункт плана…" style="flex:1;min-width:200px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--soft,#fdfaf3)">
+              <input value="{{ day.draftTime }}" onInput="{{ onDayDraftTime }}" data-day="{{ day.id }}" onKeyDown="{{ onDayKey }}" placeholder="время" style="width:110px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--soft,#fdfaf3);text-align:right">
+              <button onClick="{{ onAddDayItem }}" data-day="{{ day.id }}" style="border:none;background:var(--ac,#b95c3f);color:#fff;border-radius:9px;padding:0 16px;font-weight:600;font-size:14px;cursor:pointer">Добавить</button>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ ЖИЛЬЁ ============ -->
+    <sc-if value="{{ isLodging }}" hint-placeholder-val="{{ true }}">
+    <div style="animation:fadeUp .4s ease both;position:relative;border-radius:20px;padding:20px;background:radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf);border:1px solid var(--line,#e7dcc7);overflow:hidden">
+      <div style="position:absolute;inset:0;pointer-events:none;opacity:.5;background-image:radial-gradient(var(--line,#d8c9ac) 1.1px, transparent 1.1px);background-size:22px 22px"></div>
+      <div style="position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:18px">
+        <sc-for list="{{ lodging }}" as="lg" hint-placeholder-count="4">
+          <div id="lodge-card-{{ lg.id }}" style="background:var(--paper,#fbf2df);border:1px solid var(--line,#e7dcc7);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 1px 3px rgba(59,50,40,.05);scroll-margin-top:20px;transition:box-shadow .3s,border-color .3s">
+            <sc-if value="{{ lg.hasPhotos }}" hint-placeholder-val="{{ false }}">
+              <div style="position:relative;height:230px;overflow:hidden">
+                <img src="{{ lg.curPhoto }}" alt="фото жилья" loading="lazy" onClick="{{ onOpenLightbox }}" data-id="{{ lg.id }}" style="width:100%;height:100%;object-fit:cover;object-position:{{ lg.objPos }};display:block;cursor:zoom-in" />
+                <span style="position:absolute;top:12px;left:12px;{{ lg.badgeStyle }}">{{ lg.status }}</span>
+                <sc-if value="{{ lg.manyPhotos }}" hint-placeholder-val="{{ false }}">
+                  <button onClick="{{ onPrevPhoto }}" data-id="{{ lg.id }}" title="Назад" style="position:absolute;top:50%;left:10px;transform:translateY(-50%);width:34px;height:34px;border:none;border-radius:50%;background:rgba(24,18,12,.5);color:#fff;cursor:pointer;font-size:14px;display:grid;place-items:center"><i class="fa-solid fa-chevron-left"></i></button>
+                  <button onClick="{{ onNextPhoto }}" data-id="{{ lg.id }}" title="Вперёд" style="position:absolute;top:50%;right:10px;transform:translateY(-50%);width:34px;height:34px;border:none;border-radius:50%;background:rgba(24,18,12,.5);color:#fff;cursor:pointer;font-size:14px;display:grid;place-items:center"><i class="fa-solid fa-chevron-right"></i></button>
+                  <div style="position:absolute;bottom:12px;left:0;right:0;display:flex;justify-content:center;gap:6px">
+                    <sc-for list="{{ lg.dots }}" as="d" hint-placeholder-count="3">
+                      <span style="{{ d.style }}"></span>
+                    </sc-for>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+            <sc-if value="{{ lg.noPhotos }}" hint-placeholder-val="{{ true }}">
+            <div class="slot-wrap" style="position:relative;height:230px">
+              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ lg.slot }}" shape="rect" fit="cover" placeholder="фото жилья" hint-size="100%,230px"></x-import>
+              <span style="position:absolute;top:12px;left:12px;{{ lg.badgeStyle }}">{{ lg.status }}</span>
+            </div>
+            </sc-if>
+            <div style="padding:16px 18px 18px;display:flex;flex-direction:column;gap:10px;flex:1">
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ac,#b95c3f);font-weight:600"><span style="font-size:15px;line-height:1">{{ lg.flag }}</span>{{ lg.city }}</div>
+                <input value="{{ lg.name }}" onInput="{{ onLodgeField }}" data-id="{{ lg.id }}" data-field="name" style="font-family:'Marcellus',serif;font-size:23px;font-weight:600;border:none;background:none;width:100%;padding:2px 0;color:var(--ink,#3b3228)">
+              </div>
+              <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--muted,#8a7d6b)">
+                <span>{{ lg.dates }}</span>
+                <span style="font-weight:600;color:var(--ink,#3b3228)">{{ lg.price }}</span>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <sc-for list="{{ lg.statusOpts }}" as="s" hint-placeholder-count="3">
+                  <button onClick="{{ onSetStatus }}" data-id="{{ lg.id }}" data-status="{{ s.key }}" style="{{ s.style }}">{{ s.key }}</button>
+                </sc-for>
+              </div>
+              <input value="{{ lg.notes }}" onInput="{{ onLodgeField }}" data-id="{{ lg.id }}" data-field="notes" placeholder="заметка / удобства…" style="border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:8px 11px;font-size:13px;background:var(--soft,#fdfaf3);margin-top:2px">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:auto">
+                <div style="display:flex;align-items:center;gap:6px;min-width:0">
+                  <a href="{{ lg.link }}" target="_blank" style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Ссылка на Букинг →</a>
+                  <button onClick="{{ onCopyLodgeLink }}" data-id="{{ lg.id }}" data-url="{{ lg.link }}" title="Скопировать ссылку" style="border:none;background:none;cursor:pointer;color:var(--muted,#8a7d6b);font-size:13px;padding:2px 4px;flex:none" style-hover="color:var(--ac,#b95c3f)"><i class="{{ lg.copyIcon }}"></i></button>
+                </div>
+                <button onClick="{{ onRemoveLodge }}" data-id="{{ lg.id }}" style="border:none;background:none;color:#c4b5a0;cursor:pointer;font-size:13px;flex:none" style-hover="color:var(--ac,#b95c3f)">удалить</button>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+        <button onClick="{{ onAddLodge }}" style="border:2px dashed #d8c9ac;background:none;border-radius:16px;min-height:220px;color:#a2937c;font-size:15px;font-weight:600;cursor:pointer;display:grid;place-items:center" style-hover="border-color:var(--ac,#b95c3f);color:var(--ac,#b95c3f)">+ добавить вариант жилья</button>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ ОТМЕНА ============ -->
+    <sc-if value="{{ isCancel }}" hint-placeholder-val="{{ true }}">
+    <div style="animation:fadeUp .4s ease both">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:0 0 16px">
+        <p style="margin:0;font-size:13px;color:var(--muted,#8a7d6b);max-width:560px">Сроки бесплатной отмены по каждому жилью. Дату можно менять здесь, я также проставляю её со скринов Букинга.</p>
+        <button onClick="{{ onToggleCancelSort }}" style="display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line,#e7dcc7);background:var(--card,#fff);color:var(--ink);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap" style-hover="border-color:var(--ac,#b95c3f);color:var(--ac,#b95c3f)"><i class="{{ cancelSortIcon }}"></i>{{ cancelSortLabel }}</button>
+      </div>
+      <div style="position:relative;border-radius:20px;padding:20px;background:radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf);border:1px solid var(--line,#e7dcc7);overflow:hidden">
+        <div style="position:absolute;inset:0;pointer-events:none;opacity:.5;background-image:radial-gradient(var(--line,#d8c9ac) 1.1px, transparent 1.1px);background-size:22px 22px"></div>
+        <div style="position:relative;display:flex;flex-direction:column;gap:12px">
+        <sc-for list="{{ cancels }}" as="c" hint-placeholder-count="3">
+          <div onClick="{{ onGoToLodge }}" data-id="{{ c.id }}" title="Открыть во вкладке «Жильё»" style="background:var(--paper,#fbf2df);border:1px solid var(--line,#e7dcc7);border-radius:14px;padding:16px 20px;display:flex;flex-wrap:wrap;align-items:center;gap:16px;box-shadow:0 1px 3px rgba(59,50,40,.05);cursor:pointer" style-hover="border-color:var(--ac,#b95c3f)">
+            <div style="flex:1;min-width:190px">
+              <div style="font-weight:700;font-size:19px;display:flex;align-items:center;gap:8px"><span style="font-size:17px;line-height:1">{{ c.flag }}</span>{{ c.name }}<i class="fa-solid fa-arrow-right" style="font-size:12px;color:var(--muted,#8a7d6b)"></i></div>
+              <div style="font-size:12px;color:var(--muted,#8a7d6b);margin-top:2px">{{ c.city }} · {{ c.dates }}</div>
+            </div>
+            <div style="text-align:right;min-width:150px">
+              <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8a7d6b)">бесплатно до</div>
+              <div style="font-family:'Marcellus',serif;font-weight:600;font-size:19px;margin-top:2px">{{ c.dateLabel }}</div>
+              <div style="margin-top:6px"><span style="{{ c.chipStyle }}">{{ c.statusLabel }}</span></div>
+            </div>
+            <input type="date" value="{{ c.freeCancel }}" onInput="{{ onLodgeField }}" onClick="{{ stopClick }}" data-id="{{ c.id }}" data-field="freeCancel" style="border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 11px;font-size:13px;background:var(--soft,#fdfaf3);color:var(--ink,#3b3228)">
+          </div>
+        </sc-for>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ МЕСТА ============ -->
+    <sc-if value="{{ isSights }}" hint-placeholder-val="{{ true }}">
+    <div style="animation:fadeUp .4s ease both">
+      <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:14px 16px;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+        <input value="{{ draft.sCity }}" onInput="{{ onDraft }}" data-k="sCity" placeholder="город" style="width:150px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--soft,#fdfaf3)">
+        <input value="{{ draft.sName }}" onInput="{{ onDraft }}" data-k="sName" onKeyDown="{{ onSightKey }}" placeholder="что посмотреть / куда сходить" style="flex:1;min-width:180px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--soft,#fdfaf3)">
+        <input value="{{ draft.sCat }}" onInput="{{ onDraft }}" data-k="sCat" placeholder="категория" style="width:150px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--soft,#fdfaf3)">
+        <button onClick="{{ onAddSight }}" style="border:none;background:var(--ac,#b95c3f);color:#fff;border-radius:9px;padding:0 18px;font-weight:600;font-size:14px;cursor:pointer">Добавить</button>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
+        <sc-for list="{{ sights }}" as="st" hint-placeholder-count="6">
+          <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:13px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px">
+            <button onClick="{{ onToggleSight }}" data-id="{{ st.id }}" style="{{ st.boxStyle }}">{{ st.check }}</button>
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:15px;{{ st.textStyle }}">{{ st.name }}</div>
+              <div style="font-size:12px;color:var(--muted,#8a7d6b);margin-top:2px">{{ st.city }} · {{ st.category }}</div>
+            </div>
+            <button onClick="{{ onRemoveSight }}" data-id="{{ st.id }}" style="border:none;background:none;color:#c4b5a0;cursor:pointer;font-size:18px;line-height:1" style-hover="color:var(--ac,#b95c3f)">×</button>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ БЮДЖЕТ ============ -->
+    <sc-if value="{{ isBudget }}" hint-placeholder-val="{{ true }}">
+    <div style="animation:fadeUp .4s ease both">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px">
+        <div style="background:var(--ac,#b95c3f);color:#fff;border-radius:16px;padding:20px 22px">
+          <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.85">Всего</div>
+          <div style="font-family:'Marcellus',serif;font-size:34px;font-weight:700;margin-top:6px">€{{ budgetTotal }}</div>
+        </div>
+        <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:20px 22px">
+          <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#8a7d6b)">На человека</div>
+          <div style="font-family:'Marcellus',serif;font-size:34px;font-weight:700;margin-top:6px;color:var(--ol,#7c8450)">€{{ perPerson }}</div>
+        </div>
+        <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:20px 22px">
+          <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#8a7d6b)">В день</div>
+          <div style="font-family:'Marcellus',serif;font-size:34px;font-weight:700;margin-top:6px;color:var(--ac2,#cf9440)">€{{ perDay }}</div>
+        </div>
+      </div>
+      <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;overflow:hidden">
+        <sc-for list="{{ expenses }}" as="e" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--line,#f0e5d1)">
+            <span style="width:10px;height:10px;border-radius:50%;background:{{ e.dot }};flex:none"></span>
+            <div style="flex:1"><div style="font-weight:600;font-size:15px">{{ e.label }}</div><div style="font-size:12px;color:var(--muted,#8a7d6b)">{{ e.category }}</div></div>
+            <div style="font-family:'Marcellus',serif;font-weight:600;font-size:18px">€{{ e.amount }}</div>
+            <button onClick="{{ onRemoveExpense }}" data-id="{{ e.id }}" style="border:none;background:none;color:#c4b5a0;cursor:pointer;font-size:18px;line-height:1" style-hover="color:var(--ac,#b95c3f)">×</button>
+          </div>
+        </sc-for>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px;background:var(--soft,#faf4e8)">
+          <input value="{{ draft.eLabel }}" onInput="{{ onDraft }}" data-k="eLabel" placeholder="статья расхода" style="flex:1;min-width:160px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--card,#fff)">
+          <input value="{{ draft.eCat }}" onInput="{{ onDraft }}" data-k="eCat" placeholder="категория" style="width:150px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--card,#fff)">
+          <input value="{{ draft.eAmount }}" onInput="{{ onDraft }}" data-k="eAmount" onKeyDown="{{ onExpKey }}" placeholder="€" type="number" style="width:110px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--card,#fff)">
+          <button onClick="{{ onAddExpense }}" style="border:none;background:var(--ac,#b95c3f);color:#fff;border-radius:9px;padding:0 18px;font-weight:600;font-size:14px;cursor:pointer">Добавить</button>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ ФОТО ============ -->
+    <sc-if value="{{ isPhotos }}" hint-placeholder-val="{{ false }}">
+    <div style="animation:fadeUp .4s ease both">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px">
+        <p style="margin:0;font-size:13px;color:var(--muted,#8a7d6b);max-width:600px">Загрузите снимки — я прочитаю в каждом GPS и дату съёмки и сам разложу их по местам. Где координат нет, разложу по дню маршрута. Фото уменьшаются и хранятся в этом браузере.</p>
+        <label style="display:inline-flex;align-items:center;gap:8px;background:var(--ac,#b95c3f);color:#fff;border-radius:10px;padding:11px 18px;font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap"><i class="fa-solid fa-arrow-up-from-bracket"></i>Загрузить фото<input type="file" accept="image/*" multiple onChange="{{ onUploadPhotos }}" style="display:none"></label>
+      </div>
+
+      <sc-if value="{{ isImporting }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:10px;background:var(--paper,#fbf2df);border:1px solid var(--line,#e7dcc7);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:14px;color:var(--muted,#8a7d6b)"><i class="fa-solid fa-spinner fa-spin" style="color:var(--ac,#b95c3f)"></i>{{ importStatus }}</div>
+      </sc-if>
+
+      <sc-if value="{{ noPhotos }}" hint-placeholder-val="{{ true }}">
+        <div style="border:2px dashed #d8c9ac;border-radius:18px;padding:56px 24px;text-align:center;color:#a2937c">
+          <i class="fa-solid fa-images" style="font-size:34px;color:var(--ac,#b95c3f);opacity:.7"></i>
+          <div style="font-size:16px;font-weight:600;margin-top:14px;color:var(--ink,#3b3228)">Пока нет фото</div>
+          <div style="font-size:13px;margin-top:6px">Нажмите «Загрузить фото» — снимки сами разложатся по местам и датам.</div>
+        </div>
+      </sc-if>
+
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="0">
+          <div style="position:relative;border-radius:20px;padding:20px;background:radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf);border:1px solid var(--line,#e7dcc7);overflow:hidden">
+            <div style="position:absolute;inset:0;pointer-events:none;opacity:.5;background-image:radial-gradient(var(--line,#d8c9ac) 1.1px, transparent 1.1px);background-size:22px 22px"></div>
+            <div style="position:relative">
+              <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px">
+                <i class="{{ g.icon }}" style="color:var(--ac,#b95c3f);font-size:15px;align-self:center"></i>
+                <span style="font-family:'Marcellus',serif;font-size:20px;font-weight:600;color:var(--ink,#3b3228)">{{ g.title }}</span>
+                <span style="font-size:12px;color:var(--muted,#8a7d6b)">{{ g.meta }}</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px">
+                <sc-for list="{{ g.photos }}" as="p" hint-placeholder-count="3">
+                  <div style="position:relative;aspect-ratio:1/1;border-radius:13px;overflow:hidden;border:1px solid var(--line,#e7dcc7);background:var(--paper,#fbf2df)">
+                    <img src="{{ p.thumb }}" alt="фото" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" />
+                    <button onClick="{{ onRemovePhoto }}" data-id="{{ p.id }}" title="Удалить фото" style="position:absolute;top:6px;right:6px;width:26px;height:26px;border:none;border-radius:8px;background:rgba(24,18,12,.55);color:#fff;cursor:pointer;font-size:12px;display:grid;place-items:center"><i class="fa-solid fa-xmark"></i></button>
+                    <sc-if value="{{ p.hasDate }}" hint-placeholder-val="{{ false }}">
+                      <span style="position:absolute;left:6px;bottom:6px;background:rgba(24,18,12,.6);color:#fff;font-size:11px;padding:3px 7px;border-radius:7px">{{ p.dateLabel }}</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+
+    <!-- ============ ЗАМЕТКИ ============ -->
+    <sc-if value="{{ isNotes }}" hint-placeholder-val="{{ true }}">
+    <div style="animation:fadeUp .4s ease both;display:grid;grid-template-columns:1.4fr 1fr;gap:20px">
+      <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:20px 22px">
+        <div style="font-family:'Marcellus',serif;font-size:20px;font-weight:600;margin-bottom:12px">Заметки</div>
+        <textarea value="{{ notes }}" onInput="{{ onNotes }}" placeholder="важное, о собаках, документы, что не забыть…" style="width:100%;min-height:320px;border:1px solid var(--line,#e7dcc7);border-radius:12px;padding:14px 16px;font-size:15px;line-height:1.6;background:var(--soft,#fdfaf3);resize:vertical"></textarea>
+      </div>
+      <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:20px 22px">
+        <div style="font-family:'Marcellus',serif;font-size:20px;font-weight:600;margin-bottom:12px">Полезные ссылки</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ links }}" as="ln" hint-placeholder-count="3">
+            <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line,#f0e5d1);border-radius:10px">
+              <span style="width:8px;height:8px;border-radius:50%;background:var(--ac2,#cf9440);flex:none"></span>
+              <a href="{{ ln.url }}" target="_blank" style="flex:1;font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ln.title }}</a>
+              <button onClick="{{ onRemoveLink }}" data-id="{{ ln.id }}" style="border:none;background:none;color:#c4b5a0;cursor:pointer;font-size:16px" style-hover="color:var(--ac,#b95c3f)">×</button>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+          <input value="{{ draft.lTitle }}" onInput="{{ onDraft }}" data-k="lTitle" placeholder="название" style="border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--soft,#fdfaf3)">
+          <div style="display:flex;gap:8px">
+            <input value="{{ draft.lUrl }}" onInput="{{ onDraft }}" data-k="lUrl" placeholder="https://…" style="flex:1;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--soft,#fdfaf3)">
+            <button onClick="{{ onAddLink }}" style="border:none;background:var(--ac,#b95c3f);color:#fff;border-radius:9px;padding:0 16px;font-weight:600;font-size:14px;cursor:pointer">+</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    </sc-if>
+
+  </main>
+
+  <sc-if value="{{ lightboxOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onCloseLightbox }}" style="position:fixed;inset:0;z-index:9999;background:rgba(14,10,7,.92);display:flex;align-items:center;justify-content:center;padding:40px">
+      <img src="{{ lightboxSrc }}" alt="фото жилья" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;box-shadow:0 12px 60px rgba(0,0,0,.5)" />
+      <button onClick="{{ onCloseLightbox }}" title="Закрыть" style="position:absolute;top:22px;right:26px;width:46px;height:46px;border:none;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;font-size:20px;display:grid;place-items:center"><i class="fa-solid fa-xmark"></i></button>
+      <sc-if value="{{ lightboxMany }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ onLightboxPrev }}" title="Назад" style="position:absolute;top:50%;left:26px;transform:translateY(-50%);width:52px;height:52px;border:none;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;font-size:20px;display:grid;place-items:center"><i class="fa-solid fa-chevron-left"></i></button>
+        <button onClick="{{ onLightboxNext }}" title="Вперёд" style="position:absolute;top:50%;right:26px;transform:translateY(-50%);width:52px;height:52px;border:none;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;font-size:20px;display:grid;place-items:center"><i class="fa-solid fa-chevron-right"></i></button>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ heroFsOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onCloseHeroFs }}" style="position:fixed;inset:0;z-index:9999;background:rgba(14,10,7,.92);display:flex;align-items:center;justify-content:center;padding:40px">
+      <img src="{{ heroFsSrc }}" alt="фото города" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;box-shadow:0 12px 60px rgba(0,0,0,.5)" />
+      <button onClick="{{ onCloseHeroFs }}" title="Закрыть" style="position:absolute;top:22px;right:26px;width:46px;height:46px;border:none;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;font-size:20px;display:grid;place-items:center"><i class="fa-solid fa-xmark"></i></button>
+      <button onClick="{{ onHeroFsPrev }}" title="Назад" style="position:absolute;top:50%;left:26px;transform:translateY(-50%);width:52px;height:52px;border:none;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;font-size:20px;display:grid;place-items:center"><i class="fa-solid fa-chevron-left"></i></button>
+      <button onClick="{{ onHeroFsNext }}" title="Вперёд" style="position:absolute;top:50%;right:26px;transform:translateY(-50%);width:52px;height:52px;border:none;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;font-size:20px;display:grid;place-items:center"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+  </sc-if>
 </div>
-<input type="file" id="photoInput" accept="image/*" style="display:none">
-<script>
-const ICONS = {
-  compass:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><circle cx="12" cy="12" r="9.5"/><path d="M15 9l-2.2 5.8L8 17l2.2-5.8z"/></svg>',
-  route:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><circle cx="6" cy="6" r="2.4"/><circle cx="18" cy="18" r="2.4"/><path d="M6 8.4V13a3 3 0 0 0 3 3h6a3 3 0 0 1 3 1.6"/></svg>',
-  bed:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"/><path d="M3 18v2M21 18v2M3 12V7a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v3"/></svg>',
-  calx:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><rect x="3.5" y="4.5" width="17" height="16" rx="2"/><path d="M3.5 9.5h17M8 3v3M16 3v3M9.5 13.5l5 5m0-5l-5 5"/></svg>',
-  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><path d="M12 21s7-6.3 7-11.5A7 7 0 0 0 5 9.5C5 14.7 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.3"/></svg>',
-  wallet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><rect x="3" y="6.5" width="18" height="13" rx="2.2"/><path d="M3 10h18M16 14.2h2.4"/></svg>',
-  note:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><path d="M6 3.5h9l3.5 3.5V20a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1z"/><path d="M14.5 3.5V7a1 1 0 0 0 1 1h3.5M8 12h8M8 15.5h5"/></svg>',
-  sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M4.6 4.6l1.7 1.7M17.7 17.7l1.7 1.7M2.5 12h2.4M19.1 12h2.4M4.6 19.4l1.7-1.7M17.7 6.3l1.7-1.7"/></svg>',
-  moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="svg-icon"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.8 6.8 0 0 0 10.5 10.5z"/></svg>',
-  cam:'перетащите / нажмите, чтобы добавить фото'
-};
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Терракота&quot;,&quot;Охра&quot;,&quot;Олива&quot;],&quot;default&quot;:&quot;Олива&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Оформление&quot;},&quot;showCountdown&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Оформление&quot;}}">
+class Component extends DCLogic {
+  state = { tab: 'overview', data: this.seed(), draft: {}, dark: false, cancelSort: 'asc', weatherByCity: {}, photoByCity: {}, theme: null, photos: [], importing: false, importStatus: '' };
 
-const THEMES = {
-  'Терракота': {ac:'#b95c3f', ac2:'#cf9440', bgL:'#f4ead9', bgD:'#211a15'},
-  'Охра':      {ac:'#c8892f', ac2:'#b95c3f', bgL:'#f6eeda', bgD:'#20190f'},
-  'Олива':     {ac:'#6f7a45', ac2:'#c8923c', bgL:'#eef0da', bgD:'#1e1c15'},
-};
-
-const MON = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-const WD = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
-const uid = () => Math.random().toString(36).slice(2,9);
-
-function seed(){
-  const days = [];
-  let cur = new Date('2026-09-25T00:00:00');
-  const end = new Date('2026-10-12T00:00:00');
-  let i = 0;
-  while (cur <= end) {
-    days.push({ id:'d'+i, dayNum:cur.getDate(), month:MON[cur.getMonth()], weekday:WD[cur.getDay()], city:'', items:[], draft:'' });
-    cur = new Date(cur.getTime()+86400000); i++;
+  // ---------- IndexedDB store for photos ----------
+  openDB() {
+    if (this._dbP) return this._dbP;
+    this._dbP = new Promise((res, rej) => {
+      const r = indexedDB.open('italy_photos_db', 1);
+      r.onupgradeneeded = () => { const db = r.result; if (!db.objectStoreNames.contains('photos')) db.createObjectStore('photos', { keyPath: 'id' }); };
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+    });
+    return this._dbP;
   }
-  if (days[0]) { days[0].city = 'Прага → Зальцбург (Австрия)'; days[0].items = [ {id:'i1', title:'Выезд из Праги', done:false}, {id:'i2', title:'Заезд в Санкт-Георген, заселение 14:00–21:00', done:false} ]; }
-  if (days[1]) { days[1].city = 'Зальцбург → дальше'; days[1].items = [ {id:'i3', title:'Выселение до 10:00, продолжаем путь', done:false} ]; }
+  async idbAll() { const db = await this.openDB(); return new Promise((res) => { const t = db.transaction('photos').objectStore('photos').getAll(); t.onsuccess = () => res(t.result || []); t.onerror = () => res([]); }); }
+  async idbPut(rec) { const db = await this.openDB(); return new Promise((res, rej) => { const t = db.transaction('photos', 'readwrite'); t.objectStore('photos').put(rec); t.oncomplete = () => res(); t.onerror = () => rej(t.error); }); }
+  async idbDel(id) { const db = await this.openDB(); return new Promise((res) => { const t = db.transaction('photos', 'readwrite'); t.objectStore('photos').delete(id); t.oncomplete = () => res(); t.onerror = () => res(); }); }
 
-  return {
-    trip: { start:'2026-09-25', end:'2026-10-12', people:2, dogs:2 },
-    days,
-    lodging: [
-      { id:'l1', city:'Зальцбург, Австрия', name:'Individual room surrounded by nature', dates:'25–26 сен · 1 ночь', price:'€65', status:'бронь', freeCancel:'2026-08-25', link:'https://www.booking.com/Share-27nA3f', notes:'Апартаменты с 1 спальней. Адрес: Helmberger Str. 21, Санкт-Георген (Зальцбург). Вид на сад, сауна, стиральная машина, отопление. Гость: Natalia Munykina.' },
-    ],
-    sights: [],
-    expenses: [],
-    links: [
-      { id:'k1', title:'Правила ввоза собак в ЕС', url:'https://' },
-      { id:'k2', title:'Бронь: Individual room (Зальцбург)', url:'https://www.booking.com/Share-27nA3f' },
-    ],
-    notes: 'Выезжаем из Праги 25.09.\nСобаки: переноски, миски, ветпаспорта, чипы, поводки. Проверить pet-friendly жильё и кафе.\nДокументы: страховка, копии паспортов, зелёная карта на авто.\n',
-  };
-}
+  // ---------- EXIF (GPS + DateTimeOriginal) from JPEG ----------
+  parseExif(buf) {
+    try {
+      const dv = new DataView(buf);
+      if (dv.getUint16(0) !== 0xFFD8) return {};
+      let off = 2; const len = dv.byteLength;
+      while (off < len) {
+        if (dv.getUint16(off) !== 0xFFE1) {
+          if ((dv.getUint16(off) & 0xFF00) !== 0xFF00) break;
+          off += 2 + dv.getUint16(off + 2); continue;
+        }
+        const segLen = dv.getUint16(off + 2);
+        if (dv.getUint32(off + 4) !== 0x45786966) return {};
+        const tiff = off + 10;
+        const le = dv.getUint16(tiff) === 0x4949;
+        const u16 = (o) => dv.getUint16(o, le), u32 = (o) => dv.getUint32(o, le);
+        const ifd0 = tiff + u32(tiff + 4);
+        let gpsPtr = 0, exifPtr = 0;
+        const n0 = u16(ifd0);
+        for (let i = 0; i < n0; i++) { const e = ifd0 + 2 + i * 12; const tag = u16(e); if (tag === 0x8825) gpsPtr = tiff + u32(e + 8); if (tag === 0x8769) exifPtr = tiff + u32(e + 8); }
+        let date = null, lat = null, lng = null;
+        if (exifPtr) { const ne = u16(exifPtr); for (let i = 0; i < ne; i++) { const e = exifPtr + 2 + i * 12; const tag = u16(e); if (tag === 0x9003 || tag === 0x9004 || tag === 0x0132) { const cnt = u32(e + 4); let vo = e + 8; if (cnt > 4) vo = tiff + u32(e + 8); let s = ''; for (let k = 0; k < cnt - 1; k++) s += String.fromCharCode(dv.getUint8(vo + k)); if (!date && s) date = s; } } }
+        if (gpsPtr) {
+          const ng = u16(gpsPtr); let latRef = 'N', lngRef = 'E', latV = null, lngV = null;
+          const readRat3 = (o) => { const a = []; for (let k = 0; k < 3; k++) { a.push(u32(o + k * 8) / (u32(o + k * 8 + 4) || 1)); } return a[0] + a[1] / 60 + a[2] / 3600; };
+          for (let i = 0; i < ng; i++) { const e = gpsPtr + 2 + i * 12; const tag = u16(e); const vo = tiff + u32(e + 8); if (tag === 1) latRef = String.fromCharCode(dv.getUint8(e + 8)); if (tag === 3) lngRef = String.fromCharCode(dv.getUint8(e + 8)); if (tag === 2) latV = readRat3(vo); if (tag === 4) lngV = readRat3(vo); }
+          if (latV != null) lat = latRef === 'S' ? -latV : latV;
+          if (lngV != null) lng = lngRef === 'W' ? -lngV : lngV;
+        }
+        let iso = null;
+        if (date) { const m = date.match(/(\d{4})\D(\d{2})\D(\d{2})/); if (m) iso = m[1] + '-' + m[2] + '-' + m[3]; }
+        return { iso, lat, lng };
+      }
+    } catch (e) {}
+    return {};
+  }
 
-let data = load('italy_trip_v1', null) || seed();
-let photos = load('italy_photos_v1', {});
-let ui = load('italy_ui_v1', {tab:'overview', dark:null, theme:'Олива'});
-let draft = {};
+  downscale(file, max) {
+    return new Promise((res) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        let { width: w, height: h } = img;
+        if (w > max || h > max) { const r = Math.min(max / w, max / h); w = Math.round(w * r); h = Math.round(h * r); }
+        const c = document.createElement('canvas'); c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        res(c.toDataURL('image/jpeg', 0.82));
+      };
+      img.onerror = () => { URL.revokeObjectURL(url); res(null); };
+      img.src = url;
+    });
+  }
 
-function load(key, fallback){ try { const raw = JSON.parse(localStorage.getItem(key)); return raw === null || raw === undefined ? fallback : raw; } catch(e){ return fallback; } }
-function saveData(){ try { localStorage.setItem('italy_trip_v1', JSON.stringify(data)); } catch(e){} }
-function saveUi(){ try { localStorage.setItem('italy_ui_v1', JSON.stringify(ui)); } catch(e){} }
-function savePhotos(){ try { localStorage.setItem('italy_photos_v1', JSON.stringify(photos)); } catch(e){ console.warn('photo storage full', e); } }
+  async geocode(lat, lng) {
+    try {
+      const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=12&accept-language=ru`);
+      if (!r.ok) return null;
+      const j = await r.json(); const a = j.address || {};
+      return a.city || a.town || a.village || a.municipality || a.county || j.name || null;
+    } catch (e) { return null; }
+  }
 
-function mut(fn){ fn(data); saveData(); render(); }
-
-function applyTheme(){
-  const t = THEMES[ui.theme] || THEMES['Олива'];
-  const root = document.documentElement;
-  root.style.setProperty('--ac', t.ac);
-  root.style.setProperty('--ac2', t.ac2);
-  const isDark = ui.dark === null ? window.matchMedia('(prefers-color-scheme: dark)').matches : ui.dark;
-  if (ui.dark === true) root.setAttribute('data-theme','dark');
-  else if (ui.dark === false) root.setAttribute('data-theme','light');
-  else root.removeAttribute('data-theme');
-}
-
-function fmtDate(iso){ if(!iso) return ''; return new Date(iso+'T00:00:00').toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'}); }
-
-function downscale(file, cb){
-  const reader = new FileReader();
-  reader.onload = () => {
-    const img = new Image();
-    img.onload = () => {
-      const maxW = 1000;
-      const scale = Math.min(1, maxW/img.width);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width*scale; canvas.height = img.height*scale;
-      canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-      cb(canvas.toDataURL('image/jpeg',0.82));
-    };
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-let pendingPhotoKey = null;
-document.getElementById('photoInput').addEventListener('change', (e) => {
-  const file = e.target.files[0];
-  if (!file || !pendingPhotoKey) return;
-  downscale(file, (dataUrl) => { photos[pendingPhotoKey] = dataUrl; savePhotos(); render(); });
-  e.target.value = '';
-});
-
-function openPhotoPicker(key){ pendingPhotoKey = key; document.getElementById('photoInput').click(); }
-
-const TABS = [
-  ['overview','Обзор','compass'],
-  ['route','Маршрут','route'],
-  ['lodging','Жильё','bed'],
-  ['cancel','Отмена','calx'],
-  ['sights','Места','pin'],
-  ['budget','Бюджет','wallet'],
-  ['notes','Заметки','note'],
-];
-
-function renderTabs(){
-  document.getElementById('tabs').innerHTML = TABS.map(([id,label,icon]) =>
-    `<button data-action="tab" data-tab="${id}" class="${ui.tab===id?'active':''}">${ICONS[icon]}${label}</button>`
-  ).join('');
-}
-
-function renderThemeDots(){
-  document.getElementById('themeDots').innerHTML = Object.entries(THEMES).map(([name,t]) =>
-    `<span class="theme-dot ${ui.theme===name?'active':''}" data-action="theme" data-theme="${name}" style="background:${t.ac}" title="${name}"></span>`
-  ).join('');
-}
-
-function computeWeather(){
-  return [
-    {city:'Рим', day:24, night:13, note:'тепло, солнечно'},
-    {city:'Флоренция', day:23, night:12, note:'ясно, свежо утром'},
-    {city:'Сиена · Тоскана', day:22, night:11, note:'приятно для прогулок'},
-    {city:'Чинкве-Терре', day:21, night:14, note:'мягко у моря'},
-  ];
-}
-
-function photoStyle(key){
-  return photos[key] ? `background-image:url('${photos[key]}')` : '';
-}
-
-function renderOverview(){
-  const cities = [...new Set(data.lodging.map(l=>l.city))];
-  const routeItems = data.days.reduce((a,x)=>a+x.items.length,0);
-  const routeDone = data.days.reduce((a,x)=>a+x.items.filter(i=>i.done).length,0);
-  const sightsTotal = data.sights.length, sightsDone = data.sights.filter(s=>s.done).length;
-  const totalCount = routeItems + sightsTotal, doneCount = routeDone + sightsDone;
-  const pct = totalCount ? Math.round(doneCount/totalCount*100) : 0;
-  const budgetTotal = data.expenses.reduce((a,e)=>a+(+e.amount||0),0);
-  const partyLabel = `${data.trip.people}+${data.trip.dogs}`;
-  const mapPins = data.lodging.map((l,idx)=>({n:idx+1, city:l.city, dates:l.dates}));
-
-  return `
-  <div class="grid-2">
-    <div class="photo-slot ${photos.hero?'has-img':''}" style="min-height:300px;${photoStyle('hero')}" data-action="photo" data-key="hero">
-      <span class="hint">${ICONS.cam}</span>
-      <div class="caption"><div class="cap-title serif">La dolce vita</div><div class="cap-sub">${cities.join('  ·  ') || 'маршрут ещё не задан'}</div></div>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:14px">
-      <div class="card stat-card">
-        <div class="k">Готовность к поездке</div>
-        <div style="display:flex;align-items:baseline;gap:8px;margin-top:6px">
-          <span class="v" style="color:var(--ac)">${pct}%</span>
-          <span style="font-size:12.5px;color:var(--muted)">${doneCount} из ${totalCount} задач</span>
-        </div>
-        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-      </div>
-      <div class="card stat-card" style="flex:1">
-        <div class="k" style="margin-bottom:8px">Коротко о поездке</div>
-        <div class="mini-grid">
-          <div><div class="mv">${cities.length}</div><div class="ml">города</div></div>
-          <div><div class="mv">${sightsDone}/${sightsTotal}</div><div class="ml">места</div></div>
-          <div><div class="mv">${partyLabel}</div><div class="ml">люди и собаки</div></div>
-          <div><div class="mv">€${Math.round(budgetTotal/1000*10)/10}k</div><div class="ml">бюджет</div></div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <h2 class="section">Погода в конце сентября</h2>
-  <p class="section-note">Средние дневные и ночные температуры по городам маршрута.</p>
-  <div class="grid-auto">
-    ${computeWeather().map(w=>`
-      <div class="card weather-card">
-        <div class="city">${w.city}</div>
-        <div class="temps"><span class="day serif">${w.day}°</span><span class="night">ночью ${w.night}°</span></div>
-        <div class="note">${w.note}</div>
-      </div>`).join('')}
-  </div>
-
-  <h2 class="section">Карта маршрута</h2>
-  <div class="map-box">
-    <div class="map-pins">
-      ${mapPins.map(p=>`<span class="pin"><span class="n">${p.n}</span><span class="c">${esc(p.city)}</span><span class="d">${esc(p.dates)}</span></span><span class="arrow">→</span>`).join('') || '<span class="muted" style="font-size:13px">пока нет вариантов жилья — добавьте их на вкладке «Жильё»</span>'}
-      ${mapPins.length ? '<span class="muted" style="font-size:13px">домой</span>' : ''}
-    </div>
-    <div class="photo-slot ${photos.map?'has-img':''}" style="margin-top:16px;height:150px;border-style:dashed;${photoStyle('map')}" data-action="photo" data-key="map">
-      <span class="hint">карта / скриншот маршрута</span>
-    </div>
-  </div>`;
-}
-
-function renderRoute(){
-  return data.days.map(day=>{
-    const done = day.items.filter(x=>x.done).length;
-    return `
-    <div class="card day-card">
-      <div class="day-head">
-        <div><div class="dnum serif">${day.dayNum}</div><div class="dmon">${day.month}</div></div>
-        <div style="flex:1"><div class="dcity">${esc(day.city) || '<span class=\"muted\">город не выбран</span>'}</div><div class="dweek">${day.weekday}</div></div>
-        <div class="ddone">${day.items.length ? done+'/'+day.items.length : ''}</div>
-      </div>
-      <div class="day-body">
-        ${day.items.map(it=>`
-          <div class="item-row">
-            <button class="chk ${it.done?'done':''}" data-action="toggleItem" data-day="${day.id}" data-item="${it.id}">${it.done?'✓':''}</button>
-            <span class="item-title ${it.done?'done':''}">${esc(it.title)}</span>
-            <button class="rm-btn" data-action="removeItem" data-day="${day.id}" data-item="${it.id}">×</button>
-          </div>`).join('')}
-        <div class="inline-add">
-          <input class="txt txt-flex" data-action="dayDraft" data-day="${day.id}" data-key-enter="addItem" value="${escAttr(day.draft||'')}" placeholder="добавить пункт плана…">
-          <button class="btn-add" data-action="addItem" data-day="${day.id}">Добавить</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function renderLodging(){
-  const statusColors = { 'хочу':['#efe4cf','#8a7d6b'], 'бронь':['#e6ead2','#6f7a45'], 'оплачено':['#f0ddd4','#b95c3f'] };
-  const cards = data.lodging.map(lg=>{
-    const [bg,col] = statusColors[lg.status] || statusColors['хочу'];
-    return `
-    <div class="card lodge-card">
-      <div class="photo-slot lodge-photo ${photos[lg.id]?'has-img':''}" style="${photoStyle(lg.id)}" data-action="photo" data-key="${lg.id}">
-        <span class="hint" style="font-size:11px">фото жилья</span>
-        <span class="badge" style="background:${col}">${esc(lg.status)}</span>
-      </div>
-      <div class="lodge-body">
-        <input class="lodge-city-in" data-action="lodgeField" data-id="${lg.id}" data-field="city" value="${escAttr(lg.city)}" placeholder="город">
-        <input class="lodge-name-in" data-action="lodgeField" data-id="${lg.id}" data-field="name" value="${escAttr(lg.name)}" placeholder="название жилья">
-        <div class="lodge-row2">
-          <input data-action="lodgeField" data-id="${lg.id}" data-field="dates" value="${escAttr(lg.dates)}" placeholder="даты · ночей">
-          <input class="price" data-action="lodgeField" data-id="${lg.id}" data-field="price" value="${escAttr(lg.price)}" placeholder="€">
-        </div>
-        <div class="status-row">
-          ${['хочу','бронь','оплачено'].map(k=>`<button class="status-chip ${lg.status===k?'active':''}" data-action="setStatus" data-id="${lg.id}" data-status="${k}">${k}</button>`).join('')}
-        </div>
-        <input class="txt lodge-note-in" data-action="lodgeField" data-id="${lg.id}" data-field="notes" value="${escAttr(lg.notes)}" placeholder="заметка / удобства…">
-        <div class="lodge-foot">
-          <input class="lodge-link-in" data-action="lodgeField" data-id="${lg.id}" data-field="link" value="${escAttr(lg.link)}" placeholder="https://ссылка на объявление">
-          <button class="rm-btn" data-action="removeLodge" data-id="${lg.id}">удалить</button>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-  return `<div class="grid-lodge">${cards}<button class="add-lodge-btn" data-action="addLodge">+ добавить вариант жилья</button></div>`;
-}
-
-function renderCancel(){
-  const today = new Date(); today.setHours(0,0,0,0);
-  const rows = data.lodging.map(lg=>{
-    const iso = lg.freeCancel || '';
-    let label='дата не указана', color='#8a7d6b', bg='#efe4cf', order=1e9;
-    if (iso){
-      const dl = Math.round((new Date(iso+'T00:00:00') - today)/86400000);
-      order = dl;
-      if (dl<0){ label='отмена уже платная'; color='#b95c3f'; bg='#f0ddd4'; }
-      else if (dl===0){ label='сегодня последний день'; color='#c8892f'; bg='#f6ead0'; }
-      else if (dl<=7){ label=`осталось ${dl} дн. — скоро платно`; color='#c8892f'; bg='#f6ead0'; }
-      else { label=`бесплатно ещё ${dl} дн.`; color='#6f7a45'; bg='#e6ead2'; }
+  async handleFiles(fileList) {
+    const files = [...fileList].filter(f => /image\//.test(f.type));
+    if (!files.length) return;
+    this.setState({ importing: true, importStatus: `Обработка 0 из ${files.length}…` });
+    let done = 0;
+    for (const f of files) {
+      let exif = {};
+      try { exif = this.parseExif(await f.arrayBuffer()); } catch (e) {}
+      const thumb = await this.downscale(f, 1400);
+      if (thumb) {
+        const rec = { id: 'p_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7), thumb, iso: exif.iso || null, lat: (exif.lat ?? null), lng: (exif.lng ?? null), place: null };
+        try { await this.idbPut(rec); this.setState(s => ({ photos: [...s.photos, rec] })); } catch (e) {}
+      }
+      done++; this.setState({ importStatus: `Обработка ${done} из ${files.length}…` });
     }
-    return {lg, iso, label, color, bg, order};
-  }).sort((a,b)=>a.order-b.order);
-  if (!rows.length) return '<p class="muted" style="font-size:14px">Добавьте жильё на вкладке «Жильё», и сроки отмены появятся здесь.</p>';
-  return `<p class="section-note">Сроки бесплатной отмены по каждому жилью — раньше сверху.</p>
-  <div style="display:flex;flex-direction:column;gap:10px">
-    ${rows.map(r=>`
-      <div class="card cancel-row">
-        <div style="flex:1;min-width:180px"><div class="cancel-name">${esc(r.lg.name)}</div><div class="cancel-sub">${esc(r.lg.city)} · ${esc(r.lg.dates)}</div></div>
-        <div class="cancel-right">
-          <div class="cancel-k">бесплатно до</div>
-          <div class="cancel-date serif">${r.iso ? fmtDate(r.iso) : '— не указана'}</div>
-          <div><span class="chip" style="background:${r.bg};color:${r.color}">${r.label}</span></div>
-        </div>
-        <input class="txt" type="date" data-action="lodgeField" data-id="${r.lg.id}" data-field="freeCancel" value="${r.iso}">
-      </div>`).join('')}
-  </div>`;
+    this.setState({ importing: false, importStatus: '' });
+    this.resolvePlaces();
+  }
+
+  async resolvePlaces() {
+    const pending = this.state.photos.filter(p => p.lat != null && p.lng != null && !p.place);
+    for (const p of pending) {
+      const place = await this.geocode(p.lat, p.lng);
+      if (place) { const rec = { ...p, place }; try { await this.idbPut(rec); } catch (e) {} this.setState(s => ({ photos: s.photos.map(x => x.id === p.id ? rec : x) })); }
+      await new Promise(r => setTimeout(r, 1100)); // уважаем лимит Nominatim
+    }
+  }
+
+  photoInfo() {
+    return {
+      'Зальцбург, Австрия': { wiki: 'Зальцбург', kw: 'salzburg,austria' },
+      'Верона, Италия': { wiki: 'Верона', kw: 'verona,italy' },
+      'Рим, Италия': { wiki: 'Рим', kw: 'rome,italy' },
+      'Фильине-Вальдарно, Тоскана': { wiki: 'Фильине-Вальдарно', kw: 'tuscany,italy' },
+      'Кьоджа, Италия': { wiki: 'Кьоджа', kw: 'chioggia,venice' },
+      'Милан, Италия': { wiki: 'Милан', kw: 'milan,italy' },
+      'Вальдидентро, Альпы': { wiki: 'Бормио', kw: 'alps,italy,mountains' },
+      'Мюнхен, Германия': { wiki: 'Мюнхен', kw: 'munich,germany' },
+    };
+  }
+  async loadPhotos() {
+    const info = this.photoInfo();
+    const cities = [...new Set(this.state.data.lodging.map(l => l.city))];
+    for (const c of cities) {
+      const inf = info[c] || {};
+      const title = inf.wiki || c.split(',')[0].split('·')[0].trim();
+      let url = '';
+      try {
+        const r = await fetch('https://ru.wikipedia.org/api/rest_v1/page/summary/' + encodeURIComponent(title));
+        if (r.ok) {
+          const j = await r.json();
+          const orig = j.originalimage && j.originalimage.source;
+          const thumb = j.thumbnail && j.thumbnail.source;
+          let file = '';
+          if (orig) file = orig.split('/').pop();
+          else if (thumb) { const m = thumb.match(/\/thumb\/[^/]+\/[^/]+\/([^/]+)\//); if (m) file = m[1]; }
+          if (file) url = 'https://commons.wikimedia.org/wiki/Special:FilePath/' + encodeURIComponent(decodeURIComponent(file)) + '?width=800';
+        }
+      } catch (e) {}
+      if (!url && inf.kw) url = 'https://loremflickr.com/800/400/' + inf.kw;
+      if (url) this.setState(s => ({ photoByCity: { ...(s.photoByCity || {}), [c]: url } }));
+    }
+  }
+
+  cityCoords() {
+    return {
+      'Прага, Чехия': [50.08, 14.44],
+      'Зальцбург, Австрия': [47.80, 13.04],
+      'Верона, Италия': [45.44, 10.99],
+      'Рим, Италия': [41.90, 12.50],
+      'Фильине-Вальдарно, Тоскана': [43.62, 11.47],
+      'Кьоджа, Италия': [45.22, 12.28],
+      'Милан, Италия': [45.46, 9.19],
+      'Вальдидентро, Альпы': [46.48, 10.28],
+      'Мюнхен, Германия': [48.15, 11.60],
+    };
+  }
+  wmoInfo(code) {
+    const m = {
+      0: ['Ясно', 'fa-solid fa-sun'],
+      1: ['Малооблачно', 'fa-solid fa-cloud-sun'], 2: ['Переменная облачность', 'fa-solid fa-cloud-sun'], 3: ['Пасмурно', 'fa-solid fa-cloud'],
+      45: ['Туман', 'fa-solid fa-smog'], 48: ['Изморозь', 'fa-solid fa-smog'],
+      51: ['Морось', 'fa-solid fa-cloud-rain'], 53: ['Морось', 'fa-solid fa-cloud-rain'], 55: ['Морось', 'fa-solid fa-cloud-rain'],
+      61: ['Дождь', 'fa-solid fa-cloud-showers-heavy'], 63: ['Дождь', 'fa-solid fa-cloud-showers-heavy'], 65: ['Сильный дождь', 'fa-solid fa-cloud-showers-heavy'],
+      66: ['Ледяной дождь', 'fa-solid fa-cloud-showers-heavy'], 67: ['Ледяной дождь', 'fa-solid fa-cloud-showers-heavy'],
+      71: ['Снег', 'fa-solid fa-snowflake'], 73: ['Снег', 'fa-solid fa-snowflake'], 75: ['Сильный снег', 'fa-solid fa-snowflake'], 77: ['Снежная крупа', 'fa-solid fa-snowflake'],
+      80: ['Ливень', 'fa-solid fa-cloud-showers-heavy'], 81: ['Ливень', 'fa-solid fa-cloud-showers-heavy'], 82: ['Сильный ливень', 'fa-solid fa-cloud-showers-heavy'],
+      85: ['Снегопад', 'fa-solid fa-snowflake'], 86: ['Снегопад', 'fa-solid fa-snowflake'],
+      95: ['Гроза', 'fa-solid fa-cloud-bolt'], 96: ['Гроза с градом', 'fa-solid fa-cloud-bolt'], 99: ['Гроза с градом', 'fa-solid fa-cloud-bolt'],
+    };
+    return m[code] || ['—', 'fa-solid fa-cloud'];
+  }
+  async loadWeather() {
+    const coords = this.cityCoords();
+    const cities = ['Прага, Чехия', ...new Set(this.state.data.lodging.map(l => l.city))];
+    for (const c of cities) {
+      const cc = coords[c]; if (!cc) continue;
+      try {
+        const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${cc[0]}&longitude=${cc[1]}&current=temperature_2m,weather_code&timezone=auto`);
+        const j = await r.json();
+        const cur = j && j.current;
+        if (cur) this.setState(s => ({ weatherByCity: { ...(s.weatherByCity || {}), [c]: { temp: cur.temperature_2m, code: cur.weather_code } } }));
+      } catch (e) {}
+    }
+  }
+
+  SEED_V = 42;
+  componentDidMount() {
+    try {
+      const raw = JSON.parse(localStorage.getItem('italy_trip') || 'null');
+      if (raw && raw.v === this.SEED_V && raw.data) {
+        const data = raw.data;
+        try {
+          const seedLodge = this.seed().lodging;
+          if (Array.isArray(data.lodging)) {
+            data.lodging.forEach(l => {
+              if (!(Array.isArray(l.photos) && l.photos.length)) {
+                const s = seedLodge.find(x => x.id === l.id);
+                if (s && Array.isArray(s.photos) && s.photos.length) l.photos = s.photos;
+              }
+            });
+          }
+        } catch (e) {}
+        this.setState({ data });
+      }
+    } catch (e) {}
+    try { if (localStorage.getItem('italy_dark') === '1') this.setState({ dark: true }); } catch (e) {}
+    try { const t = localStorage.getItem('italy_theme'); if (t) this.setState({ theme: t }); } catch (e) {}
+    this.idbAll().then(list => { if (list && list.length) this.setState({ photos: list }, () => this.resolvePlaces()); }).catch(() => {});
+    this.loadWeather();
+    this.loadPhotos();
+  }
+  componentDidUpdate(prevProps, prevState) {
+    if (prevState.data !== this.state.data) {
+      try { localStorage.setItem('italy_trip', JSON.stringify({ v: this.SEED_V, data: this.state.data })); } catch (e) {}
+    }
+  }
+
+  seed() {
+    const MON = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+    const WD = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+    const days = [];
+    let cur = new Date('2026-09-25T00:00:00');
+    const end = new Date('2026-10-12T00:00:00');
+    let i = 0;
+    while (cur <= end) {
+      const iso = cur.toISOString().slice(0, 10);
+      days.push({ id: 'd' + i, iso, dayNum: cur.getDate(), month: MON[cur.getMonth()], weekday: WD[cur.getDay()], city: '', items: [], draft: '' });
+      cur = new Date(cur.getTime() + 86400000); i++;
+    }
+    if (days[0]) { days[0].city = 'Прага → Зальцбург (Австрия)'; days[0].dayMapUrl = 'https://maps.app.goo.gl/SzQxJspLgMmxvdar9'; days[0].items = [ { id: 'i1', title: 'Выезд из Праги', done: false }, { id: 'i1b', title: 'На границе Австрии — выключить платные дороги в навигаторе', done: false }, { id: 'i2', title: 'Заселение в Санкт-Георген', time: '14:00–21:00', done: false } ]; }
+    if (days[1]) { days[1].city = 'Зальцбург → Верона (Италия)'; days[1].dayMapUrl = 'https://maps.app.goo.gl/yXKMkaepazr5vVzY6'; days[1].items = [ { id: 'i3', title: 'Выселение (Санкт-Георген)', time: 'до 10:00', done: false }, { id: 'i4', title: 'Заселение в Residenze Mquadro (Верона)', time: '14:00–23:30', done: false } ]; }
+    if (days[2]) { days[2].city = 'Верона → Рим'; days[2].dayMapUrl = 'https://maps.app.goo.gl/RjmxQ3sYntkDaizj8'; days[2].items = [ { id: 'i5', title: 'Выселение (Верона)', time: '09:30–10:00', done: false }, { id: 'i6', title: 'Заселение La mia casa al @Pigneto (Рим)', time: '14:00–16:00', done: false }, { id: 'i7', title: 'Встречаем сестру мужа с супругом — теперь нас 4', time: '', done: false } ]; }
+    if (days[3]) { days[3].city = 'Рим'; }
+    if (days[4]) { days[4].city = 'Рим'; }
+    if (days[5]) { days[5].city = 'Рим → Фильине-Вальдарно (Тоскана)'; days[5].dayMapUrl = 'https://maps.app.goo.gl/jKbYKE9dumFLErtAA'; days[5].items = [ { id: 'i8', title: 'Выселение (Рим)', time: '09:30–10:00', done: false }, { id: 'i9', title: 'Заселение A Casa Mia (Фильине-Вальдарно)', time: '15:00–21:00', done: false } ]; }
+    if (days[6]) { days[6].city = 'Фильине-Вальдарно → Кьоджа'; days[6].dayMapUrl = 'https://maps.app.goo.gl/m6T5FTqhhgdfVYmM7'; days[6].items = [ { id: 'i10', title: 'Выселение (A Casa Mia)', time: 'до 11:00', done: false }, { id: 'i11', title: 'Заселение Casa Mia (Кьоджа) — ключи в MY CONCIERGE', time: '14:00–20:00', done: false } ]; }
+    if (days[7]) { days[7].city = 'Кьоджа'; }
+    if (days[8]) { days[8].city = 'Кьоджа → Милан'; days[8].dayMapUrl = 'https://maps.app.goo.gl/P5SbZn3mrqivy79R6'; days[8].items = [ { id: 'i12', title: 'Выселение (Casa Mia)', time: '08:00–10:00', done: false }, { id: 'i13', title: 'Заселение Atene House (Милан) — кодовый замок', time: 'с 15:00', done: false } ]; }
+    if (days[9]) { days[9].city = 'Милан'; }
+    if (days[10]) { days[10].city = 'Милан'; }
+    if (days[11]) { days[11].city = 'Милан → Вальдидентро (Альпы)'; days[11].dayMapUrl = 'https://maps.app.goo.gl/XLzL2mNGuSmcebB27'; days[11].items = [ { id: 'i14', title: 'Выселение (Atene House)', time: 'до 11:00', done: false }, { id: 'i15', title: 'Заселение Chalet Selva (Вальдидентро)', time: '15:00–20:00', done: false } ]; }
+    if (days[12]) { days[12].city = 'Вальдидентро'; }
+    if (days[13]) { days[13].city = 'Вальдидентро → Мюнхен (Германия)'; days[13].dayMapUrl = 'https://maps.app.goo.gl/isBpJNa3MwGqbvydA'; days[13].items = [ { id: 'i16', title: 'Выселение (Chalet Selva)', time: '08:00–10:00', done: false }, { id: 'i17', title: 'Заселение McDreams Hotel (Мюнхен)', time: 'с 15:00', done: false } ]; }
+    if (days[14]) { days[14].city = 'Мюнхен → Прага (домой)'; days[14].dayMapUrl = 'https://maps.app.goo.gl/sUuLRmtEyee1XpUb6'; days[14].items = [ { id: 'i18', title: 'Выселение (McDreams Hotel)', time: 'до 11:00', done: false }, { id: 'i19', title: 'Возвращение домой в Прагу (U Vlachovky 8)', done: false } ]; }
+    for (let k = 15; k < days.length; k++) { days[k].city = 'Прага (дома)'; }
+
+    const lodging = [
+      { id: 'l1', slot: 'lodge1', city: 'Зальцбург, Австрия', name: 'Individual room surrounded by nature', dates: '25–26 сен · 1 ночь', price: '€65', status: 'бронь', freeCancel: '2026-08-25', link: 'https://www.booking.com/Share-6u9f8tq', photos: ['images/lodge1-a.jpg', 'images/lodge1-b.jpg', 'images/lodge1-c.jpg'], notes: 'Апартаменты с 1 спальней. Адрес: Helmberger Str. 21, Санкт-Георген (Зальцбург). Вид на сад, сауна, стиральная машина, отопление. Бесплатная отмена до 25 авг. Гость: Natalia Munykina.' },
+      { id: 'l2', slot: 'lodge2', city: 'Верона, Италия', name: 'Residenze Mquadro', dates: '26–27 сен · 1 ночь', price: '€91,24', status: 'бронь', freeCancel: '2026-09-22', link: 'https://www.booking.com/Share-wILq2X', photos: ['images/lodge2-a.jpg', 'images/lodge2-b.jpg', 'images/lodge2-c.jpg'], notes: 'Апартаменты с 2 спальнями. Адрес: Via B. Giuliari 27, Борго Рома, 37134 Верона. Цена €84,24 + городской налог ~€7 (итого ~€91,24 с налогами). Ключи в запирающемся ящике на объекте, связаться с хозяином. Заезд 14:00–23:30, выезд 09:30–10:00. Гость: Natalia Munykina.' },
+      { id: 'l3', slot: 'lodge3', city: 'Рим, Италия', name: 'La mia casa al @Pigneto', dates: '27–30 сен · 3 ночи', price: '€434,98', status: 'бронь', freeCancel: '2026-09-21', link: 'https://www.booking.com/Share-qGIikqd', objPosList: ['center 45%', 'center', 'center'], photos: ['images/lodge3-a.jpg', 'images/lodge3-b.jpg', 'images/lodge3-c.jpg'], notes: 'Апартаменты с 1 спальней, до 4 гостей. PIN-код заселения: 5103. Адрес: Piazzale Prenestino 6, Пренестино, 00176 Рим. Вас встретят на объекте. Цена €390,20 (вкл. €50 уборка) + городской налог (итого ~€434,98 с налогами). С Рима нас 4 человека (сестра мужа с супругом) + 2 собаки. Заезд 14:00–16:00, выезд 09:30–10:00. Гость: Natalia Munykina.' },
+      { id: 'l4', slot: 'lodge4', city: 'Фильине-Вальдарно, Тоскана', name: 'A Casa Mia', dates: '30 сен–1 окт · 1 ночь', price: '€98', status: 'бронь', freeCancel: '2026-09-28', link: 'https://www.booking.com/Share-ZfYHYs', photos: ['images/lodge4-a.jpg', 'images/lodge4-b.jpg', 'images/lodge4-c.jpg'], notes: 'Апартаменты с 1 спальней, до 4 гостей. Адрес: Via Lorenzo Pignotti 20, 50063 Фильине-Вальдарно (Тоскана). Цена €98 за 4 гостей (вкл. €29 уборка и НДС 10%). Кухня, стиральная машина, ванна/душ, бельё и полотенца. Заезд 15:00–21:00, выезд до 11:00. Гость: Natalia Munykina.' },
+      { id: 'l5', slot: 'lodge5', city: 'Кьоджа, Италия', name: 'Casa Mia', dates: '1–3 окт · 2 ночи', price: '€222,60', status: 'бронь', freeCancel: '2026-09-16', link: 'https://www.booking.com/Share-Et5y8S', photos: ['images/lodge5-a.jpg', 'images/lodge5-b.jpg', 'images/lodge5-c.jpg'], notes: 'Апартаменты с 1 спальней, до 4 гостей. Адрес: Rione Sant’Andrea 673, 30015 Кьоджа (рядом с Венецией). Цена €210,60 за 4 гостей + городской налог (итого ~€222,60 с налогами, НДС 10%). Ключи забрать в офисе MY CONCIERGE CHIOGGIA, Corso del Popolo 960, с 14:00 до 20:00. Заезд 14:00–20:00, выезд 08:00–10:00. Гость: Natalia Munykina.' },
+      { id: 'l6', slot: 'lodge6', city: 'Милан, Италия', name: 'Atene House Milano Urban', dates: '3–6 окт · 3 ночи', price: '€258,94', status: 'бронь', freeCancel: '2026-09-18', link: 'https://www.booking.com/Share-Kjw3R6', photos: ['images/lodge6-a.jpg', 'images/lodge6-b.jpg', 'images/lodge6-c.jpg'], notes: 'Апартаменты с 1 спальней, до 4 гостей. Адрес: Via Privata Atene 6, primo piano, 20132 Милан. Цена €258,94 за 4 гостей (вкл. €35 уборка и €50 постельное бельё) + возможен городской налог. На двери кодовый замок — ссылку для открытия двери пришлют. Заезд с 15:00, выезд до 11:00. Гость: Natalia Munykina.' },
+      { id: 'l7', slot: 'lodge7', city: 'Вальдидентро, Альпы', name: 'Chalet Selva', dates: '6–8 окт · 2 ночи', price: '€206,75', status: 'бронь', freeCancel: '2026-09-30', link: 'https://www.booking.com/Share-h8O5LK', photos: ['images/lodge7-a.jpg', 'images/lodge7-b.jpg', 'images/lodge7-c.jpg'], notes: 'Апартаменты с видом на горы, до 4 гостей. Адрес: S.s 301 Località Arnoga, 23038 Вальдидентро (Альпы). Цена €206,75 за 4 гостей (вкл. уборку 13,5%). Предоплата не требуется — оплата на месте. Вас встретят на объекте. Заезд 15:00–20:00, выезд 08:00–10:00. Гость: Natalia Munykina.' },
+      { id: 'l8', slot: 'lodge8', city: 'Мюнхен, Германия', name: 'McDreams Hotel München - Messe', dates: '8–9 окт · 1 ночь', price: '€83,69', status: 'бронь', freeCancel: '2026-10-08', link: 'https://www.booking.com/Share-wM89Vy', photos: ['images/lodge8-a.jpg', 'images/lodge8-b.jpg'], notes: 'Четырёхместный номер, до 4 гостей. Номер подтверждения: 6024902666, PIN-код: 6326. Адрес: Kapellenstraße 14, 85622 Фельдкирхен (под Мюнхеном). Цена €83,69 за 4 гостей (НДС 7%). Предоплата не требуется — оплата на месте. Питание не входит, есть Wi-Fi. Заезд с 15:00, выезд до 11:00. Гость: Natalia Munykina.' },
+    ];
+    const sights = [];
+    const expenses = [];
+    const links = [
+      { id: 'k1', title: 'Правила ввоза собак в ЕС', url: 'https://' },
+      { id: 'k2', title: 'Бронь: Individual room (Зальцбург)', url: 'https://www.booking.com/Share-27nA3f' },
+    ];
+    return {
+      trip: { start: '2026-09-25', end: '2026-10-12', people: 2, dogs: 2 },
+      days, lodging, sights, expenses, links,
+      notes: 'Выезжаем из Праги 25.09, нас двое + 2 собаки.\nС Рима (27.09) нас 4 человека — присоединяются сестра мужа с супругом.\nСобаки: переноски, миски, ветпаспорта, чипы, поводки. Проверить pet-friendly жильё и кафе.\nДокументы: страховка, копии паспортов, зелёная карта на авто.\n',
+    };
+  }
+
+  // ---- helpers to update data immutably
+  setData(mut) {
+    this.setState(s => { const data = JSON.parse(JSON.stringify(s.data)); mut(data); return { data }; });
+  }
+  uid() { return Math.random().toString(36).slice(2, 8); }
+
+  renderVals() {
+    const d = this.state.data;
+    const tab = this.state.tab;
+    const draft = this.state.draft || {};
+
+    // theme
+    const themeMap = {
+      'Терракота': { ac: '#2a7089', ac2: '#d99a4e', bg: '#eaf1f1' },
+      'Охра': { ac: '#d99a4e', ac2: '#2a7089', bg: '#f4efe2' },
+      'Олива': { ac: '#5f8a6a', ac2: '#2a7089', bg: '#e9f1ec' },
+    };
+    const activeTheme = this.state.theme || this.props.theme || 'Терракота';
+    const th = themeMap[activeTheme] || themeMap['Терракота'];
+    const dark = this.state.dark;
+    const pal = dark
+      ? { card: '#2c2721', line: '#3d362c', ink: '#ece4d6', muted: '#a99d89', soft: '#241f1a', track: '#38322b', bg: '#1e1a16', paper: '#342e27' }
+      : { card: '#ffffff', line: '#d5e2e1', ink: '#173a3d', muted: '#5f7c7e', soft: '#f1f7f6', track: '#dbeae8', bg: th.bg, paper: '#f4faf9' };
+    const rootStyle = { '--ac': th.ac, '--ac2': th.ac2, '--ol': '#2f8a6a', '--ink': pal.ink, '--bg': pal.bg, '--card': pal.card, '--line': pal.line, '--muted': pal.muted, '--soft': pal.soft, '--track': pal.track, '--paper': pal.paper, minHeight: '100vh', background: 'var(--bg)', color: 'var(--ink)', fontFamily: "'Mulish',system-ui,sans-serif" };
+
+    // countdown / nights
+    const start = new Date(d.trip.start), end = new Date(d.trip.end);
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const daysLeft = Math.max(0, Math.round((start - today) / 86400000));
+    const nights = Math.round((end - start) / 86400000);
+
+    // tabs
+    const showCd = this.props.showCountdown !== false;
+    const tabDefs = [ ['overview', 'Обзор', 'fa-solid fa-compass'], ['route', 'Маршрут', 'fa-solid fa-route'], ['lodging', 'Жильё', 'fa-solid fa-bed'], ['cancel', 'Отмена', 'fa-solid fa-calendar-xmark'], ['sights', 'Места', 'fa-solid fa-location-dot'], ['budget', 'Бюджет', 'fa-solid fa-wallet'], ['photos', 'Фото', 'fa-solid fa-images'], ['notes', 'Заметки', 'fa-solid fa-note-sticky'] ];
+    const tabs = tabDefs.map(([id, label, icon]) => ({
+      id, label, icon,
+      style: `border:none;background:none;cursor:pointer;font-size:17px;font-weight:600;padding:13px 18px;margin-bottom:-1px;border-bottom:2px solid ${tab === id ? 'var(--ac,#b95c3f)' : 'transparent'};color:${tab === id ? 'var(--ac,#b95c3f)' : 'var(--muted,#8a7d6b)'}`,
+    }));
+
+    // route days
+    const boxBase = 'width:22px;height:22px;flex:none;border-radius:7px;cursor:pointer;display:grid;place-items:center;font-size:13px;font-weight:700;';
+    const mkBox = (done) => boxBase + (done ? 'background:var(--ol,#7c8450);border:1px solid var(--ol,#7c8450);color:#fff' : 'background:var(--card,#fff);border:1.5px solid var(--line,#d8c9ac);color:transparent');
+    const days = d.days.map(day => {
+      const done = day.items.filter(x => x.done).length;
+      const flagFor = (t) => {
+        if (/праг|praha/i.test(t)) return '🇨🇿';
+        if (/зальцбург|австри|salzburg/i.test(t)) return '🇦🇹';
+        if (/мюнхен|германи|munich|фельдкирх/i.test(t)) return '🇩🇪';
+        return '🇮🇹';
+      };
+      const flags = [...new Set(day.city.split('→').map(p => flagFor(p)))].join(' ');
+      return {
+        id: day.id, dayNum: day.dayNum, month: day.month, weekday: day.weekday, city: day.city, flags, draft: day.draft || '', draftTime: day.draftTime || '', draftMap: day.draftMap || '',
+        dayMapUrl: (day.dayMapUrl || '').trim(), hasDayMap: !!(day.dayMapUrl || '').trim(), noDayMap: !(day.dayMapUrl || '').trim(),
+        copyIcon: this.state.dayCopiedId === day.id ? 'fa-solid fa-check' : 'fa-solid fa-copy',
+        headBg: 'var(--paper,#fbf2df)',
+        doneLabel: day.items.length ? `${done}/${day.items.length}` : '',
+        items: day.items.map(it => { const mu = (it.mapUrl || '').trim(); return { id: it.id, title: it.title, time: it.time || '', mapUrl: mu, hasMap: !!mu, noMap: !mu, check: it.done ? '✓' : '', boxStyle: mkBox(it.done), textStyle: it.done ? 'color:#a2937c;text-decoration:line-through' : '' }; }),
+      };
+    });
+
+    // lodging
+    const statusColors = { 'хочу': ['#efe4cf', '#8a7d6b'], 'бронь': ['#e6ead2', '#6f7a45'], 'оплачено': ['#f0ddd4', '#b95c3f'] };
+    const flagCity = (t) => { if (/зальцбург|австри|salzburg/i.test(t)) return '🇦🇹'; if (/мюнхен|германи|munich|фельдкирх/i.test(t)) return '🇩🇪'; if (/праг|praha/i.test(t)) return '🇨🇿'; return '🇮🇹'; };
+    const lodging = d.lodging.map(lg => {
+      const [bg, col] = statusColors[lg.status] || statusColors['хочу'];
+      return {
+        ...lg,
+        flag: flagCity(lg.city),
+        hasPhotos: Array.isArray(lg.photos) && lg.photos.length > 0,
+        noPhotos: !(Array.isArray(lg.photos) && lg.photos.length > 0),
+        manyPhotos: Array.isArray(lg.photos) && lg.photos.length > 1,
+        objPos: (() => { const i = ((this.state.lodgePhotoIdx || {})[lg.id] || 0) % ((lg.photos && lg.photos.length) || 1); return (lg.objPosList && lg.objPosList[i]) || lg.objPos || 'center'; })(),
+        curPhoto: (Array.isArray(lg.photos) && lg.photos.length) ? lg.photos[((this.state.lodgePhotoIdx || {})[lg.id] || 0) % lg.photos.length] : '',
+        dots: (Array.isArray(lg.photos) ? lg.photos : []).map((_, i) => ({ style: `width:7px;height:7px;border-radius:50%;background:${i === (((this.state.lodgePhotoIdx || {})[lg.id] || 0) % (lg.photos.length || 1)) ? '#fff' : 'rgba(255,255,255,.5)'};box-shadow:0 0 2px rgba(0,0,0,.4)` })),
+        copyIcon: this.state.lodgeCopiedId === lg.id ? 'fa-solid fa-check' : 'fa-solid fa-copy',
+        badgeStyle: `background:${col};color:#fff;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;letter-spacing:.04em`,
+        statusOpts: ['хочу', 'бронь', 'оплачено'].map(k => ({
+          key: k,
+          style: `border:1px solid ${lg.status === k ? 'var(--ac,#b95c3f)' : 'var(--line,#e7dcc7)'};background:${lg.status === k ? 'var(--ac,#b95c3f)' : 'var(--card,#fff)'};color:${lg.status === k ? '#fff' : 'var(--muted,#8a7d6b)'};font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px;cursor:pointer`,
+        })),
+      };
+    });
+
+    // cancellation deadlines
+    const fmtDate = (iso) => { if (!iso) return ''; return new Date(iso + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }); };
+    const cancels = d.lodging.map(lg => {
+      const iso = lg.freeCancel || '';
+      let statusLabel = 'дата не указана', color = '#8a7d6b', bg = '#efe4cf', order = 1e9;
+      if (iso) {
+        const dl = Math.round((new Date(iso + 'T00:00:00') - today) / 86400000);
+        order = dl;
+        if (dl < 0) { statusLabel = 'отмена уже платная'; color = '#b95c3f'; bg = '#f0ddd4'; }
+        else if (dl === 0) { statusLabel = 'сегодня последний день'; color = '#c8892f'; bg = '#f6ead0'; }
+        else if (dl <= 7) { statusLabel = `осталось ${dl} дн. — скоро платно`; color = '#c8892f'; bg = '#f6ead0'; }
+        else { statusLabel = `бесплатно ещё ${dl} дн.`; color = '#6f7a45'; bg = '#e6ead2'; }
+      }
+      return { id: lg.id, name: lg.name, city: lg.city, flag: flagCity(lg.city), dates: lg.dates, freeCancel: iso, dateLabel: iso ? fmtDate(iso) : '— не указана', statusLabel, order, chipStyle: `background:${bg};color:${color};font-size:12px;font-weight:700;padding:5px 12px;border-radius:999px;white-space:nowrap` };
+    }).sort((a, b) => {
+      const au = a.order >= 1e9, bu = b.order >= 1e9;
+      if (au && bu) return 0; if (au) return 1; if (bu) return -1;
+      const dir = this.state.cancelSort === 'desc' ? -1 : 1;
+      return (a.order - b.order) * dir;
+    });
+
+    // sights
+    const sights = d.sights.map(st => ({ id: st.id, name: st.name, city: st.city, category: st.category, check: st.done ? '✓' : '', boxStyle: mkBox(st.done), textStyle: st.done ? 'color:#a2937c;text-decoration:line-through' : '' }));
+    const sightsTotal = d.sights.length, sightsDone = d.sights.filter(s => s.done).length;
+
+    // budget
+    const dotColors = { 'транспорт': '#b95c3f', 'проживание': '#cf9440', 'еда': '#7c8450', 'развлечения': '#c88a6a', 'собаки': '#9a7b4f' };
+    const expenses = d.expenses.map(e => ({ id: e.id, label: e.label, category: e.category, amount: e.amount.toLocaleString('ru-RU'), dot: dotColors[e.category] || '#b95c3f' }));
+    const budgetTotalNum = d.expenses.reduce((a, e) => a + (+e.amount || 0), 0);
+    const budgetTotal = budgetTotalNum.toLocaleString('ru-RU');
+    const perPerson = Math.round(budgetTotalNum / (d.trip.people || 4)).toLocaleString('ru-RU');
+    const perDay = Math.round(budgetTotalNum / (nights || 1)).toLocaleString('ru-RU');
+
+    // progress
+    const routeItems = d.days.reduce((a, x) => a + x.items.length, 0);
+    const routeDone = d.days.reduce((a, x) => a + x.items.filter(i => i.done).length, 0);
+    const totalCount = routeItems + sightsTotal;
+    const doneCount = routeDone + sightsDone;
+    const progressPct = totalCount ? Math.round(doneCount / totalCount * 100) : 0;
+
+    // overview extras
+    const wbc = this.state.weatherByCity || {};
+    const pbc = this.state.photoByCity || {};
+    const wseen = new Set();
+    const weather = [];
+    const heroPhotos = { 'Прага, Чехия': 'images/hero-prague.png', 'Зальцбург, Австрия': 'images/hero-salzburg.png', 'Верона, Италия': 'images/hero-verona.png', 'Рим, Италия': 'images/hero-rome.png', 'Фильине-Вальдарно, Тоскана': 'images/hero-figline.png', 'Кьоджа, Италия': 'images/hero-chioggia.png', 'Милан, Италия': 'images/hero-milan.png', 'Вальдидентро, Альпы': 'images/hero-valdidentro.png', 'Мюнхен, Германия': 'images/hero-munich.png' };
+    const pushWeather = (city, slot) => {
+      const photo = heroPhotos[city] || pbc[city] || '';
+      const w = wbc[city];
+      if (w) { const [desc, icon] = this.wmoInfo(w.code); weather.push({ city, slot, photo, hasPhoto: !!photo, hasTemp: true, day: Math.round(w.temp), desc, icon }); }
+      else { weather.push({ city, slot, photo, hasPhoto: !!photo, hasTemp: false, day: '', desc: 'загрузка…', icon: 'fa-solid fa-ellipsis' }); }
+    };
+    pushWeather('Прага, Чехия', 'wxPrague');
+    d.lodging.forEach((l, i) => {
+      if (wseen.has(l.city)) return; wseen.add(l.city);
+      pushWeather(l.city, 'wx' + i);
+    });
+    const mapPins = d.lodging.map((l, idx) => {
+      const short = l.city.split(',')[0].split('·')[0].trim();
+      // ссылка того дня, где этот город — пункт назначения (после «→»)
+      let dm = d.days.find(day => (day.dayMapUrl || '').trim() && (day.city.split('→').pop() || '').includes(short));
+      if (!dm) dm = d.days.find(day => (day.dayMapUrl || '').trim() && day.city.includes(short));
+      const url = dm ? dm.dayMapUrl.trim() : 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(l.city);
+      return { n: idx + 1, city: l.city, dates: l.dates, mapUrl: url };
+    });
+    const enc = (s) => encodeURIComponent(s);
+    const homeCity = 'U Vlachovky 8, Praha, Česko';
+    const routeStops = [homeCity, ...d.lodging.map(l => l.city), homeCity];
+    const mapEmbedUrl = 'https://maps.google.com/maps?saddr=' + enc(routeStops[0]) + '&daddr=' + routeStops.slice(1).map(enc).join('+to:') + '&output=embed';
+    const mapOpenUrl = 'https://www.google.com/maps/dir/?api=1&origin=' + enc(homeCity) + '&destination=' + enc(homeCity) + '&waypoints=' + d.lodging.map(l => enc(l.city)).join('%7C') + '&travelmode=driving';
+    const cities = [...new Set(d.lodging.map(l => l.city))];
+
+    return {
+      rootStyle, tabs, onTab: (e) => this.setState({ tab: e.currentTarget.dataset.tab }),
+      isOverview: tab === 'overview', isRoute: tab === 'route', isLodging: tab === 'lodging', isCancel: tab === 'cancel', isSights: tab === 'sights', isBudget: tab === 'budget', isPhotos: tab === 'photos', isNotes: tab === 'notes',
+      stopClick: (e) => { e.stopPropagation(); },
+      heroIsSalzburg: (this.state.heroIdx || 0) === 0,
+      heroIsVerona: (this.state.heroIdx || 0) === 1,
+      heroOp0: (this.state.heroIdx || 0) === 0 ? 1 : 0,
+      heroOp1: (this.state.heroIdx || 0) === 1 ? 1 : 0,
+      heroOp2: (this.state.heroIdx || 0) === 2 ? 1 : 0,
+      heroOp3: (this.state.heroIdx || 0) === 3 ? 1 : 0,
+      heroOp4: (this.state.heroIdx || 0) === 4 ? 1 : 0,
+      heroOp5: (this.state.heroIdx || 0) === 5 ? 1 : 0,
+      heroOp6: (this.state.heroIdx || 0) === 6 ? 1 : 0,
+      heroOp7: (this.state.heroIdx || 0) === 7 ? 1 : 0,
+      heroOp8: (this.state.heroIdx || 0) === 8 ? 1 : 0,
+      heroOp9: (this.state.heroIdx || 0) === 9 ? 1 : 0,
+      heroOp10: (this.state.heroIdx || 0) === 10 ? 1 : 0,
+      heroOp11: (this.state.heroIdx || 0) === 11 ? 1 : 0,
+      heroOp12: (this.state.heroIdx || 0) === 12 ? 1 : 0,
+      heroZ0: (this.state.heroIdx || 0) === 0 ? 2 : 1,
+      heroZ1: (this.state.heroIdx || 0) === 1 ? 2 : 1,
+      heroZ2: (this.state.heroIdx || 0) === 2 ? 2 : 1,
+      heroZ3: (this.state.heroIdx || 0) === 3 ? 2 : 1,
+      heroZ4: (this.state.heroIdx || 0) === 4 ? 2 : 1,
+      heroZ5: (this.state.heroIdx || 0) === 5 ? 2 : 1,
+      heroZ6: (this.state.heroIdx || 0) === 6 ? 2 : 1,
+      heroZ7: (this.state.heroIdx || 0) === 7 ? 2 : 1,
+      heroZ8: (this.state.heroIdx || 0) === 8 ? 2 : 1,
+      heroZ9: (this.state.heroIdx || 0) === 9 ? 2 : 1,
+      heroZ10: (this.state.heroIdx || 0) === 10 ? 2 : 1,
+      heroZ11: (this.state.heroIdx || 0) === 11 ? 2 : 1,
+      heroZ12: (this.state.heroIdx || 0) === 12 ? 2 : 1,
+      heroVeronaPhoto: true,
+      heroVeronaEmpty: false,
+      heroDot0: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===0?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot1: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===1?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot2: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===2?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot3: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===3?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot4: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===4?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot5: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===5?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot6: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===6?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot7: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===7?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot8: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===8?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot9: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===9?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot10: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===10?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot11: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===11?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      heroDot12: `width:8px;height:8px;border-radius:50%;background:${(this.state.heroIdx||0)===12?'#fff':'rgba(255,255,255,.5)'};box-shadow:0 0 3px rgba(0,0,0,.5)`,
+      onHeroPrev: () => this.setState(s => ({ heroIdx: ((s.heroIdx || 0) + 12) % 13 })),
+      onHeroNext: () => this.setState(s => ({ heroIdx: ((s.heroIdx || 0) + 1) % 13 })),
+      heroFsOpen: this.state.heroFs != null,
+      heroFsSrc: (() => { const imgs = ['images/hero-salzburg.png','images/hero-verona.png','images/hero-rome.png','images/hero-pisa.png','images/hero-figline.png','images/hero-sanmarino.png','images/hero-chioggia.png','images/hero-milan.png','images/hero-como.png','images/hero-valdidentro.png','images/hero-stelvio.png','images/hero-munich.png','images/hero-prague.png']; return imgs[(this.state.heroFs || 0)] || imgs[0]; })(),
+      onHeroClick: (e) => { if (e.target.closest('button')) return; this.setState(s => ({ heroFs: (s.heroIdx || 0) })); },
+      onCloseHeroFs: (e) => { if (e.currentTarget === e.target || e.currentTarget.title === 'Закрыть') this.setState({ heroFs: null }); },
+      onHeroFsPrev: (e) => { e.stopPropagation(); this.setState(s => ({ heroFs: ((s.heroFs || 0) + 12) % 13 })); },
+      onHeroFsNext: (e) => { e.stopPropagation(); this.setState(s => ({ heroFs: ((s.heroFs || 0) + 1) % 13 })); },
+      lightboxOpen: !!this.state.lightbox,
+      lightboxMany: (() => { const lb = this.state.lightbox; if (!lb) return false; const lg = d.lodging.find(x => x.id === lb.id); return !!(lg && lg.photos && lg.photos.length > 1); })(),
+      lightboxSrc: (() => { const lb = this.state.lightbox; if (!lb) return ''; const lg = d.lodging.find(x => x.id === lb.id); if (!lg || !lg.photos) return ''; return lg.photos[lb.idx % lg.photos.length]; })(),
+      onOpenLightbox: (e) => { const id = e.currentTarget.dataset.id; const idx = ((this.state.lodgePhotoIdx || {})[id] || 0); this.setState({ lightbox: { id, idx } }); },
+      onCloseLightbox: (e) => { if (e.currentTarget === e.target || e.currentTarget.title === 'Закрыть') this.setState({ lightbox: null }); },
+      onLightboxPrev: (e) => { e.stopPropagation(); this.setState(s => { const lb = s.lightbox; if (!lb) return {}; const lg = d.lodging.find(x => x.id === lb.id); const n = (lg && lg.photos) ? lg.photos.length : 1; return { lightbox: { id: lb.id, idx: (lb.idx - 1 % n + n) % n } }; }); },
+      onLightboxNext: (e) => { e.stopPropagation(); this.setState(s => { const lb = s.lightbox; if (!lb) return {}; const lg = d.lodging.find(x => x.id === lb.id); const n = (lg && lg.photos) ? lg.photos.length : 1; return { lightbox: { id: lb.id, idx: (lb.idx + 1) % n } }; }); },
+      onPrevPhoto: (e) => { const id = e.currentTarget.dataset.id; const lg = d.lodging.find(x => x.id === id); const n = (lg && lg.photos) ? lg.photos.length : 1; this.setState(s => { const m = { ...(s.lodgePhotoIdx || {}) }; m[id] = (((m[id] || 0) - 1) % n + n) % n; return { lodgePhotoIdx: m }; }); },
+      onNextPhoto: (e) => { const id = e.currentTarget.dataset.id; const lg = d.lodging.find(x => x.id === id); const n = (lg && lg.photos) ? lg.photos.length : 1; this.setState(s => { const m = { ...(s.lodgePhotoIdx || {}) }; m[id] = ((m[id] || 0) + 1) % n; return { lodgePhotoIdx: m }; }); },
+      onGoToLodge: (e) => { const id = e.currentTarget.dataset.id; this.setState({ tab: 'lodging' }); setTimeout(() => { const el = document.getElementById('lodge-card-' + id); if (el) { const y = el.getBoundingClientRect().top + window.scrollY - 20; window.scrollTo({ top: y, behavior: 'smooth' }); const b = getComputedStyle(document.documentElement).getPropertyValue('--ac') || '#b95c3f'; el.style.boxShadow = '0 0 0 3px ' + b.trim(); el.style.borderColor = b.trim(); setTimeout(() => { el.style.boxShadow = '0 1px 3px rgba(59,50,40,.05)'; el.style.borderColor = ''; }, 1400); } }, 90); },
+      isImporting: this.state.importing, importStatus: this.state.importStatus, noPhotos: !this.state.importing && this.state.photos.length === 0,
+      groups: (() => {
+        const MONr = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+        const isoToDay = {}; d.days.forEach(dd => { isoToDay[dd.iso] = dd; });
+        const destCity = (c) => (c.split('→').pop() || c).replace(/\(.*?\)/g, '').trim();
+        const fmt = (iso) => { if (!iso) return ''; const p = iso.split('-'); return p[2] + ' ' + (MONr[+p[1] - 1] || ''); };
+        const groupsMap = new Map();
+        const keyFor = (p) => {
+          if (p.place) return { key: 'place:' + p.place, title: p.place, icon: 'fa-solid fa-location-dot' };
+          if (p.iso && isoToDay[p.iso]) return { key: 'day:' + destCity(isoToDay[p.iso].city), title: destCity(isoToDay[p.iso].city), icon: 'fa-solid fa-calendar-day' };
+          if (p.iso) return { key: 'date:' + p.iso, title: fmt(p.iso), icon: 'fa-solid fa-calendar-day' };
+          return { key: 'none', title: 'Без геоданных', icon: 'fa-regular fa-image' };
+        };
+        this.state.photos.forEach(p => {
+          const k = keyFor(p);
+          if (!groupsMap.has(k.key)) groupsMap.set(k.key, { title: k.title, icon: k.icon, photos: [], minIso: p.iso || '9999' });
+          const g = groupsMap.get(k.key);
+          g.photos.push({ id: p.id, thumb: p.thumb, hasDate: !!p.iso, dateLabel: fmt(p.iso) });
+          if (p.iso && p.iso < g.minIso) g.minIso = p.iso;
+        });
+        return [...groupsMap.values()].sort((a, b) => a.minIso < b.minIso ? -1 : 1).map(g => ({ title: g.title, icon: g.icon, meta: g.photos.length + ' фото', photos: g.photos }));
+      })(),
+      onUploadPhotos: (e) => { const files = e.currentTarget.files; this.handleFiles(files); e.currentTarget.value = ''; },
+      onRemovePhoto: (e) => { const id = e.currentTarget.dataset.id; this.idbDel(id); this.setState(s => ({ photos: s.photos.filter(p => p.id !== id) })); },
+      cancels,
+      cancelSortLabel: this.state.cancelSort === 'desc' ? 'Сначала дальние' : 'Сначала ближние',
+      cancelSortIcon: this.state.cancelSort === 'desc' ? 'fa-solid fa-arrow-down-wide-short' : 'fa-solid fa-arrow-up-wide-short',
+      onToggleCancelSort: () => this.setState(s => ({ cancelSort: s.cancelSort === 'desc' ? 'asc' : 'desc' })),
+      daysLeft, nights,
+      progressPct, progressWidth: progressPct + '%', doneCount, totalCount,
+      cityCount: cities.length, sightsDone, sightsTotal, budgetTotalK: Math.round(budgetTotalNum / 1000 * 10) / 10, lodgeCount: d.lodging.length,
+      partyLabel: (d.trip.people || 2) + '+' + (d.trip.dogs || 0),
+      darkIcon: this.state.dark ? 'fa-solid fa-sun' : 'fa-solid fa-moon',
+      onToggleDark: () => this.setState(s => { const dark = !s.dark; try { localStorage.setItem('italy_dark', dark ? '1' : '0'); } catch (e) {} return { dark }; }),
+      activeTheme,
+      themeSwatches: [
+        { key: 'Терракота', color: '#2a7089' },
+        { key: 'Охра', color: '#d99a4e' },
+        { key: 'Олива', color: '#5f8a6a' },
+      ].map(t => ({ key: t.key, color: t.color, style: `width:26px;height:26px;border-radius:50%;cursor:pointer;background:${t.color};border:2px solid ${activeTheme === t.key ? 'var(--ink,#3b3228)' : 'transparent'};box-shadow:0 0 0 1px var(--line,#e7dcc7);padding:0` })),
+      onSetTheme: (e) => { const t = e.currentTarget.dataset.theme; try { localStorage.setItem('italy_theme', t); } catch (err) {} this.setState({ theme: t }); },
+      routeSummary: cities.join('  ·  '),
+      weather, mapPins, mapEmbedUrl, mapOpenUrl,
+      onOpenExt: (e) => { e.preventDefault(); const url = e.currentTarget.dataset.url || e.currentTarget.href; if (url) window.open(url, '_blank', 'noopener'); },
+      copyLabel: this.state.mapCopied ? 'Скопировано' : 'Скопировать ссылку',
+      copyIcon: this.state.mapCopied ? 'fa-solid fa-check' : 'fa-solid fa-copy',
+      onCopyMap: (e) => { const url = e.currentTarget.dataset.url || ''; const done = () => { this.setState({ mapCopied: true }); setTimeout(() => this.setState({ mapCopied: false }), 1600); }; try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(done, done); } else { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); } } catch (err) { done(); } },
+      days,
+      lodging,
+      sights,
+      expenses, budgetTotal, perPerson, perDay,
+      notes: d.notes, links: d.links,
+      draft,
+      // handlers
+      onDraft: (e) => { const k = e.currentTarget.dataset.k, v = e.currentTarget.value; this.setState(s => ({ draft: { ...s.draft, [k]: v } })); },
+      onDayDraft: (e) => { const id = e.currentTarget.dataset.day, v = e.currentTarget.value; this.setData(dd => { const day = dd.days.find(x => x.id === id); if (day) day.draft = v; }); },
+      onDayDraftTime: (e) => { const id = e.currentTarget.dataset.day, v = e.currentTarget.value; this.setData(dd => { const day = dd.days.find(x => x.id === id); if (day) day.draftTime = v; }); },
+      onDayDraftMap: (e) => { const id = e.currentTarget.dataset.day, v = e.currentTarget.value; this.setData(dd => { const day = dd.days.find(x => x.id === id); if (day) day.draftMap = v; }); },
+      onSetDayMap: (e) => { const id = e.currentTarget.dataset.day; const d0 = this.state.data.days.find(x => x.id === id); const cur = (d0 && d0.dayMapUrl) || ''; const url = window.prompt('Ссылка на Google Maps для маршрута этого дня (оставьте пустым, чтобы убрать):', cur); if (url === null) return; this.setData(dd => { const day = dd.days.find(x => x.id === id); if (day) day.dayMapUrl = url.trim(); }); },
+      onCopyDayMap: (e) => { const url = e.currentTarget.dataset.url || ''; const id = e.currentTarget.dataset.day; const setDone = () => { this.setState({ dayCopiedId: id }); setTimeout(() => this.setState({ dayCopiedId: null }), 1600); }; try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(setDone, setDone); } else { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); setDone(); } } catch (err) { setDone(); } },
+      onDayKey: (e) => { if (e.key === 'Enter') this.addDayItem(e.currentTarget.dataset.day); },
+      onAddDayItem: (e) => this.addDayItem(e.currentTarget.dataset.day),
+      onToggleItem: (e) => { const { day, item } = e.currentTarget.dataset; this.setData(dd => { const dy = dd.days.find(x => x.id === day); const it = dy && dy.items.find(x => x.id === item); if (it) it.done = !it.done; }); },
+      onRemoveItem: (e) => { const { day, item } = e.currentTarget.dataset; this.setData(dd => { const dy = dd.days.find(x => x.id === day); if (dy) dy.items = dy.items.filter(x => x.id !== item); }); },
+      onSetItemMap: (e) => { const { day, item } = e.currentTarget.dataset; const dy0 = this.state.data.days.find(x => x.id === day); const it0 = dy0 && dy0.items.find(x => x.id === item); const cur = (it0 && it0.mapUrl) || ''; const url = window.prompt('Ссылка на Google Maps (оставьте пустым, чтобы убрать):', cur); if (url === null) return; this.setData(dd => { const dy = dd.days.find(x => x.id === day); const it = dy && dy.items.find(x => x.id === item); if (it) it.mapUrl = url.trim(); }); },
+      onSetStatus: (e) => { const { id, status } = e.currentTarget.dataset; this.setData(dd => { const l = dd.lodging.find(x => x.id === id); if (l) l.status = status; }); },
+      onLodgeField: (e) => { const { id, field } = e.currentTarget.dataset, v = e.currentTarget.value; this.setData(dd => { const l = dd.lodging.find(x => x.id === id); if (l) l[field] = v; }); },
+      onAddLodge: () => this.setData(dd => { const id = this.uid(); dd.lodging.push({ id, slot: 'lodge_' + id, city: 'Новый город', name: 'Название жилья', dates: 'даты', price: '€', status: 'хочу', link: '', notes: '' }); }),
+      onRemoveLodge: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { dd.lodging = dd.lodging.filter(x => x.id !== id); }); },
+      onCopyLodgeLink: (e) => { const url = e.currentTarget.dataset.url || ''; const id = e.currentTarget.dataset.id; if (!url) { window.alert('Для этого жилья ссылка ещё не добавлена.'); return; } const done = () => { this.setState({ lodgeCopiedId: id }); setTimeout(() => this.setState({ lodgeCopiedId: null }), 1600); }; try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(done, done); } else { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); } } catch (err) { done(); } },
+      onToggleSight: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { const s = dd.sights.find(x => x.id === id); if (s) s.done = !s.done; }); },
+      onRemoveSight: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { dd.sights = dd.sights.filter(x => x.id !== id); }); },
+      onSightKey: (e) => { if (e.key === 'Enter') this.addSight(); },
+      onAddSight: () => this.addSight(),
+      onExpKey: (e) => { if (e.key === 'Enter') this.addExpense(); },
+      onAddExpense: () => this.addExpense(),
+      onRemoveExpense: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { dd.expenses = dd.expenses.filter(x => x.id !== id); }); },
+      onNotes: (e) => { const v = e.currentTarget.value; this.setData(dd => { dd.notes = v; }); },
+      onAddLink: () => this.addLink(),
+      onRemoveLink: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { dd.links = dd.links.filter(x => x.id !== id); }); },
+    };
+  }
+
+  addDayItem(dayId) {
+    this.setData(dd => { const day = dd.days.find(x => x.id === dayId); if (day && (day.draft || '').trim()) { day.items.push({ id: this.uid(), title: day.draft.trim(), time: (day.draftTime || '').trim(), mapUrl: (day.draftMap || '').trim(), done: false }); day.draft = ''; day.draftTime = ''; day.draftMap = ''; } });
+  }
+  addSight() {
+    const { sName, sCity, sCat } = this.state.draft;
+    if (!(sName || '').trim()) return;
+    this.setData(dd => { dd.sights.push({ id: this.uid(), name: sName.trim(), city: (sCity || 'Без города').trim(), category: (sCat || 'разное').trim(), done: false }); });
+    this.setState(s => ({ draft: { ...s.draft, sName: '', sCity: '', sCat: '' } }));
+  }
+  addExpense() {
+    const { eLabel, eCat, eAmount } = this.state.draft;
+    if (!(eLabel || '').trim()) return;
+    this.setData(dd => { dd.expenses.push({ id: this.uid(), label: eLabel.trim(), category: (eCat || 'разное').trim(), amount: +eAmount || 0 }); });
+    this.setState(s => ({ draft: { ...s.draft, eLabel: '', eCat: '', eAmount: '' } }));
+  }
+  addLink() {
+    const { lTitle, lUrl } = this.state.draft;
+    if (!(lTitle || '').trim()) return;
+    this.setData(dd => { dd.links.push({ id: this.uid(), title: lTitle.trim(), url: (lUrl || 'https://').trim() }); });
+    this.setState(s => ({ draft: { ...s.draft, lTitle: '', lUrl: '' } }));
+  }
 }
-
-function renderSights(){
-  return `
-  <div class="card form-bar">
-    <input class="txt" style="width:140px" data-action="draft" data-key="sCity" value="${escAttr(draft.sCity||'')}" placeholder="город">
-    <input class="txt txt-flex" style="min-width:180px" data-action="draft" data-key="sName" data-key-enter="addSight" value="${escAttr(draft.sName||'')}" placeholder="что посмотреть / куда сходить">
-    <input class="txt" style="width:140px" data-action="draft" data-key="sCat" value="${escAttr(draft.sCat||'')}" placeholder="категория">
-    <button class="btn-add" data-action="addSight">Добавить</button>
-  </div>
-  <div class="grid-sights">
-    ${data.sights.map(st=>`
-      <div class="card sight-row">
-        <button class="chk ${st.done?'done':''}" data-action="toggleSight" data-id="${st.id}">${st.done?'✓':''}</button>
-        <div style="flex:1">
-          <div class="sight-name ${st.done?'done':''}">${esc(st.name)}</div>
-          <div class="sight-sub">${esc(st.city)} · ${esc(st.category)}</div>
-        </div>
-        <button class="rm-btn" data-action="removeSight" data-id="${st.id}">×</button>
-      </div>`).join('') || '<p class="muted" style="font-size:14px">Пока пусто — добавьте первое место выше.</p>'}
-  </div>`;
-}
-
-function renderBudget(){
-  const dotColors = { 'транспорт':'#b95c3f','проживание':'#cf9440','еда':'#7c8450','развлечения':'#c88a6a','собаки':'#9a7b4f' };
-  const total = data.expenses.reduce((a,e)=>a+(+e.amount||0),0);
-  const perPerson = Math.round(total/(data.trip.people||2));
-  const nights = Math.round((new Date(data.trip.end)-new Date(data.trip.start))/86400000);
-  const perDay = Math.round(total/(nights||1));
-  return `
-  <div class="grid-budget-top">
-    <div class="card stat-card" style="background:var(--ac);color:#fff;border:none">
-      <div class="k" style="color:#fff;opacity:.85">Всего</div><div class="v" style="color:#fff">€${total.toLocaleString('ru-RU')}</div>
-    </div>
-    <div class="card stat-card"><div class="k">На человека</div><div class="v" style="color:var(--ol)">€${perPerson.toLocaleString('ru-RU')}</div></div>
-    <div class="card stat-card"><div class="k">В день</div><div class="v" style="color:var(--ac2)">€${perDay.toLocaleString('ru-RU')}</div></div>
-  </div>
-  <div class="card" style="overflow:hidden">
-    ${data.expenses.map(e=>`
-      <div class="expense-row">
-        <span class="dot" style="background:${dotColors[e.category]||'#b95c3f'}"></span>
-        <div style="flex:1"><div class="exp-label">${esc(e.label)}</div><div class="exp-cat">${esc(e.category)}</div></div>
-        <div class="exp-amt serif">€${(+e.amount||0).toLocaleString('ru-RU')}</div>
-        <button class="rm-btn" data-action="removeExpense" data-id="${e.id}">×</button>
-      </div>`).join('') || '<div style="padding:16px 18px" class="muted">Расходов пока нет.</div>'}
-    <div class="exp-form">
-      <input class="txt txt-flex" style="min-width:150px" data-action="draft" data-key="eLabel" value="${escAttr(draft.eLabel||'')}" placeholder="статья расхода">
-      <input class="txt" style="width:140px" data-action="draft" data-key="eCat" value="${escAttr(draft.eCat||'')}" placeholder="категория">
-      <input class="txt" type="number" style="width:100px" data-action="draft" data-key="eAmount" data-key-enter="addExpense" value="${escAttr(draft.eAmount||'')}" placeholder="€">
-      <button class="btn-add" data-action="addExpense">Добавить</button>
-    </div>
-  </div>`;
-}
-
-function renderNotes(){
-  return `
-  <div class="grid-2">
-    <div class="card" style="padding:20px 22px">
-      <div class="serif" style="font-size:19px;font-weight:700;margin-bottom:12px">Заметки</div>
-      <textarea class="notes-area" data-action="notes" placeholder="важное, о собаках, документы, что не забыть…">${esc(data.notes)}</textarea>
-    </div>
-    <div class="card" style="padding:20px 22px">
-      <div class="serif" style="font-size:19px;font-weight:700;margin-bottom:12px">Полезные ссылки</div>
-      <div style="display:flex;flex-direction:column;gap:8px">
-        ${data.links.map(ln=>`
-          <div class="link-row">
-            <span class="link-dot"></span>
-            <a href="${escAttr(ln.url)}" target="_blank" rel="noopener">${esc(ln.title)}</a>
-            <button class="rm-btn" data-action="removeLink" data-id="${ln.id}">×</button>
-          </div>`).join('')}
-      </div>
-      <div class="link-add">
-        <input class="txt" data-action="draft" data-key="lTitle" value="${escAttr(draft.lTitle||'')}" placeholder="название">
-        <div class="row">
-          <input class="txt txt-flex" data-action="draft" data-key="lUrl" data-key-enter="addLink" value="${escAttr(draft.lUrl||'')}" placeholder="https://…">
-          <button class="btn-add" data-action="addLink">+</button>
-        </div>
-      </div>
-    </div>
-  </div>`;
-}
-
-function esc(s){ return String(s??'').replace(/[&<>]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
-function escAttr(s){ return String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-
-function render(){
-  applyTheme();
-  renderTabs();
-  renderThemeDots();
-
-  const start = new Date(data.trip.start), end = new Date(data.trip.end);
-  const today = new Date(); today.setHours(0,0,0,0);
-  document.getElementById('daysLeft').textContent = Math.max(0, Math.round((start-today)/86400000));
-  document.getElementById('nights').textContent = Math.round((end-start)/86400000);
-  document.getElementById('lede').textContent = `${fmtDate(data.trip.start)} — ${fmtDate(data.trip.end)} · выезжаем из Праги, ${data.trip.people} человека и ${data.trip.dogs} собаки. Планируем маршрут, жильё, места и бюджет.`;
-
-  const isDark = ui.dark === null ? window.matchMedia('(prefers-color-scheme: dark)').matches : ui.dark;
-  document.getElementById('darkToggle').innerHTML = isDark ? ICONS.sun : ICONS.moon;
-
-  let html = '';
-  if (ui.tab==='overview') html = renderOverview();
-  else if (ui.tab==='route') html = renderRoute();
-  else if (ui.tab==='lodging') html = renderLodging();
-  else if (ui.tab==='cancel') html = renderCancel();
-  else if (ui.tab==='sights') html = renderSights();
-  else if (ui.tab==='budget') html = renderBudget();
-  else if (ui.tab==='notes') html = renderNotes();
-  document.getElementById('main').innerHTML = `<div class="tabpanel">${html}</div>`;
-}
-
-function addDayItem(dayId){
-  mut(d => { const day = d.days.find(x=>x.id===dayId); if (day && (day.draft||'').trim()){ day.items.push({id:uid(), title:day.draft.trim(), done:false}); day.draft=''; } });
-}
-function addSight(){
-  const name = (draft.sName||'').trim();
-  if (!name) return;
-  const city = (draft.sCity||'Без города').trim(), category = (draft.sCat||'разное').trim();
-  draft.sName=''; draft.sCity=''; draft.sCat='';
-  mut(d => { d.sights.push({id:uid(), name, city, category, done:false}); });
-}
-function addExpense(){
-  const label = (draft.eLabel||'').trim();
-  if (!label) return;
-  const category = (draft.eCat||'разное').trim(), amount = +draft.eAmount||0;
-  draft.eLabel=''; draft.eCat=''; draft.eAmount='';
-  mut(d => { d.expenses.push({id:uid(), label, category, amount}); });
-}
-function addLink(){
-  const title = (draft.lTitle||'').trim();
-  if (!title) return;
-  const url = (draft.lUrl||'https://').trim();
-  draft.lTitle=''; draft.lUrl='';
-  mut(d => { d.links.push({id:uid(), title, url}); });
-}
-
-document.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-action]');
-  if (!el) return;
-  const action = el.dataset.action;
-  if (action==='tab'){ ui.tab = el.dataset.tab; saveUi(); render(); }
-  else if (action==='theme'){ ui.theme = el.dataset.theme; saveUi(); render(); }
-  else if (action==='photo'){ openPhotoPicker(el.dataset.key); }
-  else if (action==='toggleItem'){ const {day,item}=el.dataset; mut(d=>{ const dy=d.days.find(x=>x.id===day); const it=dy&&dy.items.find(x=>x.id===item); if(it) it.done=!it.done; }); }
-  else if (action==='removeItem'){ const {day,item}=el.dataset; mut(d=>{ const dy=d.days.find(x=>x.id===day); if(dy) dy.items=dy.items.filter(x=>x.id!==item); }); }
-  else if (action==='addItem'){ addDayItem(el.dataset.day); }
-  else if (action==='setStatus'){ const {id,status}=el.dataset; mut(d=>{ const l=d.lodging.find(x=>x.id===id); if(l) l.status=status; }); }
-  else if (action==='removeLodge'){ mut(d=>{ d.lodging = d.lodging.filter(x=>x.id!==el.dataset.id); }); }
-  else if (action==='addLodge'){ mut(d=>{ const id=uid(); d.lodging.push({id, city:'Новый город', name:'Название жилья', dates:'даты · ночей', price:'€', status:'хочу', freeCancel:'', link:'', notes:''}); }); }
-  else if (action==='toggleSight'){ mut(d=>{ const s=d.sights.find(x=>x.id===el.dataset.id); if(s) s.done=!s.done; }); }
-  else if (action==='removeSight'){ mut(d=>{ d.sights = d.sights.filter(x=>x.id!==el.dataset.id); }); }
-  else if (action==='addSight'){ addSight(); }
-  else if (action==='addExpense'){ addExpense(); }
-  else if (action==='removeExpense'){ mut(d=>{ d.expenses = d.expenses.filter(x=>x.id!==el.dataset.id); }); }
-  else if (action==='addLink'){ addLink(); }
-  else if (action==='removeLink'){ mut(d=>{ d.links = d.links.filter(x=>x.id!==el.dataset.id); }); }
-});
-
-document.getElementById('darkToggle').addEventListener('click', () => {
-  const isDark = ui.dark === null ? window.matchMedia('(prefers-color-scheme: dark)').matches : ui.dark;
-  ui.dark = !isDark; saveUi(); render();
-});
-
-document.addEventListener('input', (e) => {
-  const el = e.target.closest('[data-action]');
-  if (!el) return;
-  const action = el.dataset.action;
-  if (action==='dayDraft'){ const day=el.dataset.day; const d=data.days.find(x=>x.id===day); if(d){ d.draft = el.value; saveData(); } }
-  else if (action==='lodgeField'){ const {id,field}=el.dataset; const l=data.lodging.find(x=>x.id===id); if(l){ l[field]=el.value; saveData(); if(field==='status'){} } }
-  else if (action==='notes'){ data.notes = el.value; saveData(); }
-  else if (action==='draft'){ draft[el.dataset.key] = el.value; }
-});
-
-document.addEventListener('keydown', (e) => {
-  if (e.key !== 'Enter') return;
-  const el = e.target.closest('[data-key-enter]');
-  if (!el) return;
-  const action = el.dataset.keyEnter;
-  if (action==='addItem') addDayItem(el.dataset.day);
-  else if (action==='addSight') addSight();
-  else if (action==='addExpense') addExpense();
-  else if (action==='addLink') addLink();
-});
-
-render();
 </script>
 </body>
 </html>
