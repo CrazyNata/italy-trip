@@ -398,7 +398,12 @@
       <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:14px 16px;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
         <input value="{{ draft.sCity }}" onInput="{{ onDraft }}" data-k="sCity" placeholder="город" style="width:150px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--soft,#fdfaf3)">
         <input value="{{ draft.sName }}" onInput="{{ onDraft }}" data-k="sName" onKeyDown="{{ onSightKey }}" placeholder="что посмотреть / куда сходить" style="flex:1;min-width:180px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--soft,#fdfaf3)">
-        <input value="{{ draft.sCat }}" onInput="{{ onDraft }}" data-k="sCat" placeholder="категория" style="width:150px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--soft,#fdfaf3)">
+        <select value="{{ draft.sCat }}" onChange="{{ onDraft }}" data-k="sCat" style="width:170px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--soft,#fdfaf3);color:var(--ink,#3b3228);cursor:pointer">
+          <option value="">категория…</option>
+          <sc-for list="{{ sightCats }}" as="c" hint-placeholder-count="8">
+            <option value="{{ c }}">{{ c }}</option>
+          </sc-for>
+        </select>
         <button onClick="{{ onAddSight }}" style="border:none;background:var(--ac,#b95c3f);color:#fff;border-radius:9px;padding:0 18px;font-weight:600;font-size:14px;cursor:pointer">Добавить</button>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">
@@ -407,7 +412,7 @@
             <button onClick="{{ onToggleSight }}" data-id="{{ st.id }}" style="{{ st.boxStyle }}">{{ st.check }}</button>
             <div style="flex:1">
               <div style="font-weight:600;font-size:15px;{{ st.textStyle }}">{{ st.name }}</div>
-              <div style="font-size:12px;color:var(--muted,#8a7d6b);margin-top:2px">{{ st.city }} · {{ st.category }}</div>
+              <div style="font-size:12px;color:var(--muted,#8a7d6b);margin-top:2px;display:flex;align-items:center;gap:6px"><span>{{ st.city }}</span><span style="width:7px;height:7px;border-radius:50%;background:{{ st.catDot }};flex:none"></span><span>{{ st.category }}</span></div>
             </div>
             <button onClick="{{ onRemoveSight }}" data-id="{{ st.id }}" style="border:none;background:none;color:#c4b5a0;cursor:pointer;font-size:18px;line-height:1" style-hover="color:var(--ac,#b95c3f)">×</button>
           </div>
@@ -930,7 +935,9 @@ class Component extends DCLogic {
     });
 
     // sights
-    const sights = d.sights.map(st => ({ id: st.id, name: st.name, city: st.city, category: st.category, check: st.done ? '✓' : '', boxStyle: mkBox(st.done), textStyle: st.done ? 'color:#a2937c;text-decoration:line-through' : '' }));
+    const sightCats = ['достопримечательности', 'музеи', 'природа', 'еда', 'шопинг', 'развлечения', 'пляж', 'разное'];
+    const sightCatColors = { 'достопримечательности': '#b95c3f', 'музеи': '#cf9440', 'природа': '#7c8450', 'еда': '#c88a6a', 'шопинг': '#9a7b4f', 'развлечения': '#c06a86', 'пляж': '#5f8aa0', 'разное': '#8a7d6b' };
+    const sights = d.sights.map(st => ({ id: st.id, name: st.name, city: st.city, category: st.category, catDot: sightCatColors[st.category] || '#8a7d6b', check: st.done ? '✓' : '', boxStyle: mkBox(st.done), textStyle: st.done ? 'color:#a2937c;text-decoration:line-through' : '' }));
     const sightsTotal = d.sights.length, sightsDone = d.sights.filter(s => s.done).length;
 
     // budget
@@ -1094,7 +1101,7 @@ class Component extends DCLogic {
       onCopyMap: (e) => { const url = e.currentTarget.dataset.url || ''; const done = () => { this.setState({ mapCopied: true }); setTimeout(() => this.setState({ mapCopied: false }), 1600); }; try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(done, done); } else { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); } } catch (err) { done(); } },
       days,
       lodging,
-      sights,
+      sights, sightCats,
       expenses, budgetTotal, perPerson, perDay,
       notes: d.notes, links: d.links,
       draft,
