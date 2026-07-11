@@ -25,7 +25,7 @@ const TABLES = [
   "useful_links",
   "trip_photos",
 ] as const;
-type QueryResult = { data: unknown; error: { message: string } | null };
+type QueryResult = { data: unknown; error: { code?: string; message: string } | null };
 const query = (value: unknown) => value as PromiseLike<QueryResult>;
 
 function fail(operation: string, error: { message: string } | null) {
@@ -71,6 +71,9 @@ export async function listTrips(): Promise<TripSummary[]> {
       )
       .order("created_at"),
   );
+  // The normalized schema is deployed after visual acceptance. Until then the
+  // existing trip_state row remains the authoritative, fully supported source.
+  if (result.error?.code === "42P01" || result.error?.message.includes("public.trips")) return [];
   fail("Не удалось загрузить поездки", result.error);
   return rows(result.data).map((row) => ({
     id: row.id,

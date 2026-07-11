@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
 import { useTripData } from "../trip/TripDataContext";
-import { TripManager } from "../trip/TripManager";
 import { Overview } from "../features/overview/Overview";
 import { Itinerary } from "../features/itinerary/Itinerary";
 import { Lodging } from "../features/lodging/Lodging";
@@ -11,14 +10,14 @@ import { Photos } from "../features/photos/Photos";
 import { Notes } from "../features/notes/Notes";
 
 const tabs = [
-  "Обзор",
-  "Маршрут",
-  "Жильё",
-  "Отмена",
-  "Места",
-  "Бюджет",
-  "Фото",
-  "Заметки",
+  ["Обзор", "fa-solid fa-compass"],
+  ["Маршрут", "fa-solid fa-route"],
+  ["Жильё", "fa-solid fa-bed"],
+  ["Отмена", "fa-solid fa-calendar-xmark"],
+  ["Места", "fa-solid fa-location-dot"],
+  ["Бюджет", "fa-solid fa-wallet"],
+  ["Фото", "fa-solid fa-images"],
+  ["Заметки", "fa-solid fa-note-sticky"],
 ] as const;
 
 export function AppShell() {
@@ -86,18 +85,18 @@ export function AppShell() {
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
-      <header className="mx-auto max-w-[1120px] px-4 pt-7 sm:px-6 sm:pt-10">
-        <div className="flex flex-wrap items-end justify-between gap-6">
+      <header className="app-header">
+        <div className="flex flex-wrap items-end justify-between gap-5">
           <div>
             <p className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ac)]">
               <span className="h-px w-6 bg-current" aria-hidden="true" />
               Италия · осень 2026
             </p>
-            <h1 className="mt-2 font-display text-[clamp(2.75rem,6.4vw,4.625rem)] font-semibold leading-none tracking-[-0.015em]">
+            <h1 className="app-title">
               Отпуск с семьёй
               <br />в Италии <span aria-hidden="true">🍋</span>
             </h1>
-            <p className="mt-4 max-w-[540px] text-[15px] leading-relaxed text-[var(--muted)]">
+            <p className="trip-intro">
               25 сентября — 12 октября · выезжаем из Праги вдвоём с 2 собаками.
               В Риме встречаем родственников — и нас становится 4 человека и 2
               собаки. Планируем маршрут, жильё, места и бюджет.
@@ -105,8 +104,8 @@ export function AppShell() {
           </div>
 
           <div className="flex gap-3">
-            <div className="rounded-[14px] border border-[var(--line)] bg-[var(--card)] px-5 py-3.5 text-center">
-              <p className="font-mono text-4xl font-bold leading-none text-[var(--ac)]">
+            <div className="count-card">
+              <strong className="text-[var(--ac)]">
                 {Math.max(
                   0,
                   Math.ceil(
@@ -114,38 +113,33 @@ export function AppShell() {
                       86400000,
                   ),
                 )}
-              </p>
-              <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
+              </strong>
+              <span>
                 дней до выезда
-              </p>
+              </span>
             </div>
-            <div className="rounded-[14px] border border-[var(--line)] bg-[var(--card)] px-5 py-3.5 text-center">
-              <p className="font-mono text-4xl font-bold leading-none text-[var(--ol)]">
+            <div className="count-card">
+              <strong className="text-[var(--ol)]">
                 17
-              </p>
-              <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
+              </strong>
+              <span>
                 ночей
-              </p>
+              </span>
             </div>
           </div>
         </div>
 
         <nav
-          className="-mx-4 mt-7 flex overflow-x-auto border-b border-[var(--line)] px-4 sm:mx-0 sm:px-0"
+          className="tabbar"
           aria-label="Разделы поездки"
           role="tablist"
         >
-          {tabs.map((tab, index) => (
+          {tabs.map(([label, icon], index) => (
             <button
-              className={`shrink-0 border-b-2 px-3 py-3 text-base font-semibold transition-colors sm:px-[18px] sm:text-[17px] ${
-                index === selectedTab
-                  ? "border-[var(--ac)] text-[var(--ac)]"
-                  : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
-              }`}
               aria-controls={`panel-${index}`}
               aria-selected={index === selectedTab}
               id={`tab-${index}`}
-              key={tab}
+              key={label}
               onClick={() => setSelectedTab(index)}
               onKeyDown={(event) => handleTabKeyDown(event, index)}
               ref={(element) => {
@@ -155,19 +149,14 @@ export function AppShell() {
               tabIndex={index === selectedTab ? 0 : -1}
               type="button"
             >
-              {tab}
+              <i className={icon} aria-hidden="true" />{label}
             </button>
           ))}
         </nav>
       </header>
 
-      <main className="mx-auto max-w-[1120px] px-4 pb-20 pt-7 sm:px-6">
-        <TripManager />
-        {(loading ||
-          error ||
-          isReadOnly ||
-          usingCache ||
-          syncState !== "clean") && (
+      <main className="app-main">
+        {(loading || error || syncState !== "clean") && (
           <div
             className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${error || syncState === "failed" ? "border-[#d8a08d] bg-[#fff2ed] text-[#7f3524]" : "border-[var(--line)] bg-[var(--soft)] text-[var(--muted)]"}`}
             role="status"
@@ -184,9 +173,9 @@ export function AppShell() {
                     ? "Есть несохранённые изменения…"
                     : syncState === "saving"
                       ? "Сохраняем изменения…"
-                      : usingCache
-                        ? "Показана локальная копия плана."
-                         : "Режим просмотра: редактировать план может только владелец."))}
+                         : usingCache
+                         ? "Показана локальная копия плана."
+                          : ""))}
             </span>
             {syncState === "conflict" ? (
               <span className="flex flex-wrap gap-2">
