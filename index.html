@@ -493,7 +493,7 @@
                   <div draggable="true" onDragStart="{{ onSightDragStart }}" data-id="{{ st.id }}" style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:12px;overflow:hidden;transition:box-shadow .16s ease,transform .16s ease" style-hover="box-shadow:0 6px 18px rgba(59,50,40,.11);transform:translateY(-1px)">
                     <sc-if value="{{ st.hasPhoto }}" hint-placeholder-val="{{ false }}">
                       <div style="position:relative;height:132px;background:var(--track,#efe4cf)">
-                        <img src="{{ st.photo }}" alt="{{ st.name }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">
+                        <img src="{{ st.photo }}" alt="{{ st.name }}" loading="lazy" onClick="{{ onOpenSightInfo }}" data-id="{{ st.id }}" title="Открыть историю места" style="width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in">
                         <button onClick="{{ onRemovePlacePhoto }}" data-id="{{ st.id }}" title="Убрать фото" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(24,18,12,.5);color:#fff;cursor:pointer;font-size:13px;display:grid;place-items:center">×</button>
                       </div>
                     </sc-if>
@@ -1539,6 +1539,7 @@ class Component extends DCLogic {
       onRemoveLodge: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { dd.lodging = dd.lodging.filter(x => x.id !== id); }); },
       onCopyLodgeLink: (e) => { const url = e.currentTarget.dataset.url || ''; const id = e.currentTarget.dataset.id; if (!url) { window.alert('Для этого жилья ссылка ещё не добавлена.'); return; } const done = () => { this.setState({ lodgeCopiedId: id }); setTimeout(() => this.setState({ lodgeCopiedId: null }), 1600); }; try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(done, done); } else { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); } } catch (err) { done(); } },
       onToggleSight: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { const s = dd.sights.find(x => x.id === id); if (s) s.done = !s.done; }); },
+      onOpenSightInfo: (e) => { e.stopPropagation(); this.setState({ sightInfoId: e.currentTarget.dataset.id }); },
       onRemoveSight: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { dd.sights = dd.sights.filter(x => x.id !== id); }); },
       onSightKey: (e) => { if (e.key === 'Enter') this.addSight(); },
       onAddSight: () => this.addSight(),
