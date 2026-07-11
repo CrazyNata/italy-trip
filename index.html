@@ -492,10 +492,10 @@
               </div>
               <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:11px">
                 <sc-for list="{{ sub.items }}" as="st" hint-placeholder-count="4">
-                  <div draggable="true" onDragStart="{{ onSightDragStart }}" data-id="{{ st.id }}" style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:12px;overflow:hidden;transition:box-shadow .16s ease,transform .16s ease" style-hover="box-shadow:0 6px 18px rgba(59,50,40,.11);transform:translateY(-1px)">
+                  <div draggable="true" onClick="{{ onOpenSightInfo }}" onDragStart="{{ onSightDragStart }}" data-id="{{ st.id }}" title="Открыть описание места" style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:12px;overflow:hidden;cursor:pointer;transition:box-shadow .16s ease,transform .16s ease" style-hover="box-shadow:0 6px 18px rgba(59,50,40,.11);transform:translateY(-1px)">
                     <sc-if value="{{ st.hasPhoto }}" hint-placeholder-val="{{ false }}">
                       <div style="position:relative;height:132px;background:var(--track,#efe4cf)">
-                        <img src="{{ st.photo }}" alt="{{ st.name }}" loading="lazy" onClick="{{ onOpenSightInfo }}" data-id="{{ st.id }}" title="Открыть историю места" style="width:100%;height:100%;object-fit:cover;display:block;cursor:zoom-in">
+                        <img src="{{ st.photo }}" alt="{{ st.name }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">
                         <button onClick="{{ onRemovePlacePhoto }}" data-id="{{ st.id }}" title="Убрать фото" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(24,18,12,.5);color:#fff;cursor:pointer;font-size:13px;display:grid;place-items:center">×</button>
                       </div>
                     </sc-if>
@@ -653,7 +653,7 @@
   </sc-if>
 
   <sc-if value="{{ sightInfoOpen }}" hint-placeholder-val="{{ false }}">
-    <div onClick="{{ onCloseSightInfo }}" style="position:fixed;inset:0;z-index:10000;background:rgba(14,10,7,.68);display:grid;place-items:center;padding:20px">
+    <div onClick="{{ onCloseSightInfoBackdrop }}" style="position:fixed;inset:0;z-index:10000;background:rgba(14,10,7,.68);display:grid;place-items:center;padding:20px">
       <div style="width:min(100%,540px);max-height:min(760px,calc(100vh - 40px));overflow:auto;background:var(--card,#fff);border-radius:18px;box-shadow:0 18px 60px rgba(0,0,0,.35);position:relative">
         <sc-if value="{{ sightInfoHasPhoto }}" hint-placeholder-val="{{ false }}"><img src="{{ sightInfoPhoto }}" alt="{{ sightInfoName }}" style="width:100%;height:230px;object-fit:cover;display:block"></sc-if>
         <button onClick="{{ onCloseSightInfo }}" title="Закрыть" style="position:absolute;top:12px;right:12px;width:34px;height:34px;border:none;border-radius:50%;background:rgba(20,18,14,.62);color:#fff;cursor:pointer;font-size:16px"><i class="fa-solid fa-xmark"></i></button>
@@ -674,7 +674,7 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{},&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;Терракота&quot;,&quot;Охра&quot;,&quot;Олива&quot;],&quot;default&quot;:&quot;Олива&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Оформление&quot;},&quot;showCountdown&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Оформление&quot;}}">
 class Component extends DCLogic {
-  state = { tab: 'overview', data: this.seed(), draft: {}, dark: false, cancelSort: 'asc', weatherByCity: {}, photoByCity: {}, theme: null, photos: [], importing: false, importStatus: '' };
+  state = { tab: 'overview', data: this.seed(), draft: {}, dark: false, cancelSort: 'asc', weatherByCity: {}, photoByCity: {}, theme: null, photos: [], importing: false, importStatus: '', sightInfoId: null };
 
   // ---------- IndexedDB store for photos ----------
   openDB() {
@@ -1400,7 +1400,7 @@ class Component extends DCLogic {
     const cities = [...new Set(d.lodging.map(l => l.city))];
 
     return {
-      rootStyle, tabs, onTab: (e) => this.setState({ tab: e.currentTarget.dataset.tab }),
+      rootStyle, tabs, onTab: (e) => this.setState({ tab: e.currentTarget.dataset.tab, sightInfoId: null }),
       isOverview: tab === 'overview', isRoute: tab === 'route', isLodging: tab === 'lodging', isCancel: tab === 'cancel', isSights: tab === 'sights', isBudget: tab === 'budget', isPhotos: tab === 'photos', isNotes: tab === 'notes',
       stopClick: (e) => { e.stopPropagation(); },
       heroIsSalzburg: (this.state.heroIdx || 0) === 0,
@@ -1460,7 +1460,8 @@ class Component extends DCLogic {
       lightboxSrc: (() => { const lb = this.state.lightbox; if (!lb) return ''; const lg = d.lodging.find(x => x.id === lb.id); if (!lg || !lg.photos) return ''; return lg.photos[lb.idx % lg.photos.length]; })(),
       onOpenLightbox: (e) => { const id = e.currentTarget.dataset.id; const idx = ((this.state.lodgePhotoIdx || {})[id] || 0); this.setState({ lightbox: { id, idx } }); },
       onCloseLightbox: (e) => { if (e.currentTarget === e.target || e.currentTarget.title === 'Закрыть') this.setState({ lightbox: null }); },
-      onCloseSightInfo: (e) => { if (e.currentTarget === e.target || e.currentTarget.title === 'Закрыть') this.setState({ sightInfoId: null }); },
+      onCloseSightInfo: () => this.setState({ sightInfoId: null }),
+      onCloseSightInfoBackdrop: (e) => { if (e.currentTarget === e.target) this.setState({ sightInfoId: null }); },
       onLightboxPrev: (e) => { e.stopPropagation(); this.setState(s => { const lb = s.lightbox; if (!lb) return {}; const lg = d.lodging.find(x => x.id === lb.id); const n = (lg && lg.photos) ? lg.photos.length : 1; return { lightbox: { id: lb.id, idx: (lb.idx - 1 % n + n) % n } }; }); },
       onLightboxNext: (e) => { e.stopPropagation(); this.setState(s => { const lb = s.lightbox; if (!lb) return {}; const lg = d.lodging.find(x => x.id === lb.id); const n = (lg && lg.photos) ? lg.photos.length : 1; return { lightbox: { id: lb.id, idx: (lb.idx + 1) % n } }; }); },
       onPrevPhoto: (e) => { const id = e.currentTarget.dataset.id; const lg = d.lodging.find(x => x.id === id); const n = (lg && lg.photos) ? lg.photos.length : 1; this.setState(s => { const m = { ...(s.lodgePhotoIdx || {}) }; m[id] = (((m[id] || 0) - 1) % n + n) % n; return { lodgePhotoIdx: m }; }); },
@@ -1533,7 +1534,7 @@ class Component extends DCLogic {
       onRemoveLodge: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { dd.lodging = dd.lodging.filter(x => x.id !== id); }); },
       onCopyLodgeLink: (e) => { const url = e.currentTarget.dataset.url || ''; const id = e.currentTarget.dataset.id; if (!url) { window.alert('Для этого жилья ссылка ещё не добавлена.'); return; } const done = () => { this.setState({ lodgeCopiedId: id }); setTimeout(() => this.setState({ lodgeCopiedId: null }), 1600); }; try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(done, done); } else { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); } } catch (err) { done(); } },
       onToggleSight: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { const s = dd.sights.find(x => x.id === id); if (s) s.done = !s.done; }); },
-      onOpenSightInfo: (e) => { e.stopPropagation(); this.setState({ sightInfoId: e.currentTarget.dataset.id }); },
+      onOpenSightInfo: (e) => { if (e.target.closest('button, label, input, a')) return; this.setState({ sightInfoId: e.currentTarget.dataset.id }); },
       onRemoveSight: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { dd.sights = dd.sights.filter(x => x.id !== id); }); },
       onSightKey: (e) => { if (e.key === 'Enter') this.addSight(); },
       onAddSight: () => this.addSight(),
