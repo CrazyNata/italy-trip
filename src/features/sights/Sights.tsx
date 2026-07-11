@@ -3,7 +3,7 @@ import { useAuth } from "../../auth";
 import { supabase } from "../../lib/supabase/client";
 import { useTripData } from "../../trip/TripDataContext";
 import type { Sight } from "../../types/trip";
-import { button, field, PanelTitle, subtleButton, uid, useDialogKeyboard, useTransientState } from "../shared";
+import { uid, useDialogKeyboard, useTransientState } from "../shared";
 
 const subs = [
   "достопримечательности",
@@ -26,9 +26,9 @@ const colors: Record<string, string> = {
   разное: "#8a7d6b",
 };
 const days: Record<number, string> = {
-  1: "День 1 · Античный Рим",
-  2: "День 2 · Центр Рима",
-  3: "День 3 · Ватикан и Боргезе",
+  1: "День 1: античный Рим",
+  2: "День 2: центр Рима",
+  3: "День 3: Ватикан и Боргезе",
 };
 const toast = (message?: string) =>
   window.dispatchEvent(
@@ -44,26 +44,6 @@ type RouteState = {
   distance: number;
   duration: number;
 } | null;
-
-function CoordinateInputs({ sight, onChange }: { sight: Sight; onChange: (lnglat?: [number, number]) => void }) {
-  const [draft, setDraft] = useState({ lng: sight.lnglat?.[0]?.toString() ?? "", lat: sight.lnglat?.[1]?.toString() ?? "" });
-  useEffect(() => {
-    setDraft({ lng: sight.lnglat?.[0]?.toString() ?? "", lat: sight.lnglat?.[1]?.toString() ?? "" });
-  }, [sight.id, sight.lnglat?.[0], sight.lnglat?.[1]]);
-  const update = (key: "lng" | "lat", value: string) => {
-    const next = { ...draft, [key]: value };
-    setDraft(next);
-    if (!next.lng.trim() && !next.lat.trim()) return onChange(undefined);
-    if (!next.lng.trim() || !next.lat.trim()) return;
-    const lng = Number(next.lng);
-    const lat = Number(next.lat);
-    if (Number.isFinite(lng) && lng >= -180 && lng <= 180 && Number.isFinite(lat) && lat >= -90 && lat <= 90) onChange([lng, lat]);
-  };
-  return <div className="mt-3 grid grid-cols-2 gap-2">
-    <label className="text-xs text-[var(--muted)]">Долгота<input className={`${field} mt-1`} type="number" min="-180" max="180" step="any" value={draft.lng} onChange={(event) => update("lng", event.target.value)}/></label>
-    <label className="text-xs text-[var(--muted)]">Широта<input className={`${field} mt-1`} type="number" min="-90" max="90" step="any" value={draft.lat} onChange={(event) => update("lat", event.target.value)}/></label>
-  </div>;
-}
 
 function WalkingMap({
   sights,
@@ -200,10 +180,7 @@ function WalkingMap({
     sights.map((sight) => `${sight.id}:${sight.lnglat?.join(",")}`).join("|"),
   ]);
   return (
-    <div
-      className="h-[380px] min-h-72 overflow-hidden rounded-xl bg-[var(--track)]"
-      ref={element}
-    >
+    <div ref={element} style={{ height: 380, minHeight: 280, borderRadius: 12, overflow: "hidden", background: "var(--track,#efe4cf)", position: "relative" }}>
       {(mapError || !mapboxToken) && (
         <div className="grid h-full place-items-center text-sm text-[var(--muted)]">
           {mapError || "Токен карты недоступен"}
@@ -473,249 +450,45 @@ export function Sights() {
   const selected = open ? data.sights.find((sight) => sight.id === open) : null;
   return (
     <>
-      <PanelTitle eyebrow="Идеи для прогулок">Места</PanelTitle>
-      <div className="sights-controls mb-5 flex flex-wrap gap-2 rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4">
-        <input
-          className={`${field} w-36`}
-          placeholder="город"
-          value={draft.city}
-          onChange={(event) => setDraft({ ...draft, city: event.target.value })}
-        />
-        <input
-          className={`${field} min-w-48 flex-1`}
-          placeholder="что посмотреть / куда сходить"
-          value={draft.name}
-          onChange={(event) => setDraft({ ...draft, name: event.target.value })}
-          onKeyDown={(event) => event.key === "Enter" && add()}
-        />
-        <select
-          className={`${field} w-40`}
-          value={draft.group}
-          onChange={(event) =>
-            setDraft({ ...draft, group: event.target.value })
-          }
-        >
-          <option value="">важность…</option>
-          <option>обязательные</option>
-          <option>необязательные</option>
-        </select>
-        <select
-          className={`${field} w-44`}
-          value={draft.sub}
-          onChange={(event) => setDraft({ ...draft, sub: event.target.value })}
-        >
-          <option value="">подкатегория…</option>
-          {subs.map((sub) => (
-            <option key={sub}>{sub}</option>
-          ))}
-        </select>
-        <button className={button} onClick={add}>
-          + Добавить
-        </button>
-      </div>
-      <div className="mb-5 flex flex-wrap items-center gap-2">
-        <span className="text-sm font-semibold text-[var(--muted)]">
-          Фильтр
-        </span>
-        {(["city", "group", "sub"] as const).map((key) => (
-          <select
-            className={`${field} w-auto`}
-            key={key}
-            value={filter[key]}
-            onChange={(event) =>
-              setFilter({ ...filter, [key]: event.target.value })
-            }
-          >
-            <option value="">
-              {key === "city"
-                ? "все города"
-                : key === "group"
-                  ? "вся важность"
-                  : "все подкатегории"}
-            </option>
-            {(key === "city"
-              ? cities
-              : key === "group"
-                ? ["обязательные", "необязательные"]
-                : subs
-            ).map((value) => (
-              <option key={value}>{value}</option>
-            ))}
-          </select>
-        ))}
-        {Object.values(filter).some(Boolean) && (
-          <button
-            className="text-sm font-semibold text-[var(--ac)]"
-            onClick={() => setFilter({ city: "", group: "", sub: "" })}
-          >
-            × Сбросить
-          </button>
-        )}
+      <div style={{ animation: "fadeUp .4s ease both" }}>
+      <div className="sights-controls" style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 16, padding: "14px 16px", display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 22 }}>
+        <input value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} placeholder="город" style={{ width: 130, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)" }} />
+        <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="что посмотреть / куда сходить" style={{ flex: 1, minWidth: 160, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)" }} />
+        <select value={draft.group} onChange={(e) => setDraft({ ...draft, group: e.target.value })} style={{ width: 150, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", cursor: "pointer" }}><option value="">важность…</option><option>обязательные</option><option>необязательные</option></select>
+        <select value={draft.sub} onChange={(e) => setDraft({ ...draft, sub: e.target.value })} style={{ width: 160, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", cursor: "pointer" }}><option value="">подкатегория…</option>{subs.map((sub) => <option key={sub}>{sub}</option>)}</select>
+        <button onClick={add} style={{ border: "none", background: "var(--ac,#b95c3f)", color: "#fff", borderRadius: 9, padding: "0 18px", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7 }}><i className="fa-solid fa-plus" style={{ fontSize: 12 }} />Добавить</button>
       </div>
 
-      <section className="mb-7 rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4">
-        <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h3 className="font-display text-2xl font-semibold">
-              🚶 Пеший маршрут
-            </h3>
-            <p className="text-xs text-[var(--muted)]">
-              Меняйте порядок стрелками или перетаскиванием маркеров.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <select
-              className={`${field} w-auto`}
-              value={activeCity}
-              onChange={(event) => {
-                setWalkCity(event.target.value);
-                setRoute(null);
-                setRouteError("");
-              }}
-            >
-              {cities.map((city) => (
-                <option key={city}>{city}</option>
-              ))}
-            </select>
-            <select
-              className={`${field} w-auto`}
-              value={walkDay}
-              onChange={(event) => {
-                setWalkDay(+event.target.value);
-                setRoute(null);
-                setRouteError("");
-              }}
-            >
-              {[1, 2, 3].map((day) => (
-                <option value={day} key={day}>
-                  {days[day]}
-                </option>
-              ))}
-            </select>
-            <button
-              className={subtleButton}
-              onClick={() => void geocodeMissing()}
-            >
-              {geocoding ? "Ищу…" : "Найти точки"}
-            </button>
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 20 }}>
+        <span style={{ fontSize: 13, color: "var(--muted,#8a7d6b)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7 }}><i className="fa-solid fa-filter" style={{ fontSize: 12 }} />Фильтр</span>
+        {(["city", "group", "sub"] as const).map((key) => <select key={key} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "8px 11px", fontSize: 13, background: "var(--card,#fff)", color: "var(--ink,#3b3228)", cursor: "pointer" }}><option value="">{key === "city" ? "все города" : key === "group" ? "вся важность" : "все подкатегории"}</option>{(key === "city" ? cities : key === "group" ? ["обязательные", "необязательные"] : subs).map((value) => <option key={value}>{value}</option>)}</select>)}
+        {Object.values(filter).some(Boolean) && <button onClick={() => setFilter({ city: "", group: "", sub: "" })} style={{ border: "none", background: "none", color: "var(--ac,#b95c3f)", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "8px 6px" }}><i className="fa-solid fa-xmark" style={{ marginRight: 5, fontSize: 12 }} />Сбросить</button>}
+      </div>
+
+      <section style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 16, padding: 16, margin: "0 0 24px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 13 }}>
+          <div><div style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 600 }}><i className="fa-solid fa-person-walking" style={{ color: "var(--ac,#b95c3f)", fontSize: 18, marginRight: 7 }} />Пеший маршрут</div><div style={{ fontSize: 12.5, color: "var(--muted,#8a7d6b)", marginTop: 3 }}>Проверьте точки и меняйте порядок стрелками или перетаскиванием маркеров.</div></div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <select value={activeCity} onChange={(e) => { setWalkCity(e.target.value); setRoute(null); setRouteError(""); }} style={{ minWidth: 165, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}><option value="">город…</option>{cities.map((city) => <option key={city}>{city}</option>)}</select>
+            <select value={walkDay} onChange={(e) => { setWalkDay(+e.target.value); setRoute(null); setRouteError(""); }} style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}>{[1, 2, 3].map((day) => <option value={day} key={day}>{days[day]}</option>)}</select>
+            <button onClick={() => void geocodeMissing()} style={{ border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: 9, padding: "8px 11px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className="fa-solid fa-location-crosshairs" style={{ marginRight: 5 }} />{geocoding ? "Ищу…" : "Найти точки"}</button>
           </div>
         </div>
-        <div className="mb-3 flex justify-end gap-2">
-          <button
-            className={subtleButton}
-            onClick={async () => {
-              if (!mapUrl)
-                return void toast("Добавьте минимум две точки для маршрута");
-              try {
-                await navigator.clipboard.writeText(mapUrl);
-              } catch {}
-              showCopied(true, false);
-            }}
-          >
-            {copied ? "✓ Скопировано" : "⧉ Копировать маршрут"}
-          </button>
-          {mapUrl && (
-            <a
-              className={subtleButton}
-              href={mapUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              Открыть ↗
-            </a>
-          )}
-        </div>
-        {activeCity ? (
-          <div className="grid gap-4 md:grid-cols-[minmax(240px,.8fr)_1.5fr]">
-            <div className="max-h-[380px] space-y-2 overflow-auto">
-              {walkAll.map((sight, index) => (
-                <div
-                  className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--soft)] p-2"
-                  key={sight.id}
-                >
-                  <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--ac)] text-xs font-bold text-white">
-                    {index + 1}
-                  </span>
-                   <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                    {sight.name} {!sight.lnglat && <small className="font-normal text-[var(--muted)]">· без точки</small>}
-                  </span>
-                  <button title="Раньше" onClick={() => move(sight.id, -1)}>
-                    ↑
-                  </button>
-                  <button title="Позже" onClick={() => move(sight.id, 1)}>
-                    ↓
-                  </button>
-                </div>
-              ))}
-              {!walkAll.length && (
-                <p className="text-sm text-[var(--muted)]">
-                  У мест нет координат. Нажмите «Найти точки».
-                </p>
-              )}
-              {walkAll.filter((sight) => !sight.lnglat).length > 0 && (
-                <p className="text-xs text-[var(--muted)]">
-                  Без точки: {walkAll.filter((sight) => !sight.lnglat).length}
-                </p>
-              )}
-              {walkAll.filter((sight) => sight.lnglat).length > 25 && <p className="text-xs text-[var(--muted)]">На карте и в маршруте показаны первые 25 точек; полный порядок сохранён в списке.</p>}
-              <p className="text-xs text-[var(--muted)]">
-                {routeError ||
-                  (route
-                    ? `Пешком: ${(route.distance / 1000).toFixed(1).replace(".", ",")} км · ${Math.round(route.duration / 60)} мин.`
-                    : located.length > 1
-                      ? "Строим пеший маршрут…"
-                      : "Добавьте минимум две точки для маршрута.")}
-              </p>
-            </div>
-            <WalkingMap
-              sights={located}
-              readOnly={isReadOnly}
-              onMove={(id, lnglat) => mutate(id, { lnglat })}
-              onRoute={(next, error) => {
-                setRoute(next);
-                setRouteError(error);
-              }}
-            />
+        <div style={{ display: "flex", justifyContent: "flex-end", margin: "-4px 0 12px" }}><button onClick={async () => { if (!mapUrl) return void toast("Добавьте минимум две точки для маршрута"); try { await navigator.clipboard.writeText(mapUrl); } catch {} showCopied(true, false); }} style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", color: "var(--ink,#3b3228)", borderRadius: 9, padding: "8px 11px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}><i className={copied ? "fa-solid fa-check" : "fa-regular fa-copy"} />{copied ? "Скопировано" : "Копировать маршрут"}</button></div>
+        {activeCity ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 14 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 7, maxHeight: 380, overflow: "auto" }}>
+            {walkAll.map((sight, index) => <div key={sight.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, background: "var(--soft,#fdfaf3)" }}><span style={{ width: 21, height: 21, borderRadius: "50%", display: "grid", placeItems: "center", background: "var(--ac,#b95c3f)", color: "#fff", fontSize: 11, fontWeight: 700 }}>{index + 1}</span><span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, fontWeight: 600 }}>{sight.name}</span><button onClick={() => move(sight.id, -1)} title="Раньше" style={{ border: "none", background: "none", color: "var(--muted,#8a7d6b)", cursor: "pointer", padding: 4 }}><i className="fa-solid fa-chevron-up" /></button><button onClick={() => move(sight.id, 1)} title="Позже" style={{ border: "none", background: "none", color: "var(--muted,#8a7d6b)", cursor: "pointer", padding: 4 }}><i className="fa-solid fa-chevron-down" /></button></div>)}
+            {!located.length && <div style={{ fontSize: 13, color: "var(--muted,#8a7d6b)", padding: "8px 2px" }}>У мест нет координат. Нажмите «Найти точки».</div>}
+            {walkAll.some((sight) => !sight.lnglat) && <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)" }}>Без точки: {walkAll.filter((sight) => !sight.lnglat).length}</div>}
+            <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)", padding: "3px 2px" }}>{routeError || (route ? `Пешком: ${(route.distance / 1000).toFixed(1).replace(".", ",")} км · ${Math.round(route.duration / 60)} мин.` : located.length > 1 ? "Строим пеший маршрут…" : "Добавьте минимум две точки для маршрута.")}</div>
           </div>
-        ) : (
-          <p className="text-sm text-[var(--muted)]">
-            Добавьте места с указанным городом, чтобы построить маршрут.
-          </p>
-        )}
-        {walkAll.length > 0 && (
-          <div className="-mx-4 -mb-4 mt-5 border-t border-[var(--line)] bg-[var(--soft)] p-4">
-            <h3 className="mb-3 font-display text-xl font-semibold">
-              {days[walkDay]}{" "}
-              <span className="text-xs text-[var(--muted)]">
-                {walkAll.length} мест
-              </span>
-            </h3>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {walkAll.map((sight, index) => (
-                <button
-                  className="relative min-h-32 overflow-hidden rounded-xl border border-[var(--line)] text-left"
-                  key={sight.id}
-                  onClick={() => void openInfo(sight)}
-                >
-                  {sight.photo && (
-                    <img
-                      className="absolute inset-0 h-full w-full object-cover opacity-80"
-                      src={sight.photo}
-                      alt=""
-                    />
-                  )}
-                  <span className="absolute left-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-[var(--ac)] text-xs font-bold text-white">
-                    {index + 1}
-                  </span>
-                  <span className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 p-3 pt-8 font-display font-semibold text-white">
-                    {sight.name}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+          <WalkingMap sights={located} readOnly={isReadOnly} onMove={(id, lnglat) => mutate(id, { lnglat })} onRoute={(next, error) => { setRoute(next); setRouteError(error); }} />
+        </div> : <div style={{ fontSize: 13, color: "var(--muted,#8a7d6b)", padding: "6px 0" }}>Добавьте места с указанным городом, чтобы построить маршрут.</div>}
+        {walkAll.length > 0 && <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "17px 0 -12px", fontSize: 12, color: "var(--muted,#5f7c7e)" }}><i className="fa-solid fa-circle-info" style={{ color: "var(--ac,#2a7089)" }} />Нажмите на карточку достопримечательности, чтобы прочитать её историю.</div>}
+        {walkAll.length > 0 && <div style={{ margin: "20px -16px -16px", padding: "18px 16px 16px", background: "var(--soft,#f1f7f6)", borderTop: "1px solid var(--line,#e7dcc7)" }}><div style={{ display: "flex", alignItems: "baseline", gap: 9, margin: "0 0 13px" }}><h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 600, margin: 0 }}>{days[walkDay]}</h2><span style={{ fontSize: 12, color: "var(--muted,#8a7d6b)" }}>{walkAll.length} мест</span></div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 10 }}>{walkAll.map((sight, index) => <div key={sight.id} onClick={() => void openInfo(sight)} title="Открыть описание места" style={{ position: "relative", minHeight: 145, borderRadius: 11, overflow: "hidden", background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", cursor: "pointer" }}>{sight.photo && <img src={sight.photo} alt={sight.name} loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: .78 }} />}<div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg,rgba(20,35,36,.78),transparent 72%)" }} /><span style={{ position: "absolute", top: 9, left: 9, width: 23, height: 23, borderRadius: "50%", background: "var(--ac,#2a7089)", color: "#fff", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700 }}>{index + 1}</span><div style={{ position: "absolute", left: 11, right: 11, bottom: 10, color: "#fff", textShadow: "0 1px 5px rgba(0,0,0,.42)" }}><div style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, fontWeight: 600, lineHeight: 1.05 }}>{sight.name}</div><div style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", opacity: .82, marginTop: 4 }}>{subOf(sight)}</div></div></div>)}</div></div>}
       </section>
+
+      {!!data.sights.length && <div style={{ fontSize: 12.5, color: "var(--muted,#a2937c)", margin: "-4px 0 18px", display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}><i className="fa-solid fa-up-down-left-right" style={{ fontSize: 11 }} /><span>Перетащите место между разделами или нажмите <i className="fa-solid fa-star" style={{ fontSize: 10, color: "var(--ac,#b95c3f)" }} />, чтобы поменять важность. Значок <i className="fa-solid fa-camera" style={{ fontSize: 11 }} /> — добавить фото.</span></div>}
 
       {(["обязательные", "необязательные"] as const).map((group) => {
         const items = filtered.filter(
@@ -724,7 +497,7 @@ export function Sights() {
         if (Object.values(filter).some(Boolean) && !items.length) return null;
         return (
           <section
-            className="mb-7 rounded-xl"
+            style={{ marginBottom: 32, borderRadius: 14 }}
             key={group}
             onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => {
@@ -733,28 +506,21 @@ export function Sights() {
               if (id) mutate(id, { group });
             }}
           >
-            <h3 className="mb-4 border-b border-[var(--line)] pb-2 font-display text-2xl font-semibold">
-              {group === "обязательные" ? "★ Обязательные" : "☆ Необязательные"}{" "}
-              <span className="text-xs text-[var(--muted)]">
-                {items.length}
-              </span>
-            </h3>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "0 0 18px", paddingBottom: 11, borderBottom: "1.5px solid var(--line,#e7dcc7)" }}><i className={group === "обязательные" ? "fa-solid fa-star" : "fa-regular fa-star"} style={{ color: group === "обязательные" ? "var(--ac,#b95c3f)" : "var(--muted,#8a7d6b)", fontSize: 16 }} /><h2 style={{ fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: 25, margin: 0, letterSpacing: ".005em" }}>{group === "обязательные" ? "Обязательные" : "Необязательные"}</h2>{items.length > 0 && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--muted,#8a7d6b)", background: "var(--track,#efe4cf)", borderRadius: 999, padding: "3px 11px" }}>{items.length} мест</span>}</div>
             {subs.map((sub) => {
               const subset = items.filter((sight) => subOf(sight) === sub);
               if (!subset.length) return null;
               return (
-                <div className="mb-5" key={sub}>
-                  <h4 className="mb-2 text-xs font-bold uppercase tracking-widest text-[var(--muted)]">
-                    <span style={{ color: colors[sub] }}>●</span> {sub}
-                  </h4>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <div style={{ marginBottom: 22 }} key={sub}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 11, margin: "0 0 13px" }}><span style={{ width: 9, height: 9, borderRadius: "50%", background: colors[sub], flex: "none" }} /><span style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", whiteSpace: "nowrap" }}>{sub}</span><span style={{ flex: 1, height: 1, background: "var(--line,#efe4cf)" }} /><span style={{ fontSize: 11, fontWeight: 600, color: "var(--muted,#b6a892)" }}>{subset.length}</span></div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(238px,1fr))", gap: 11 }}>
                     {subset.map((sight) => (
                       <article
                         draggable={!isReadOnly}
                         onDragStart={(event) =>
                           event.dataTransfer.setData("text/plain", sight.id)
                         }
-                        className="overflow-hidden rounded-xl border border-[var(--line)] bg-[var(--card)]"
+                        style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 12, overflow: "hidden", cursor: "pointer", transition: "box-shadow .16s ease,transform .16s ease" }}
                         key={sight.id}
                         onClick={(event) => {
                           if (
@@ -766,14 +532,14 @@ export function Sights() {
                         }}
                       >
                         {sight.photo && (
-                          <div className="relative h-32">
+                          <div style={{ position: "relative", height: 132, background: "var(--track,#efe4cf)" }}>
                             <img
-                              className="h-full w-full object-cover"
+                              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                               src={sight.photo}
                               alt={sight.name}
                             />
                             <button
-                              className="absolute right-2 top-2 rounded-full bg-black/60 px-2 text-white"
+                              style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 13, display: "grid", placeItems: "center" }}
                               title="Убрать фото"
                               onClick={() => void removeSightPhoto(sight)}
                             >
@@ -781,9 +547,9 @@ export function Sights() {
                             </button>
                           </div>
                         )}
-                        <div className="flex items-center gap-2 p-3">
+                        <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 11 }}>
                           <button
-                            className={`grid h-6 w-6 place-items-center rounded border ${sight.done ? "border-[var(--ac)] bg-[var(--ac)] text-white" : "border-[var(--line)]"}`}
+                            style={{ width: 22, height: 22, borderRadius: 6, border: `1.5px solid ${sight.done ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: sight.done ? "var(--ac,#b95c3f)" : "transparent", color: "#fff", cursor: "pointer", display: "grid", placeItems: "center", flex: "none", fontSize: 12 }}
                             title="Отметить, что сходили"
                             onClick={() =>
                               mutate(sight.id, { done: !sight.done })
@@ -791,23 +557,12 @@ export function Sights() {
                           >
                             {sight.done ? "✓" : ""}
                           </button>
-                          <div className="min-w-0 flex-1">
-                            <input
-                              className="w-full bg-transparent font-display text-lg font-semibold outline-none"
-                              value={sight.name}
-                              onChange={(event) =>
-                                mutate(sight.id, { name: event.target.value })
-                              }
-                            />
-                            <input
-                              className="w-full bg-transparent text-xs text-[var(--muted)] outline-none"
-                              value={sight.city}
-                              onChange={(event) =>
-                                mutate(sight.id, { city: event.target.value })
-                              }
-                            />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, lineHeight: 1.22, textDecoration: sight.done ? "line-through" : "none", color: sight.done ? "var(--muted,#8a7d6b)" : undefined }}>{sight.name}</div>
+                            <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)", marginTop: 4, display: "flex", alignItems: "center", gap: 5 }}><i className="fa-solid fa-location-dot" style={{ fontSize: 10, opacity: .7 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sight.city}</span></div>
                           </div>
-                          <button
+                          <div style={{ display: "flex", alignItems: "center", gap: 2, flex: "none" }}><button
+                            style={{ border: "none", background: "none", cursor: "pointer", color: group === "обязательные" ? "var(--ac,#b95c3f)" : "#c4b5a0", fontSize: 14, padding: "5px 6px" }}
                             title="Поменять важность"
                             onClick={() =>
                               mutate(sight.id, {
@@ -818,13 +573,13 @@ export function Sights() {
                               })
                             }
                           >
-                            {group === "обязательные" ? "★" : "☆"}
+                            <i className={group === "обязательные" ? "fa-solid fa-star" : "fa-regular fa-star"} />
                           </button>
                           <label
-                            className="cursor-pointer"
+                            style={{ cursor: "pointer", color: "#c4b5a0", fontSize: 14, padding: "5px 6px", display: "grid", placeItems: "center" }}
                             title="Добавить / заменить фото"
                           >
-                            📷
+                            <i className="fa-solid fa-camera" />
                             <input
                               hidden
                               type="file"
@@ -835,42 +590,12 @@ export function Sights() {
                             />
                           </label>
                           <button
+                            style={{ border: "none", background: "none", color: "#c4b5a0", cursor: "pointer", fontSize: 17, lineHeight: 1, padding: "3px 5px" }}
                             title="Удалить место"
                             onClick={() => void removeSight(sight)}
                           >
                             ×
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2 px-3 pb-3">
-                          <select
-                            className={field}
-                            value={sight.subcategory}
-                            onChange={(event) =>
-                              mutate(sight.id, {
-                                subcategory: event.target.value,
-                              })
-                            }
-                          >
-                            {subs.map((sub) => (
-                              <option key={sub}>{sub}</option>
-                            ))}
-                          </select>
-                          <select
-                            className={field}
-                            value={sight.walkDay || ""}
-                            onChange={(event) =>
-                              mutate(sight.id, {
-                                walkDay: event.target.value
-                                  ? +event.target.value
-                                  : undefined,
-                              })
-                            }
-                          >
-                            <option value="">все дни</option>
-                            <option value="1">день 1</option>
-                            <option value="2">день 2</option>
-                            <option value="3">день 3</option>
-                          </select>
+                          </button></div>
                         </div>
                       </article>
                     ))}
@@ -879,7 +604,7 @@ export function Sights() {
               );
             })}
             {!items.length && (
-              <p className="text-sm text-[var(--muted)]">
+              <p style={{ fontSize: 13, color: "var(--muted,#a2937c)", padding: "0 0 8px" }}>
                 пока ничего не добавлено
               </p>
             )}
@@ -887,63 +612,51 @@ export function Sights() {
         );
       })}
       {Object.values(filter).some(Boolean) && !filtered.length && (
-        <p className="py-8 text-center text-[var(--muted)]">
+        <p style={{ textAlign: "center", color: "var(--muted,#8a7d6b)", fontSize: 14, padding: "26px 0" }}>
           Ничего не найдено — попробуйте изменить фильтр.
         </p>
-      )}
+      )}</div>
 
       {selected && (
         <div
-          className="fixed inset-0 z-[10000] grid place-items-center bg-black/70 p-5"
+          style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(14,10,7,.68)", display: "grid", placeItems: "center", padding: 20 }}
           role="dialog"
           aria-modal="true"
             onClick={(event) =>
             event.currentTarget === event.target && closeInfo()
           }
         >
-          <div className="relative max-h-[calc(100vh-40px)] w-full max-w-xl overflow-auto rounded-2xl bg-[var(--card)]">
-            {(selected.photo || (wiki?.id === selected.id && wiki.photo)) && (
+          <div style={{ width: "min(100%, 540px)", maxHeight: "min(760px, calc(100vh - 40px))", overflow: "auto", background: "var(--card,#fff)", borderRadius: 18, boxShadow: "0 18px 60px rgba(0,0,0,.35)", position: "relative" }}>
+            {selected.photo && (
               <img
-                className="h-56 w-full object-cover"
-                src={selected.photo || (wiki?.id === selected.id ? wiki.photo : undefined)}
+                style={{ width: "100%", height: 230, objectFit: "cover", display: "block" }}
+                src={selected.photo}
                 alt={selected.name}
               />
             )}
             <button
               ref={closeButton}
-              className="absolute right-3 top-3 rounded-full bg-black/60 px-3 py-1 text-2xl text-white"
+              style={{ position: "absolute", top: 12, right: 12, width: 34, height: 34, border: "none", borderRadius: "50%", background: "rgba(20,18,14,.62)", color: "#fff", cursor: "pointer", fontSize: 16 }}
               title="Закрыть"
               onClick={closeInfo}
             >
-              ×
+              <i className="fa-solid fa-xmark" />
             </button>
-            <div className="p-6">
-              <p className="text-xs font-bold uppercase tracking-widest text-[var(--ac)]">
+            <div style={{ padding: 22 }}>
+              <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "var(--ac,#2a7089)", fontWeight: 700 }}>
                 {subOf(selected)} · {selected.city}
-              </p>
-              <h2 className="mt-2 font-display text-3xl font-semibold">
+              </div>
+              <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 30, lineHeight: 1.05, fontWeight: 600, margin: "8px 0 12px" }}>
                 {selected.name}
               </h2>
-              <textarea
-                className={`${field} mt-4 min-h-32 resize-y leading-relaxed`}
-                placeholder="Сохранённая заметка о месте…"
-                value={selected.description || ""}
-                onChange={(event) =>
-                  mutate(selected.id, { description: event.target.value })
-                }
-              />
-              <div className="mt-3 rounded-xl bg-[var(--soft)] p-3 text-sm leading-relaxed text-[var(--muted)]">
-                <strong className="mb-1 block text-xs uppercase tracking-wider">Wikipedia</strong>
-                {wiki?.id === selected.id ? wiki.text : "Загружаем описание…"}
-              </div>
-              <CoordinateInputs sight={selected} onChange={(lnglat) => mutate(selected.id, { lnglat })}/>
+              <p style={{ fontSize: 15, lineHeight: 1.55, color: "var(--muted,#5f7c7e)", margin: 0 }}>{selected.description || (wiki?.id === selected.id ? wiki.text : "Загружаем описание…")}</p>
               <a
-                className={`${subtleButton} mt-4 inline-block`}
+                style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 18, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "9px 12px", color: "var(--ink,#3b3228)", fontSize: 13, fontWeight: 700, textDecoration: "none" }}
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.name}, ${selected.city}`)}`}
                 target="_blank"
                 rel="noreferrer"
               >
-                Открыть на карте ↗
+                <i className="fa-solid fa-location-dot" style={{ color: "var(--ac,#2a7089)" }} />Открыть на карте
               </a>
             </div>
           </div>
