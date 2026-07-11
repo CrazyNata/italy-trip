@@ -200,7 +200,7 @@
       avatar = document.createElement('button');
       avatar.id = 'auth-bar';
       avatar.setAttribute('aria-label', 'Аккаунт');
-      avatar.style.cssText = 'position:fixed;top:14px;right:16px;z-index:9998;width:38px;height:38px;' +
+      avatar.style.cssText = 'position:fixed;top:12px;right:14px;z-index:9998;width:46px;height:46px;' +
         'border-radius:50%;border:2px solid #fff;cursor:pointer;padding:0;display:grid;place-items:center;' +
         'font:700 15px ' + FONT + ';color:#fff;box-shadow:0 3px 12px rgba(59,50,40,.28)';
       document.body.appendChild(avatar);
