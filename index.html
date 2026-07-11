@@ -900,10 +900,10 @@ class Component extends DCLogic {
             });
           }
         } catch (e) {}
-        if (!data.romeSightsV) {
+        if ((data.romeSightsV || 0) < 2) {
           const known = new Set((data.sights || []).map(s => s.name + '\u0000' + s.city));
           data.sights = [...(data.sights || []), ...this.romeSights().filter(s => !known.has(s.name + '\u0000' + s.city))];
-          data.romeSightsV = 1;
+          data.romeSightsV = 2;
         }
         this.setState({ data });
       }
@@ -1075,6 +1075,14 @@ class Component extends DCLogic {
       { id: 'rome_pantheon', name: 'Пантеон', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 4, lnglat: [12.47694444, 41.89861111], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Pantheon_%28Rome%29_-_Right_side_and_front.jpg/330px-Pantheon_%28Rome%29_-_Right_side_and_front.jpg' },
       { id: 'rome_navona', name: 'Пьяцца Навона', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 5, lnglat: [12.47316, 41.89871], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Paolo_Monti_-_Servizio_fotografico_%28Roma%2C_1966%29_-_BEIC_6329173.jpg/330px-Paolo_Monti_-_Servizio_fotografico_%28Roma%2C_1966%29_-_BEIC_6329173.jpg' },
       { id: 'rome_sant_angelo', name: 'Замок Святого Ангела', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 6, lnglat: [12.466355, 41.903064], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Engelsburg_und_Engelsbr%C3%BCcke_abends.jpg/330px-Engelsburg_und_Engelsbr%C3%BCcke_abends.jpg' },
+      { id: 'rome_st_peter', name: 'Собор Святого Петра', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 7, lnglat: [12.45333333, 41.90222222], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Basilica_di_San_Pietro_in_Vaticano_September_2015-1a.jpg/330px-Basilica_di_San_Pietro_in_Vaticano_September_2015-1a.jpg' },
+      { id: 'rome_vatican_museums', name: 'Музеи Ватикана', city, group: 'обязательные', subcategory: 'музеи', done: false, walkOrder: 8, lnglat: [12.4544, 41.9064], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Musei_vaticani_Coat_of_Arms.svg/330px-Musei_vaticani_Coat_of_Arms.svg.png' },
+      { id: 'rome_borghese_gallery', name: 'Галерея Боргезе', city, group: 'необязательные', subcategory: 'музеи', done: false, walkOrder: 9, lnglat: [12.4922, 41.9142], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Galleria_Borghese_-_logo_%28Italy%2C_2022-%29.svg/330px-Galleria_Borghese_-_logo_%28Italy%2C_2022-%29.svg.png' },
+      { id: 'rome_villa_borghese', name: 'Парк Вилла Боргезе', city, group: 'необязательные', subcategory: 'природа', done: false, walkOrder: 10, lnglat: [12.49222222, 41.91416667], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Ingresso_monumentale_di_Villa_Borghese_a_Roma_su_piazzale_Flaminio_2018-02.jpg/330px-Ingresso_monumentale_di_Villa_Borghese_a_Roma_su_piazzale_Flaminio_2018-02.jpg' },
+      { id: 'rome_campo_de_fiori', name: 'Кампо-деи-Фьори', city, group: 'необязательные', subcategory: 'еда', done: false, walkOrder: 11, lnglat: [12.472, 41.8957], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Campo_dei_Fiori.jpg/330px-Campo_dei_Fiori.jpg' },
+      { id: 'rome_capitoline_museums', name: 'Капитолийские музеи', city, group: 'необязательные', subcategory: 'музеи', done: false, walkOrder: 12, lnglat: [12.4828, 41.8931], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/0_Cordonata_-_Dioscuri_-_Palazzo_Senatorio.JPG/330px-0_Cordonata_-_Dioscuri_-_Palazzo_Senatorio.JPG' },
+      { id: 'rome_circus_maximus', name: 'Большой цирк', city, group: 'необязательные', subcategory: 'достопримечательности', done: false, walkOrder: 13, lnglat: [12.4857, 41.8859], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/CircusMaximusSO.jpg/330px-CircusMaximusSO.jpg' },
+      { id: 'rome_caracalla', name: 'Термы Каракаллы', city, group: 'необязательные', subcategory: 'достопримечательности', done: false, walkOrder: 14, lnglat: [12.49305556, 41.87944444], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Baths_of_Caracalla%2C_facing_Caldarium.jpg/330px-Baths_of_Caracalla%2C_facing_Caldarium.jpg' },
     ];
   }
 
@@ -1125,7 +1133,7 @@ class Component extends DCLogic {
     ];
     return {
       trip: { start: '2026-09-25', end: '2026-10-12', people: 2, dogs: 2 },
-      days, lodging, sights, romeSightsV: 1, expenses, links,
+      days, lodging, sights, romeSightsV: 2, expenses, links,
       notes: 'Выезжаем из Праги 25.09, нас двое + 2 собаки.\nС Рима (27.09) нас 4 человека — присоединяются сестра мужа с супругом.\nСобаки: переноски, миски, ветпаспорта, чипы, поводки. Проверить pet-friendly жильё и кафе.\nДокументы: страховка, копии паспортов, зелёная карта на авто.\n',
     };
   }
