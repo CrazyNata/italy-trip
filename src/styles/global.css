@@ -54,3 +54,9 @@ textarea {
 button {
   cursor: pointer;
 }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+a { color: var(--ac); text-decoration: none; }
+input:focus, textarea:focus, select:focus { outline: none; }
+::placeholder { color: var(--muted); opacity: .65; }
+@media (max-width: 600px) { .map-box { height: 340px !important; } }

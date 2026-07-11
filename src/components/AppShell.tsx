@@ -1,7 +1,14 @@
-import { useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 
 import { useAuth } from '../auth'
 import { useTripData } from '../trip/TripDataContext'
+import { Overview } from '../features/overview/Overview'
+import { Itinerary } from '../features/itinerary/Itinerary'
+import { Lodging } from '../features/lodging/Lodging'
+import { Sights } from '../features/sights/Sights'
+import { Budget } from '../features/budget/Budget'
+import { Photos } from '../features/photos/Photos'
+import { Notes } from '../features/notes/Notes'
 
 const tabs = [
   'Обзор',
@@ -18,7 +25,9 @@ export function AppShell() {
   const { isOwner, error: authError } = useAuth()
   const { data, loading, error, usingCache, syncState, refresh, retrySave } = useTripData()
   const [selectedTab, setSelectedTab] = useState(0)
+  const [toast, setToast] = useState<string | null>(null)
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
+  useEffect(() => { const show=()=>{setToast('Режим просмотра: изменения доступны только владельцу');window.setTimeout(()=>setToast(null),2200)};window.addEventListener('trip:readonly',show);return()=>window.removeEventListener('trip:readonly',show)},[])
 
   function selectTab(index: number) {
     setSelectedTab(index)
@@ -52,18 +61,17 @@ export function AppShell() {
               Отпуск с семьёй
               <br />в Италии <span aria-hidden="true">🍋</span>
             </h1>
-            <p className="mt-4 max-w-[460px] text-[15px] leading-relaxed text-[var(--muted)]">
-              25 сентября — 12 октября · маршрут, жильё, места и бюджет
-              семейного путешествия.
+              <p className="mt-4 max-w-[540px] text-[15px] leading-relaxed text-[var(--muted)]">
+              25 сентября — 12 октября · выезжаем из Праги вдвоём с 2 собаками. В Риме встречаем родственников — и нас становится 4 человека и 2 собаки. Планируем маршрут, жильё, места и бюджет.
             </p>
           </div>
 
-          <div className="rounded-[14px] border border-[var(--line)] bg-[var(--card)] px-5 py-3.5 text-center">
+          <div className="flex gap-3"><div className="rounded-[14px] border border-[var(--line)] bg-[var(--card)] px-5 py-3.5 text-center"><p className="font-mono text-4xl font-bold leading-none text-[var(--ac)]">{Math.max(0,Math.ceil((new Date('2026-09-25T00:00:00').getTime()-Date.now())/86400000))}</p><p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">дней до выезда</p></div><div className="rounded-[14px] border border-[var(--line)] bg-[var(--card)] px-5 py-3.5 text-center">
             <p className="font-mono text-4xl font-bold leading-none text-[var(--ol)]">17</p>
             <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
               ночей
             </p>
-          </div>
+          </div></div>
         </div>
 
         <nav
@@ -105,23 +113,18 @@ export function AppShell() {
         {tabs.map((tab, index) => (
           <section
             aria-labelledby={`tab-${index}`}
-            className="rounded-[18px] border border-[var(--line)] bg-[var(--card)] p-6 shadow-[0_12px_40px_rgba(23,58,61,0.06)] sm:p-8"
+            className="animate-[fadeUp_.4s_ease_both]"
             hidden={index !== selectedTab}
             id={`panel-${index}`}
             key={tab}
             role="tabpanel"
             tabIndex={0}
           >
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--ac)]">
-              Новая основа приложения
-            </p>
-            <h2 className="mt-2 font-display text-3xl font-semibold">{tab}</h2>
-            <p className="mt-3 max-w-2xl leading-relaxed text-[var(--muted)]">
-              {data ? `Данные поездки загружены: ${data.days.length} дней, ${data.lodging.length} вариантов жилья и ${data.sights.length} мест. Перенос интерфейса раздела продолжится следующим этапом.` : 'Данные поездки пока недоступны.'}
-            </p>
+            {data && [<Overview/>,<Itinerary/>,<Lodging/>,<Lodging cancellation/>,<Sights/>,<Budget/>,<Photos/>,<Notes/>][index]}
           </section>
         ))}
       </main>
+      {toast&&<div className="fixed bottom-6 left-1/2 z-[20000] -translate-x-1/2 rounded-full bg-[var(--ink)] px-5 py-3 text-sm font-bold text-[var(--card)] shadow-xl">{toast}</div>}
     </div>
   )
 }

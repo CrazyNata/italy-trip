@@ -12,6 +12,7 @@ export interface ItineraryItem {
   title: string
   done: boolean
   time?: string
+  mapUrl?: string
 }
 
 export interface TripDay {
@@ -114,7 +115,7 @@ function hasOptionalStringArray(value: JsonRecord, key: string) {
 
 function isItem(value: unknown): value is ItineraryItem {
   return isRecord(value) && hasString(value, 'id') && hasString(value, 'title') &&
-    typeof value.done === 'boolean' && hasOptionalString(value, 'time')
+    typeof value.done === 'boolean' && hasOptionalString(value, 'time') && hasOptionalString(value, 'mapUrl')
 }
 
 function isDay(value: unknown): value is TripDay {
