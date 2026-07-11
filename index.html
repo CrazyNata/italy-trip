@@ -433,6 +433,31 @@
         <button onClick="{{ onAddSight }}" style="border:none;background:var(--ac,#b95c3f);color:#fff;border-radius:9px;padding:0 18px;font-weight:600;font-size:14px;cursor:pointer">Добавить</button>
       </div>
 
+      <!-- Фильтры: город / важность / подкатегория -->
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:20px">
+        <span style="font-size:13px;color:var(--muted,#8a7d6b);font-weight:600;display:inline-flex;align-items:center;gap:7px"><i class="fa-solid fa-filter" style="font-size:12px"></i>Фильтр</span>
+        <select value="{{ sfCity }}" onChange="{{ onSightFilter }}" data-k="city" style="border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:8px 11px;font-size:13px;background:var(--card,#fff);color:var(--ink,#3b3228);cursor:pointer">
+          <option value="">все города</option>
+          <sc-for list="{{ sightCities }}" as="c" hint-placeholder-count="5">
+            <option value="{{ c }}">{{ c }}</option>
+          </sc-for>
+        </select>
+        <select value="{{ sfGroup }}" onChange="{{ onSightFilter }}" data-k="group" style="border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:8px 11px;font-size:13px;background:var(--card,#fff);color:var(--ink,#3b3228);cursor:pointer">
+          <option value="">вся важность</option>
+          <option value="обязательные">обязательные</option>
+          <option value="необязательные">необязательные</option>
+        </select>
+        <select value="{{ sfSub }}" onChange="{{ onSightFilter }}" data-k="sub" style="border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:8px 11px;font-size:13px;background:var(--card,#fff);color:var(--ink,#3b3228);cursor:pointer">
+          <option value="">все подкатегории</option>
+          <sc-for list="{{ sightSubs }}" as="c" hint-placeholder-count="8">
+            <option value="{{ c }}">{{ c }}</option>
+          </sc-for>
+        </select>
+        <sc-if value="{{ sightFilterActive }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ onSightFilterReset }}" style="border:none;background:none;color:var(--ac,#b95c3f);font-size:13px;font-weight:600;cursor:pointer;padding:8px 6px"><i class="fa-solid fa-xmark" style="margin-right:5px;font-size:12px"></i>Сбросить</button>
+        </sc-if>
+      </div>
+
       <sc-for list="{{ sightGroups }}" as="g" hint-placeholder-count="2">
         <div style="margin-bottom:26px">
           <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid var(--line,#e7dcc7)">
@@ -464,6 +489,9 @@
           </sc-for>
         </div>
       </sc-for>
+      <sc-if value="{{ sightsNoResults }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center;color:var(--muted,#8a7d6b);font-size:14px;padding:26px 0">Ничего не найдено — попробуйте изменить фильтр.</div>
+      </sc-if>
     </div>
     </sc-if>
 
@@ -1067,9 +1095,19 @@ class Component extends DCLogic {
     const sightGroupDefs = [ { key: 'обязательные', label: 'Обязательные' }, { key: 'необязательные', label: 'Необязательные' } ];
     // старые записи (только category) считаем «необязательными»; category → подкатегория
     const subOf = (st) => st.subcategory || (st.category && sightSubs.includes(st.category) ? st.category : 'разное');
-    const sightGroups = sightGroupDefs.map(gd => {
-      const inGroup = d.sights.filter(s => (s.group || 'необязательные') === gd.key);
-      const subs = sightSubs.map(sub => {
+    // Фильтры (город / важность / подкатегория) — это состояние интерфейса, не данные
+    const sf = this.state.sf || { city: '', group: '', sub: '' };
+    const sightCities = [...new Set(d.sights.map(s => s.city).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru'));
+    const sightFilterActive = !!(sf.city || sf.group || sf.sub);
+    const filteredSights = d.sights.filter(s =>
+      (!sf.city || s.city === sf.city) &&
+      (!sf.group || (s.group || 'необязательные') === sf.group) &&
+      (!sf.sub || subOf(s) === sf.sub)
+    );
+    const groupDefsShown = sf.group ? sightGroupDefs.filter(g => g.key === sf.group) : sightGroupDefs;
+    let sightGroups = groupDefsShown.map(gd => {
+      const inGroup = filteredSights.filter(s => (s.group || 'необязательные') === gd.key);
+      const subs = sightSubs.filter(sub => !sf.sub || sub === sf.sub).map(sub => {
         const items = inGroup.filter(s => subOf(s) === sub).map(st => ({
           id: st.id, name: st.name, city: st.city, check: st.done ? '✓' : '',
           boxStyle: mkBox(st.done), textStyle: st.done ? 'color:#a2937c;text-decoration:line-through' : '',
@@ -1078,6 +1116,8 @@ class Component extends DCLogic {
       }).filter(x => x.has);
       return { key: gd.key, label: gd.label, subs, countLabel: inGroup.length ? String(inGroup.length) : '', empty: inGroup.length === 0 };
     });
+    if (sightFilterActive) sightGroups = sightGroups.filter(g => !g.empty); // прячем пустые разделы при фильтре
+    const sightsNoResults = sightFilterActive && sightGroups.length === 0;
     const sightsTotal = d.sights.length, sightsDone = d.sights.filter(s => s.done).length;
 
     // budget
@@ -1239,7 +1279,8 @@ class Component extends DCLogic {
       onCopyMap: (e) => { const url = e.currentTarget.dataset.url || ''; const done = () => { this.setState({ mapCopied: true }); setTimeout(() => this.setState({ mapCopied: false }), 1600); }; try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(done, done); } else { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); } } catch (err) { done(); } },
       days,
       lodging,
-      sightGroups, sightSubs,
+      sightGroups, sightSubs, sightCities, sightFilterActive, sightsNoResults,
+      sfCity: sf.city, sfGroup: sf.group, sfSub: sf.sub,
       expenses, budgetTotal, perPerson, perDay,
       notes: d.notes, links: d.links,
       draft,
@@ -1264,6 +1305,8 @@ class Component extends DCLogic {
       onRemoveSight: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { dd.sights = dd.sights.filter(x => x.id !== id); }); },
       onSightKey: (e) => { if (e.key === 'Enter') this.addSight(); },
       onAddSight: () => this.addSight(),
+      onSightFilter: (e) => { const k = e.currentTarget.dataset.k, v = e.currentTarget.value; this.setState(s => ({ sf: { ...(s.sf || { city: '', group: '', sub: '' }), [k]: v } })); },
+      onSightFilterReset: () => this.setState({ sf: { city: '', group: '', sub: '' } }),
       onExpKey: (e) => { if (e.key === 'Enter') this.addExpense(); },
       onAddExpense: () => this.addExpense(),
       onRemoveExpense: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { dd.expenses = dd.expenses.filter(x => x.id !== id); }); },
