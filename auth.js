@@ -235,6 +235,28 @@
     const role = document.createElement('div');
     role.innerHTML = '<i class="fa-solid ' + (isOwner ? 'fa-pen' : 'fa-eye') + '" style="font-size:11px;margin-right:6px"></i>' + roleTxt;
     role.style.cssText = 'margin-top:5px;font-size:12.5px;font-weight:600;color:' + (isOwner ? '#2f7d4f' : '#8a7d6b');
+    const appearance = document.createElement('div');
+    appearance.style.cssText = 'margin:15px -2px 0;padding:11px 0 0;border-top:1px solid #efe4cf';
+    const appearanceLabel = document.createElement('div');
+    appearanceLabel.textContent = 'Оформление';
+    appearanceLabel.style.cssText = 'font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:#a2937c;margin-bottom:8px';
+    const controls = document.createElement('div');
+    controls.style.cssText = 'display:flex;align-items:center;gap:8px';
+    [ ['Терракота', '#2a7089'], ['Охра', '#d99a4e'], ['Олива', '#5f8a6a'] ].forEach(([theme, color]) => {
+      const swatch = document.createElement('button');
+      swatch.type = 'button'; swatch.title = theme; swatch.setAttribute('aria-label', theme);
+      swatch.style.cssText = 'width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #d5c9b6;background:' + color + ';cursor:pointer;padding:0';
+      swatch.addEventListener('click', () => window.dispatchEvent(new CustomEvent('trip:set-theme', { detail: theme })));
+      controls.appendChild(swatch);
+    });
+    const dark = document.createElement('button');
+    dark.type = 'button'; dark.title = 'Светлая / тёмная тема'; dark.setAttribute('aria-label', dark.title);
+    dark.style.cssText = 'margin-left:4px;width:28px;height:28px;border-radius:50%;border:1px solid #d5c9b6;background:#fbf7ee;color:#3b3228;cursor:pointer;padding:0';
+    const setDarkIcon = () => { dark.innerHTML = '<i class="fa-solid ' + (localStorage.getItem('italy_dark') === '1' ? 'fa-sun' : 'fa-moon') + '"></i>'; };
+    setDarkIcon();
+    dark.addEventListener('click', () => { window.dispatchEvent(new CustomEvent('trip:toggle-dark')); setDarkIcon(); });
+    controls.appendChild(dark);
+    appearance.append(appearanceLabel, controls);
     const hr = document.createElement('div');
     hr.style.cssText = 'height:1px;background:#efe4cf;margin:12px -15px';
     const out = document.createElement('button');
@@ -242,7 +264,7 @@
     out.style.cssText = 'display:flex;align-items:center;gap:9px;width:100%;border:none;background:none;' +
       'color:#b95c3f;font:600 14px ' + FONT + ';cursor:pointer;padding:3px 0;text-align:left';
     out.addEventListener('click', async () => { out.disabled = true; closeMenu(); await sb.auth.signOut(); });
-    menu.append(label, em, role, hr, out);
+    menu.append(label, em, role, appearance, hr, out);
 
     avatar.style.display = 'grid';
   }
