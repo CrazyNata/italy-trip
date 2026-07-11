@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTripData } from "../../trip/TripDataContext";
-import { copyText, useDialogKeyboard, useTransientState } from "../shared";
+import { copyText, useTransientState } from "../shared";
+import { Lightbox } from "../../components/Lightbox";
 import { RouteMap } from "../maps/RouteMap";
 
 const slides = [
@@ -41,9 +42,7 @@ export function Overview() {
   const [lightbox, setLightbox] = useState(false);
   const [copied, setCopied] = useState(false);
   const showCopied = useTransientState(setCopied);
-  const closeButton = useRef<HTMLButtonElement>(null);
   const shift = (amount: number) => setIndex((current) => (current + amount + slides.length) % slides.length);
-  useDialogKeyboard({ open: lightbox, onClose: () => setLightbox(false), onPrevious: () => shift(-1), onNext: () => shift(1), initialFocus: closeButton });
   const weatherCities = data ? ["Прага, Чехия", ...new Set(data.lodging.map((lodge) => lodge.city))] : [];
 
   useEffect(() => {
@@ -121,6 +120,6 @@ export function Overview() {
       <a href={routeUrl} target="_blank" rel="noopener" title="Открыть маршрут в Google Maps" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", textDecoration: "none" }}><i className="fa-solid fa-arrow-up-right-from-square" />Открыть в Google Maps</a>
     </div></div>
 
-    {lightbox && <div className="lightbox" role="dialog" aria-modal="true" aria-label={slides[index][1]} onMouseDown={(event) => event.target === event.currentTarget && setLightbox(false)}><img src={imageUrl(`hero-${slides[index][0]}.png`)} alt={slides[index][1]} /><button ref={closeButton} className="lightbox-close" onClick={() => setLightbox(false)} aria-label="Закрыть">×</button><button className="lightbox-prev" onClick={() => shift(-1)} aria-label="Предыдущее фото">‹</button><button className="lightbox-next" onClick={() => shift(1)} aria-label="Следующее фото">›</button></div>}
+    {lightbox && <Lightbox images={slides.map((slide) => imageUrl(`hero-${slide[0]}.png`))} index={index} alt={slides[index][1]} onClose={() => setLightbox(false)} onIndex={setIndex} />}
   </div>;
 }

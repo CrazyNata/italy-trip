@@ -1,4 +1,21 @@
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode, type RefObject } from "react";
+
+// Locks background scrolling while an overlay is open and compensates for the
+// disappearing scrollbar so the page underneath doesn't jump.
+export function useScrollLock() {
+  useLayoutEffect(() => {
+    const { body, documentElement } = document;
+    const scrollbar = window.innerWidth - documentElement.clientWidth;
+    const previousOverflow = body.style.overflow;
+    const previousPadding = body.style.paddingRight;
+    body.style.overflow = "hidden";
+    if (scrollbar > 0) body.style.paddingRight = `${scrollbar}px`;
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPadding;
+    };
+  }, []);
+}
 
 export const uid = (prefix: string) =>
   `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;

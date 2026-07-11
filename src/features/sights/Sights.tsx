@@ -3,6 +3,7 @@ import { useAuth } from "../../auth";
 import { supabase } from "../../lib/supabase/client";
 import { useTripData } from "../../trip/TripDataContext";
 import type { Sight } from "../../types/trip";
+import { useConfirm } from "../../components/ConfirmDialog";
 import { uid, useDialogKeyboard, useTransientState } from "../shared";
 
 const subs = [
@@ -193,6 +194,7 @@ function WalkingMap({
 export function Sights() {
   const { data, updateData, isReadOnly } = useTripData();
   const { mapboxToken } = useAuth();
+  const confirm = useConfirm();
   const [filter, setFilter] = useState({ city: "", group: "", sub: "" });
   const [draft, setDraft] = useState({
     city: "",
@@ -390,6 +392,7 @@ export function Sights() {
   }
   async function removeSightPhoto(sight: Sight) {
     if (isReadOnly) return void toast();
+    if (!(await confirm({ title: "Удалить фото?", message: <>Фото места «{sight.name}» будет удалено безвозвратно.</> }))) return;
     const path = data?.sights.find((item) => item.id === sight.id)?.photoPath || "";
     if (path) {
       const { error } = await supabase.storage.from("place-photos").remove([path]);
@@ -400,6 +403,7 @@ export function Sights() {
   }
   async function removeSight(sight: Sight) {
     if (isReadOnly) return void toast();
+    if (!(await confirm({ title: "Удалить место?", message: <>«{sight.name}» будет удалено безвозвратно вместе с фото. Это действие нельзя отменить.</> }))) return;
     const path = data?.sights.find((item) => item.id === sight.id)?.photoPath || "";
     if (path) {
       const { error } = await supabase.storage.from("place-photos").remove([path]);

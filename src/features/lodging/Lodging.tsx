@@ -1,8 +1,11 @@
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTripData } from "../../trip/TripDataContext";
 import { supabase } from "../../lib/supabase/client";
 import type { Lodging as LodgingRecord } from "../../types/trip";
-import { uid, useDialogKeyboard, useTransientState } from "../shared";
+import { Lightbox } from "../../components/Lightbox";
+import { useConfirm } from "../../components/ConfirmDialog";
+import { uid, useTransientState } from "../shared";
 
 const statuses = ["хочу", "бронь", "оплачено"];
 const flag = (city: string) =>
@@ -79,6 +82,10 @@ function deadline(lodge: LodgingRecord) {
 
 export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
   const { data, updateData, isReadOnly } = useTripData();
+  const navigate = useNavigate();
+  const confirm = useConfirm();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const focusId = searchParams.get("focus");
   const [sort, setSort] = useState<"asc" | "desc">("asc");
   const [photo, setPhoto] = useState<Record<string, number>>({});
   const [lightbox, setLightbox] = useState<{
@@ -87,22 +94,26 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
   } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const showCopied = useTransientState(setCopied);
-  const closeButton = useRef<HTMLButtonElement>(null);
-  useDialogKeyboard({
-    open: !!lightbox,
-    onClose: () => setLightbox(null),
-    onPrevious: () => setLightbox((current) => {
-      if (!current) return null;
-      const count = data?.lodging.find((lodge) => lodge.id === current.id)?.photos?.length || 1;
-      return { ...current, index: (current.index - 1 + count) % count };
-    }),
-    onNext: () => setLightbox((current) => {
-      if (!current) return null;
-      const count = data?.lodging.find((lodge) => lodge.id === current.id)?.photos?.length || 1;
-      return { ...current, index: (current.index + 1) % count };
-    }),
-    initialFocus: closeButton,
-  });
+
+  // When arriving from the «Отмена» tab (?focus=<id>) scroll to that lodging
+  // card and flash it red, then drop the param so a refresh doesn't re-flash.
+  useEffect(() => {
+    if (cancellation || !focusId) return;
+    const card = document.getElementById(`lodge-card-${focusId}`);
+    if (!card) return;
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
+    card.classList.add("lodge-highlight");
+    const timer = window.setTimeout(() => card.classList.remove("lodge-highlight"), 1600);
+    setSearchParams(
+      (params) => {
+        params.delete("focus");
+        return params;
+      },
+      { replace: true },
+    );
+    return () => window.clearTimeout(timer);
+  }, [cancellation, focusId, setSearchParams]);
+
   if (!data) return null;
 
   const guard = (action: () => void) => (isReadOnly ? readonly() : action());
@@ -122,14 +133,6 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
         ((current[lodge.id] || 0) + amount + (lodge.photos?.length || 1)) %
         (lodge.photos?.length || 1),
     }));
-  const shiftLightbox = (amount: number) =>
-    setLightbox((current) => {
-      if (!current) return null;
-      const count =
-        data.lodging.find((lodge) => lodge.id === current.id)?.photos?.length ||
-        1;
-      return { ...current, index: (current.index + amount + count) % count };
-    });
   const copy = async (lodge: LodgingRecord) => {
     if (!lodge.link)
       return window.alert("Для этого жилья ссылка ещё не добавлена.");
@@ -142,6 +145,18 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
   };
   const removeLodging = async (lodge: LodgingRecord) => {
     if (isReadOnly) return readonly();
+    if (
+      !(await confirm({
+        title: "Удалить жильё?",
+        message: (
+          <>
+            «{lodge.name}» ({lodge.city}) будет удалено безвозвратно вместе со всеми
+            загруженными фото. Это действие нельзя отменить.
+          </>
+        ),
+      }))
+    )
+      return;
     const current = data?.lodging.find((item) => item.id === lodge.id);
     if (!current) return;
     const paths = [...new Set((current.photos || []).map(storagePath).filter(Boolean))];
@@ -188,7 +203,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
             <div
               key={lodge.id}
               title="Открыть во вкладке «Жильё»"
-              onClick={() => window.dispatchEvent(new CustomEvent("trip:open-lodging", { detail: lodge.id }))}
+              onClick={() => navigate(`/lodging?focus=${lodge.id}`)}
               style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 14, padding: "16px 20px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 16, boxShadow: "0 1px 3px rgba(59,50,40,.05)", cursor: "pointer" }}
             >
               <div style={{ flex: 1, minWidth: 190 }}>
@@ -370,46 +385,13 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
         </div>
       </div>
       {active?.photos && lightbox && (
-        <div
-          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 p-8"
-          role="dialog"
-          aria-modal="true"
-          onClick={(event) =>
-            event.currentTarget === event.target && setLightbox(null)
-          }
-        >
-          <img
-            className="max-h-full max-w-full object-contain"
-            src={active.photos[lightbox.index]}
-            alt={active.name}
-          />
-          <button
-            ref={closeButton}
-            className="absolute right-6 top-5 text-4xl text-white"
-            title="Закрыть"
-            onClick={() => setLightbox(null)}
-          >
-            ×
-          </button>
-          {active.photos.length > 1 && (
-            <>
-              <button
-                className="absolute left-5 top-1/2 text-5xl text-white"
-                title="Назад"
-                onClick={() => shiftLightbox(-1)}
-              >
-                ‹
-              </button>
-              <button
-                className="absolute right-5 top-1/2 text-5xl text-white"
-                title="Вперёд"
-                onClick={() => shiftLightbox(1)}
-              >
-                ›
-              </button>
-            </>
-          )}
-        </div>
+        <Lightbox
+          images={active.photos}
+          index={lightbox.index}
+          alt={active.name}
+          onClose={() => setLightbox(null)}
+          onIndex={(next) => setLightbox((current) => (current ? { ...current, index: next } : null))}
+        />
       )}
     </>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 import { useTripData } from "../trip/TripDataContext";
 import { Overview } from "../features/overview/Overview";
@@ -10,23 +11,28 @@ import { Photos } from "../features/photos/Photos";
 import { Notes } from "../features/notes/Notes";
 
 const tabs = [
-  ["Обзор", "fa-solid fa-compass"],
-  ["Маршрут", "fa-solid fa-route"],
-  ["Жильё", "fa-solid fa-bed"],
-  ["Отмена", "fa-solid fa-calendar-xmark"],
-  ["Места", "fa-solid fa-location-dot"],
-  ["Бюджет", "fa-solid fa-wallet"],
-  ["Фото", "fa-solid fa-images"],
-  ["Заметки", "fa-solid fa-note-sticky"],
+  { path: "overview", label: "Обзор", icon: "fa-solid fa-compass" },
+  { path: "route", label: "Маршрут", icon: "fa-solid fa-route" },
+  { path: "lodging", label: "Жильё", icon: "fa-solid fa-bed" },
+  { path: "cancellation", label: "Отмена", icon: "fa-solid fa-calendar-xmark" },
+  { path: "places", label: "Места", icon: "fa-solid fa-location-dot" },
+  { path: "budget", label: "Бюджет", icon: "fa-solid fa-wallet" },
+  { path: "photos", label: "Фото", icon: "fa-solid fa-images" },
+  { path: "notes", label: "Заметки", icon: "fa-solid fa-note-sticky" },
 ] as const;
 
 export function AppShell() {
   const { data, loading, error, usingCache, syncState, refresh, retrySave } =
     useTripData();
-  const [selectedTab, setSelectedTab] = useState(0);
+  const location = useLocation();
+  const navigate = useNavigate();
   const [toast, setToast] = useState<string | null>(null);
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const tabRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const toastTimer = useRef<number | null>(null);
+  const activeIndex = Math.max(
+    0,
+    tabs.findIndex((tab) => location.pathname === `/${tab.path}`),
+  );
   useEffect(() => {
     const show = (event: Event) => {
       setToast(
@@ -48,25 +54,6 @@ export function AppShell() {
       if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
     };
   }, []);
-  useEffect(() => {
-    const openLodging = (event: Event) => {
-      const id = event instanceof CustomEvent ? String(event.detail || "") : "";
-      setSelectedTab(2);
-      window.setTimeout(() => {
-        const card = document.getElementById(`lodge-card-${id}`);
-        card?.scrollIntoView({ behavior: "smooth", block: "center" });
-        card?.classList.add("lodge-highlight");
-        window.setTimeout(() => card?.classList.remove("lodge-highlight"), 1600);
-      }, 50);
-    };
-    window.addEventListener("trip:open-lodging", openLodging);
-    return () => window.removeEventListener("trip:open-lodging", openLodging);
-  }, []);
-
-  function selectTab(index: number) {
-    setSelectedTab(index);
-    tabRefs.current[index]?.focus();
-  }
 
   function handleTabKeyDown(event: KeyboardEvent, index: number) {
     let nextIndex: number | undefined;
@@ -79,7 +66,8 @@ export function AppShell() {
 
     if (nextIndex !== undefined) {
       event.preventDefault();
-      selectTab(nextIndex);
+      navigate(`/${tabs[nextIndex].path}`);
+      tabRefs.current[nextIndex]?.focus();
     }
   }
 
@@ -134,23 +122,20 @@ export function AppShell() {
           aria-label="Разделы поездки"
           role="tablist"
         >
-          {tabs.map(([label, icon], index) => (
-            <button
-              aria-controls={`panel-${index}`}
-              aria-selected={index === selectedTab}
-              id={`tab-${index}`}
-              key={label}
-              onClick={() => setSelectedTab(index)}
+          {tabs.map((tab, index) => (
+            <NavLink
+              aria-selected={index === activeIndex}
+              key={tab.path}
+              to={`/${tab.path}`}
               onKeyDown={(event) => handleTabKeyDown(event, index)}
               ref={(element) => {
                 tabRefs.current[index] = element;
               }}
               role="tab"
-              tabIndex={index === selectedTab ? 0 : -1}
-              type="button"
+              tabIndex={index === activeIndex ? 0 : -1}
             >
-              <i className={icon} aria-hidden="true" />{label}
-            </button>
+              <i className={tab.icon} aria-hidden="true" />{tab.label}
+            </NavLink>
           ))}
         </nav>
       </header>
@@ -192,8 +177,21 @@ export function AppShell() {
             )}
           </div>
         )}
-        <section aria-labelledby={`tab-${selectedTab}`} className="animate-[fadeUp_.4s_ease_both]" id={`panel-${selectedTab}`} role="tabpanel" tabIndex={0}>
-          {data && [<Overview />, <Itinerary />, <Lodging />, <Lodging cancellation />, <Sights />, <Budget />, <Photos />, <Notes />][selectedTab]}
+        <section className="animate-[fadeUp_.4s_ease_both]" role="tabpanel" tabIndex={0}>
+          {data && (
+            <Routes>
+              <Route index element={<Navigate to="/overview" replace />} />
+              <Route path="overview" element={<Overview />} />
+              <Route path="route" element={<Itinerary />} />
+              <Route path="lodging" element={<Lodging />} />
+              <Route path="cancellation" element={<Lodging cancellation />} />
+              <Route path="places" element={<Sights />} />
+              <Route path="budget" element={<Budget />} />
+              <Route path="photos" element={<Photos />} />
+              <Route path="notes" element={<Notes />} />
+              <Route path="*" element={<Navigate to="/overview" replace />} />
+            </Routes>
+          )}
         </section>
       </main>
       {toast && (
