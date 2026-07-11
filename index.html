@@ -493,7 +493,7 @@
               </div>
               <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:11px">
                 <sc-for list="{{ sub.items }}" as="st" hint-placeholder-count="4">
-                  <div draggable="true" onDragStart="{{ onSightDragStart }}" data-id="{{ st.id }}" style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-left:3px solid {{ st.dot }};border-radius:12px;overflow:hidden;transition:box-shadow .16s ease,transform .16s ease" style-hover="box-shadow:0 6px 18px rgba(59,50,40,.11);transform:translateY(-1px)">
+                  <div draggable="true" onDragStart="{{ onSightDragStart }}" data-id="{{ st.id }}" style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:12px;overflow:hidden;transition:box-shadow .16s ease,transform .16s ease" style-hover="box-shadow:0 6px 18px rgba(59,50,40,.11);transform:translateY(-1px)">
                     <sc-if value="{{ st.hasPhoto }}" hint-placeholder-val="{{ false }}">
                       <div style="position:relative;height:132px;background:var(--track,#efe4cf)">
                         <img src="{{ st.photo }}" alt="{{ st.name }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">
