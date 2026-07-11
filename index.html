@@ -457,6 +457,7 @@
           <div><div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600"><i class="fa-solid fa-person-walking" style="color:var(--ac,#b95c3f);font-size:18px;margin-right:7px"></i>Пеший маршрут</div><div style="font-size:12.5px;color:var(--muted,#8a7d6b);margin-top:3px">Проверьте точки и меняйте порядок стрелками или перетаскиванием маркеров.</div></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap"><select value="{{ walkCity }}" onChange="{{ onWalkCity }}" style="min-width:165px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:8px 10px;font-size:13px;background:var(--soft,#fdfaf3);color:var(--ink,#3b3228)"><option value="">город…</option><sc-for list="{{ sightCities }}" as="c" hint-placeholder-count="4"><option value="{{ c }}">{{ c }}</option></sc-for></select><select value="{{ walkDay }}" onChange="{{ onWalkDay }}" style="border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:8px 10px;font-size:13px;background:var(--soft,#fdfaf3);color:var(--ink,#3b3228)"><option value="1">День 1: античный Рим</option><option value="2">День 2: центр Рима</option><option value="3">День 3: Ватикан и Боргезе</option></select><button onClick="{{ onGeocodeWalkSights }}" style="border:1px solid var(--line,#e7dcc7);background:var(--soft,#fdfaf3);color:var(--ink,#3b3228);border-radius:9px;padding:8px 11px;font-size:13px;font-weight:600;cursor:pointer"><i class="fa-solid fa-location-crosshairs" style="margin-right:5px"></i>{{ walkGeocodeLabel }}</button></div>
         </div>
+        <div style="display:flex;justify-content:flex-end;margin:-4px 0 12px"><button onClick="{{ onCopyWalkMap }}" data-url="{{ walkMapUrl }}" style="display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line,#e7dcc7);background:var(--card,#fff);color:var(--ink,#3b3228);border-radius:9px;padding:8px 11px;font-size:12px;font-weight:700;cursor:pointer"><i class="{{ walkMapCopyIcon }}"></i>{{ walkMapCopyLabel }}</button></div>
         <sc-if value="{{ walkHasCity }}" hint-placeholder-val="{{ false }}"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px"><div style="display:flex;flex-direction:column;gap:7px;max-height:380px;overflow:auto"><sc-for list="{{ walkSights }}" as="st" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line,#e7dcc7);border-radius:9px;background:var(--soft,#fdfaf3)"><span style="width:21px;height:21px;border-radius:50%;display:grid;place-items:center;background:var(--ac,#b95c3f);color:#fff;font-size:11px;font-weight:700">{{ st.n }}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600">{{ st.name }}</span><button onClick="{{ onMoveWalkSight }}" data-id="{{ st.id }}" data-dir="-1" title="Раньше" style="border:none;background:none;color:var(--muted,#8a7d6b);cursor:pointer;padding:4px"><i class="fa-solid fa-chevron-up"></i></button><button onClick="{{ onMoveWalkSight }}" data-id="{{ st.id }}" data-dir="1" title="Позже" style="border:none;background:none;color:var(--muted,#8a7d6b);cursor:pointer;padding:4px"><i class="fa-solid fa-chevron-down"></i></button></div></sc-for><sc-if value="{{ walkNoPoints }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:var(--muted,#8a7d6b);padding:8px 2px">У мест нет координат. Нажмите «Найти точки».</div></sc-if><sc-if value="{{ walkHasUnlocated }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--muted,#8a7d6b)">Без точки: {{ walkUnlocatedCount }}</div></sc-if><div style="font-size:12px;color:var(--muted,#8a7d6b);padding:3px 2px">{{ walkRouteLabel }}</div></div><div id="walk-map-slot" style="height:380px;min-height:280px;border-radius:12px;overflow:hidden;background:var(--track,#efe4cf);position:relative"></div></div></sc-if>
         <sc-if value="{{ walkNoCity }}" hint-placeholder-val="{{ true }}"><div style="font-size:13px;color:var(--muted,#8a7d6b);padding:6px 0">Добавьте места с указанным городом, чтобы построить маршрут.</div></sc-if>
       </div>
@@ -1304,6 +1305,13 @@ class Component extends DCLogic {
     const walkAll = d.sights.map((s, index) => ({ ...s, _index: index })).filter(s => s.city === walkCity && (!s.walkDay || s.walkDay === walkDay)).sort((a, b) => (a.walkOrder ?? a._index) - (b.walkOrder ?? b._index));
     const walkWithCoords = walkAll.filter(s => Array.isArray(s.lnglat) && s.lnglat.length === 2);
     const walkLocated = walkWithCoords.slice(0, 25);
+    const walkMapUrl = (() => {
+      if (walkLocated.length < 2) return '';
+      const point = (s) => s.lnglat[1] + ',' + s.lnglat[0];
+      const origin = point(walkLocated[0]), destination = point(walkLocated[walkLocated.length - 1]);
+      const waypoints = walkLocated.slice(1, -1).map(point).join('|');
+      return 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(origin) + '&destination=' + encodeURIComponent(destination) + (waypoints ? '&waypoints=' + encodeURIComponent(waypoints) : '') + '&travelmode=walking';
+    })();
     const walkRoute = this.state.walkRoute;
     const walkRouteLabel = this.state.walkRouteError || (walkRoute && walkRoute.signature === walkLocated.map(s => s.id + ':' + s.lnglat.join(',')).join('|')
       ? `Пешком: ${(walkRoute.distance / 1000).toFixed(1).replace('.', ',')} км · ${Math.round(walkRoute.duration / 60)} мин.`
@@ -1462,6 +1470,7 @@ class Component extends DCLogic {
       sightGroups, sightSubs, sightCities, sightFilterActive, sightsNoResults, sightHasAny: d.sights.length > 0,
       walkCity, walkDay, walkHasCity: !!walkCity, walkNoCity: !walkCity, walkSights: walkLocated.map((s, index) => ({ id: s.id, name: s.name, n: index + 1 })), walkNoPoints: walkLocated.length === 0,
       walkHasUnlocated: walkAll.length > walkWithCoords.length, walkUnlocatedCount: walkAll.length - walkWithCoords.length, walkGeocodeLabel: this.state.walkGeocoding ? 'Ищу…' : 'Найти точки', walkRouteLabel,
+      walkMapUrl, walkMapCopyLabel: this.state.walkMapCopied ? 'Скопировано' : 'Копировать маршрут', walkMapCopyIcon: this.state.walkMapCopied ? 'fa-solid fa-check' : 'fa-solid fa-copy',
       sfCity: sf.city, sfGroup: sf.group, sfSub: sf.sub,
       expenses, budgetTotal, perFamily, perDay,
       notes: d.notes, links: d.links,
@@ -1491,6 +1500,15 @@ class Component extends DCLogic {
       onSightFilterReset: () => this.setState({ sf: { city: '', group: '', sub: '' } }),
       onWalkCity: (e) => this.setState({ walkCity: e.currentTarget.value, walkRoute: null, walkRouteError: '' }),
       onWalkDay: (e) => this.setState({ walkDay: +e.currentTarget.value, walkRoute: null, walkRouteError: '' }),
+      onCopyWalkMap: (e) => {
+        const url = e.currentTarget.dataset.url || '';
+        if (!url) { if (window.__tripToast) window.__tripToast('Добавьте минимум две точки для маршрута'); return; }
+        const done = () => { this.setState({ walkMapCopied: true }); setTimeout(() => this.setState({ walkMapCopied: false }), 1600); };
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, done);
+          else { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); done(); }
+        } catch (_) { done(); }
+      },
       onGeocodeWalkSights: () => this.geocodeWalkSights(),
       onMoveWalkSight: (e) => this.moveWalkSight(e.currentTarget.dataset.id, +e.currentTarget.dataset.dir),
       onToggleSightGroup: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { const s = dd.sights.find(x => x.id === id); if (s) s.group = (s.group === 'обязательные' ? 'необязательные' : 'обязательные'); }); },
