@@ -14,6 +14,11 @@
 
   const SUPABASE_URL = 'https://hxcavgtlucyoqudbrgse.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_IyGTMYZyxWXr0GoctL83YA_wSgoSj1-';
+  const REMEMBER_KEY = 'italy_remember_login';
+
+  function rememberLogin() {
+    try { return localStorage.getItem(REMEMBER_KEY) !== '0'; } catch (_) { return true; }
+  }
 
   if (!window.supabase || !window.supabase.createClient) {
     console.error('[auth] supabase-js не загрузился');
@@ -52,7 +57,7 @@
   window.__tripToast = toast;
 
   // ---- Экран входа/регистрации ----
-  let gate, msgEl, emailEl, passEl, submitBtn, toggleBtn, titleEl, subEl;
+  let gate, msgEl, emailEl, passEl, rememberEl, submitBtn, toggleBtn, titleEl, subEl;
   let mode = 'login'; // 'login' | 'register'
   let busy = false;
 
@@ -87,6 +92,12 @@
     passEl.type = 'password'; passEl.placeholder = 'Пароль'; passEl.autocomplete = 'current-password';
     passEl.required = true; passEl.minLength = 6; passEl.style.cssText = inputCss;
 
+    const rememberLabel = document.createElement('label');
+    rememberLabel.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:13px;color:#6f6252;cursor:pointer;user-select:none;margin-top:-2px';
+    rememberEl = document.createElement('input');
+    rememberEl.type = 'checkbox'; rememberEl.checked = rememberLogin(); rememberEl.style.cssText = 'width:15px;height:15px;accent-color:#b95c3f;cursor:pointer';
+    rememberLabel.append(rememberEl, document.createTextNode('Запомнить меня'));
+
     submitBtn = document.createElement('button');
     submitBtn.type = 'submit';
     submitBtn.style.cssText = 'margin-top:4px;padding:12px;border:none;border-radius:11px;background:#b95c3f;' +
@@ -99,7 +110,7 @@
     toggleBtn.type = 'button';
     toggleBtn.style.cssText = 'background:none;border:none;color:#8a7d6b;font:14px ' + FONT + ';cursor:pointer;padding:6px;text-align:center';
 
-    form.append(emailEl, passEl, submitBtn, msgEl);
+    form.append(emailEl, passEl, rememberLabel, submitBtn, msgEl);
     card.append(titleEl, subEl, form, toggleBtn);
     gate.appendChild(card);
     document.body.appendChild(gate);
@@ -152,6 +163,7 @@
     const email = emailEl.value.trim();
     const password = passEl.value;
     if (!email || !password) return;
+    try { localStorage.setItem(REMEMBER_KEY, rememberEl && rememberEl.checked ? '1' : '0'); } catch (_) {}
     setBusy(true); setMsg('');
     try {
       if (mode === 'login') {
@@ -175,12 +187,12 @@
     }
   }
 
-  function showGate() {
-    if (gate) gate.style.display = 'grid';
+  function showGate(visible = true) {
+    if (gate) { gate.style.display = 'grid'; gate.style.visibility = visible ? 'visible' : 'hidden'; }
     document.documentElement.style.overflow = 'hidden';
   }
   function hideGate() {
-    if (gate) gate.style.display = 'none';
+    if (gate) { gate.style.display = 'none'; gate.style.visibility = 'visible'; }
     document.documentElement.style.overflow = '';
     if (passEl) passEl.value = '';
   }
@@ -359,10 +371,14 @@
 
   function init() {
     buildGate();
-    // сразу показываем экран входа, чтобы план не мелькал до проверки сессии
-    showGate();
-    sb.auth.getSession().then(({ data }) => applySession(data && data.session));
     sb.auth.onAuthStateChange((_event, session) => { applySession(session); });
+    // Пока читаем локальную сессию, закрываем приложение пустым оверлеем, а не формой входа.
+    showGate(false);
+    if (!rememberLogin()) {
+      sb.auth.signOut({ scope: 'local' }).then(() => applySession(null));
+      return;
+    }
+    sb.auth.getSession().then(({ data }) => applySession(data && data.session));
   }
 
   if (document.readyState === 'loading') {
