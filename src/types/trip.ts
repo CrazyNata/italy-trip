@@ -66,10 +66,13 @@ export interface Expense {
   amount: number;
 }
 
-export interface TripLink {
+export interface Restaurant {
   id: string;
-  title: string;
-  url: string;
+  name: string;
+  city: string;
+  status: string;
+  note?: string;
+  link?: string;
 }
 
 export interface TripData {
@@ -80,8 +83,7 @@ export interface TripData {
   romeSightsV: number;
   expenses: Expense[];
   budgetV: number;
-  links: TripLink[];
-  notes: string;
+  restaurants?: Restaurant[];
 }
 
 export interface TripPayload {
@@ -205,12 +207,12 @@ function isExpense(value: unknown): value is Expense {
   );
 }
 
-function isLink(value: unknown): value is TripLink {
+function isRestaurant(value: unknown): value is Restaurant {
   return (
     isRecord(value) &&
-    hasString(value, "id") &&
-    hasString(value, "title") &&
-    hasString(value, "url")
+    ["id", "name", "city", "status"].every((key) => hasString(value, key)) &&
+    hasOptionalString(value, "note") &&
+    hasOptionalString(value, "link")
   );
 }
 
@@ -236,11 +238,10 @@ export function parseTripPayload(value: unknown): TripPayload | null {
     !data.sights.every(isSight) ||
     !Array.isArray(data.expenses) ||
     !data.expenses.every(isExpense) ||
-    !Array.isArray(data.links) ||
-    !data.links.every(isLink) ||
+    (data.restaurants !== undefined &&
+      !(Array.isArray(data.restaurants) && data.restaurants.every(isRestaurant))) ||
     !hasFiniteNumber(data, "romeSightsV") ||
-    !hasFiniteNumber(data, "budgetV") ||
-    typeof data.notes !== "string"
+    !hasFiniteNumber(data, "budgetV")
   )
     return null;
   return value as unknown as TripPayload;

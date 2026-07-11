@@ -8,7 +8,7 @@ import { Lodging } from "../features/lodging/Lodging";
 import { Sights } from "../features/sights/Sights";
 import { Budget } from "../features/budget/Budget";
 import { Photos } from "../features/photos/Photos";
-import { Notes } from "../features/notes/Notes";
+import { Restaurants } from "../features/restaurants/Restaurants";
 
 const tabs = [
   { path: "overview", label: "Обзор", icon: "fa-solid fa-compass" },
@@ -16,9 +16,9 @@ const tabs = [
   { path: "lodging", label: "Жильё", icon: "fa-solid fa-bed" },
   { path: "cancellation", label: "Отмена", icon: "fa-solid fa-calendar-xmark" },
   { path: "places", label: "Места", icon: "fa-solid fa-location-dot" },
+  { path: "restaurants", label: "Рестораны", icon: "fa-solid fa-utensils" },
   { path: "budget", label: "Бюджет", icon: "fa-solid fa-wallet" },
   { path: "photos", label: "Фото", icon: "fa-solid fa-images" },
-  { path: "notes", label: "Заметки", icon: "fa-solid fa-note-sticky" },
 ] as const;
 
 export function AppShell() {
@@ -186,9 +186,9 @@ export function AppShell() {
               <Route path="lodging" element={<Lodging />} />
               <Route path="cancellation" element={<Lodging cancellation />} />
               <Route path="places" element={<Sights />} />
+              <Route path="restaurants" element={<Restaurants />} />
               <Route path="budget" element={<Budget />} />
               <Route path="photos" element={<Photos />} />
-              <Route path="notes" element={<Notes />} />
               <Route path="*" element={<Navigate to="/overview" replace />} />
             </Routes>
           )}
