@@ -900,6 +900,11 @@ class Component extends DCLogic {
             });
           }
         } catch (e) {}
+        if (!data.romeSightsV) {
+          const known = new Set((data.sights || []).map(s => s.name + '\u0000' + s.city));
+          data.sights = [...(data.sights || []), ...this.romeSights().filter(s => !known.has(s.name + '\u0000' + s.city))];
+          data.romeSightsV = 1;
+        }
         this.setState({ data });
       }
     } catch (e) {}
@@ -1060,6 +1065,18 @@ class Component extends DCLogic {
       try { localStorage.setItem('italy_trip', JSON.stringify({ v: this.SEED_V, data: this.state.data })); } catch (e) {}
     }
   }
+  romeSights() {
+    const city = 'Рим, Италия';
+    return [
+      { id: 'rome_colosseum', name: 'Колизей', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 0, lnglat: [12.4922694, 41.8901694], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Colosseo_2020.jpg/330px-Colosseo_2020.jpg' },
+      { id: 'rome_forum', name: 'Римский форум', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 1, lnglat: [12.4852, 41.8922], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Foro_Romano_Musei_Capitolini_Roma.jpg/330px-Foro_Romano_Musei_Capitolini_Roma.jpg' },
+      { id: 'rome_trevi', name: 'Фонтан Треви', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 2, lnglat: [12.48305556, 41.90083333], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Trevi_Fountain_-_Roma.jpg/330px-Trevi_Fountain_-_Roma.jpg' },
+      { id: 'rome_spanish_steps', name: 'Испанская лестница', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 3, lnglat: [12.48278, 41.90611], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Scalinata_della_Trinit%C3%A0_dei_Monti.jpg/330px-Scalinata_della_Trinit%C3%A0_dei_Monti.jpg' },
+      { id: 'rome_pantheon', name: 'Пантеон', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 4, lnglat: [12.47694444, 41.89861111], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Pantheon_%28Rome%29_-_Right_side_and_front.jpg/330px-Pantheon_%28Rome%29_-_Right_side_and_front.jpg' },
+      { id: 'rome_navona', name: 'Пьяцца Навона', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 5, lnglat: [12.47316, 41.89871], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Paolo_Monti_-_Servizio_fotografico_%28Roma%2C_1966%29_-_BEIC_6329173.jpg/330px-Paolo_Monti_-_Servizio_fotografico_%28Roma%2C_1966%29_-_BEIC_6329173.jpg' },
+      { id: 'rome_sant_angelo', name: 'Замок Святого Ангела', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 6, lnglat: [12.466355, 41.903064], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Engelsburg_und_Engelsbr%C3%BCcke_abends.jpg/330px-Engelsburg_und_Engelsbr%C3%BCcke_abends.jpg' },
+    ];
+  }
 
   seed() {
     const MON = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
@@ -1100,7 +1117,7 @@ class Component extends DCLogic {
       { id: 'l7', slot: 'lodge7', city: 'Вальдидентро, Альпы', name: 'Chalet Selva', dates: '6–8 окт · 2 ночи', price: '€206,75', status: 'бронь', freeCancel: '2026-09-30', link: 'https://www.booking.com/Share-h8O5LK', photos: ['images/lodge7-a.jpg', 'images/lodge7-b.jpg', 'images/lodge7-c.jpg'], notes: 'Апартаменты с видом на горы, до 4 гостей. Адрес: S.s 301 Località Arnoga, 23038 Вальдидентро (Альпы). Цена €206,75 за 4 гостей (вкл. уборку 13,5%). Предоплата не требуется — оплата на месте. Вас встретят на объекте. Заезд 15:00–20:00, выезд 08:00–10:00. Гость: Natalia Munykina.' },
       { id: 'l8', slot: 'lodge8', city: 'Мюнхен, Германия', name: 'McDreams Hotel München - Messe', dates: '8–9 окт · 1 ночь', price: '€83,69', status: 'бронь', freeCancel: '2026-10-08', link: 'https://www.booking.com/Share-wM89Vy', photos: ['images/lodge8-a.jpg', 'images/lodge8-b.jpg'], notes: 'Четырёхместный номер, до 4 гостей. Номер подтверждения: 6024902666, PIN-код: 6326. Адрес: Kapellenstraße 14, 85622 Фельдкирхен (под Мюнхеном). Цена €83,69 за 4 гостей (НДС 7%). Предоплата не требуется — оплата на месте. Питание не входит, есть Wi-Fi. Заезд с 15:00, выезд до 11:00. Гость: Natalia Munykina.' },
     ];
-    const sights = [];
+    const sights = this.romeSights();
     const expenses = [];
     const links = [
       { id: 'k1', title: 'Правила ввоза собак в ЕС', url: 'https://' },
@@ -1108,7 +1125,7 @@ class Component extends DCLogic {
     ];
     return {
       trip: { start: '2026-09-25', end: '2026-10-12', people: 2, dogs: 2 },
-      days, lodging, sights, expenses, links,
+      days, lodging, sights, romeSightsV: 1, expenses, links,
       notes: 'Выезжаем из Праги 25.09, нас двое + 2 собаки.\nС Рима (27.09) нас 4 человека — присоединяются сестра мужа с супругом.\nСобаки: переноски, миски, ветпаспорта, чипы, поводки. Проверить pet-friendly жильё и кафе.\nДокументы: страховка, копии паспортов, зелёная карта на авто.\n',
     };
   }
