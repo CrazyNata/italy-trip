@@ -902,6 +902,11 @@ class Component extends DCLogic {
           data.sights.push(...defaults.filter(s => !known.has(s.name + '\u0000' + s.city)));
           data.romeSightsV = 3;
         }
+        if ((data.budgetV || 0) < 1) {
+          data.expenses = data.expenses || [];
+          if (!data.expenses.some(e => e.id === 'e_housing_rome')) data.expenses.push({ id: 'e_housing_rome', label: 'Жильё', category: 'проживание', amount: 1300 });
+          data.budgetV = 1;
+        }
         this.setState({ data });
       }
     } catch (e) {}
@@ -1132,14 +1137,14 @@ class Component extends DCLogic {
       { id: 'l8', slot: 'lodge8', city: 'Мюнхен, Германия', name: 'McDreams Hotel München - Messe', dates: '8–9 окт · 1 ночь', price: '€83,69', status: 'бронь', freeCancel: '2026-10-08', link: 'https://www.booking.com/Share-wM89Vy', photos: ['images/lodge8-a.jpg', 'images/lodge8-b.jpg'], notes: 'Четырёхместный номер, до 4 гостей. Номер подтверждения: 6024902666, PIN-код: 6326. Адрес: Kapellenstraße 14, 85622 Фельдкирхен (под Мюнхеном). Цена €83,69 за 4 гостей (НДС 7%). Предоплата не требуется — оплата на месте. Питание не входит, есть Wi-Fi. Заезд с 15:00, выезд до 11:00. Гость: Natalia Munykina.' },
     ];
     const sights = this.romeSights();
-    const expenses = [];
+    const expenses = [ { id: 'e_housing_rome', label: 'Жильё', category: 'проживание', amount: 1300 } ];
     const links = [
       { id: 'k1', title: 'Правила ввоза собак в ЕС', url: 'https://' },
       { id: 'k2', title: 'Бронь: Individual room (Зальцбург)', url: 'https://www.booking.com/Share-27nA3f' },
     ];
     return {
       trip: { start: '2026-09-25', end: '2026-10-12', people: 2, dogs: 2 },
-      days, lodging, sights, romeSightsV: 3, expenses, links,
+      days, lodging, sights, romeSightsV: 3, expenses, budgetV: 1, links,
       notes: 'Выезжаем из Праги 25.09, нас двое + 2 собаки.\nС Рима (27.09) нас 4 человека — присоединяются сестра мужа с супругом.\nСобаки: переноски, миски, ветпаспорта, чипы, поводки. Проверить pet-friendly жильё и кафе.\nДокументы: страховка, копии паспортов, зелёная карта на авто.\n',
     };
   }
