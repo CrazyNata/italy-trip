@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useTripData } from "../../trip/TripDataContext";
 import { supabase } from "../../lib/supabase/client";
 import type { Lodging as LodgingRecord } from "../../types/trip";
-import { button, field, PanelTitle, subtleButton, uid, useDialogKeyboard, useTransientState } from "../shared";
+import { uid, useDialogKeyboard, useTransientState } from "../shared";
 
 const statuses = ["хочу", "бронь", "оплачено"];
 const flag = (city: string) =>
@@ -32,7 +32,8 @@ function deadline(lodge: LodgingRecord) {
       order: Infinity,
       label: "— не указана",
       status: "дата не указана",
-      tone: "bg-[var(--track)] text-[var(--muted)]",
+      background: "#efe4cf",
+      color: "#8a7d6b",
     };
   const days = Math.round(
     (new Date(`${lodge.freeCancel}T00:00:00`).getTime() -
@@ -48,27 +49,31 @@ function deadline(lodge: LodgingRecord) {
       order: days,
       label,
       status: "отмена уже платная",
-      tone: "bg-[#f0ddd4] text-[#b95c3f]",
+      background: "#f0ddd4",
+      color: "#b95c3f",
     };
   if (days === 0)
     return {
       order: days,
       label,
       status: "сегодня последний день",
-      tone: "bg-[#f6ead0] text-[#c8892f]",
+      background: "#f6ead0",
+      color: "#c8892f",
     };
   if (days <= 7)
     return {
       order: days,
       label,
       status: `осталось ${days} дн. — скоро платно`,
-      tone: "bg-[#f6ead0] text-[#c8892f]",
+      background: "#f6ead0",
+      color: "#c8892f",
     };
   return {
     order: days,
     label,
     status: `бесплатно ещё ${days} дн.`,
-    tone: "bg-[#e6ead2] text-[#6f7a45]",
+    background: "#e6ead2",
+    color: "#6f7a45",
   };
 }
 
@@ -135,58 +140,6 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
     }
     showCopied(lodge.id, null);
   };
-  const changeGallery = (lodge: LodgingRecord, from: number, to: number) => guard(() => {
-    if (to < 0 || to >= (lodge.photos?.length || 0)) return;
-    const photos = [...(lodge.photos || [])];
-    const positions = photos.map((_, i) => lodge.objPosList?.[i] || lodge.objPos || "center");
-    [photos[from], photos[to]] = [photos[to], photos[from]];
-    [positions[from], positions[to]] = [positions[to], positions[from]];
-    edit(lodge.id, "photos", photos); edit(lodge.id, "objPosList", positions);
-    setPhoto((current) => ({ ...current, [lodge.id]: to }));
-  });
-  const removePhoto = async (lodge: LodgingRecord, index: number) => {
-    if (isReadOnly) return readonly();
-    const url = data?.lodging.find((item) => item.id === lodge.id)?.photos?.[index];
-    const path = url ? storagePath(url) : "";
-    if (path) {
-      const { error } = await supabase.storage.from("place-photos").remove([path]);
-      if (error) return toast("Не удалось удалить фото из хранилища");
-    }
-    let photoCount = 0;
-    updateData((current) => ({ ...current, lodging: current.lodging.map((item) => {
-      if (item.id !== lodge.id) return item;
-      const currentIndex = (item.photos || []).indexOf(url || "");
-      if (currentIndex < 0) return item;
-      const photos = (item.photos || []).filter((_, i) => i !== currentIndex);
-      const objPosList = (item.photos || []).map((_, i) => item.objPosList?.[i] || item.objPos || "center").filter((_, i) => i !== currentIndex);
-      photoCount = photos.length;
-      return { ...item, photos, objPosList };
-    }) }));
-    setPhoto((current) => ({ ...current, [lodge.id]: Math.min(current[lodge.id] || 0, Math.max(0, photoCount - 1)) }));
-  };
-  const uploadPhoto = async (lodge: LodgingRecord, file?: File) => {
-    if (!file) return;
-    if (isReadOnly) return readonly();
-    toast("Загружаю фото…");
-    const extension = (file.name.split(".").pop() || "jpg").replace(/[^a-z0-9]/gi, "") || "jpg";
-    const path = `lodging/${lodge.id}_${Date.now()}.${extension}`;
-    const { error } = await supabase.storage.from("place-photos").upload(path, file, { contentType: file.type || "image/jpeg" });
-    if (error) return toast("Не удалось загрузить фото");
-    const url = supabase.storage.from("place-photos").getPublicUrl(path).data.publicUrl;
-    let appendedAt = -1;
-    updateData((current) => ({ ...current, lodging: current.lodging.map((item) => {
-      if (item.id !== lodge.id) return item;
-      const photos = item.photos || [];
-      appendedAt = photos.length;
-      return { ...item, photos: [...photos, url], objPosList: [...photos.map((_, i) => item.objPosList?.[i] || item.objPos || "center"), "center"] };
-    }) }));
-    if (appendedAt < 0) {
-      await supabase.storage.from("place-photos").remove([path]);
-      return;
-    }
-    setPhoto((current) => ({ ...current, [lodge.id]: appendedAt }));
-    toast("Фото добавлено");
-  };
   const removeLodging = async (lodge: LodgingRecord) => {
     if (isReadOnly) return readonly();
     const current = data?.lodging.find((item) => item.id === lodge.id);
@@ -221,62 +174,46 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
         );
       });
     return (
-      <>
-        <PanelTitle eyebrow="Не пропустить срок">Бесплатная отмена</PanelTitle>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="max-w-xl text-sm text-[var(--muted)]">
-            Сроки бесплатной отмены по каждому жилью. Дату можно менять здесь.
-          </p>
-          <button
-            className={subtleButton}
-            onClick={() => setSort(sort === "asc" ? "desc" : "asc")}
-          >
-            Сначала {sort === "asc" ? "ближние" : "дальние"}
+      <div style={{ animation: "fadeUp .4s ease both" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "0 0 16px" }}>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--muted,#8a7d6b)", maxWidth: 560 }}>Сроки бесплатной отмены по каждому жилью. Дату можно менять здесь, я также проставляю её со скринов Букинга.</p>
+          <button onClick={() => setSort(sort === "asc" ? "desc" : "asc")} style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", color: "var(--ink)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+            <i className={sort === "desc" ? "fa-solid fa-arrow-down-wide-short" : "fa-solid fa-arrow-up-wide-short"}></i>Сначала {sort === "asc" ? "ближние" : "дальние"}
           </button>
         </div>
-        <div className="space-y-3 rounded-2xl border border-[var(--line)] bg-[var(--track)] p-4">
+        <div style={{ position: "relative", borderRadius: 20, padding: 20, background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", overflow: "hidden" }}>
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: .5, backgroundImage: "radial-gradient(var(--line,#d8c9ac) 1.1px, transparent 1.1px)", backgroundSize: "22px 22px" }}></div>
+          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
           {list.map(({ lodge, deadline: item }) => (
-            <article
-              className="flex flex-wrap items-center gap-4 rounded-xl border border-[var(--line)] bg-[var(--paper)] p-4"
+            <div
               key={lodge.id}
+              title="Открыть во вкладке «Жильё»"
+              onClick={() => window.dispatchEvent(new CustomEvent("trip:open-lodging", { detail: lodge.id }))}
+              style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 14, padding: "16px 20px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 16, boxShadow: "0 1px 3px rgba(59,50,40,.05)", cursor: "pointer" }}
             >
-              <div className="min-w-48 flex-1">
-                <h3 className="font-display text-xl font-semibold">
-                  {flag(lodge.city)} {lodge.name}
-                </h3>
-                <p className="text-xs text-[var(--muted)]">
-                  {lodge.city} · {lodge.dates}
-                </p>
+              <div style={{ flex: 1, minWidth: 190 }}>
+                <div style={{ fontWeight: 700, fontSize: 19, display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 17, lineHeight: 1 }}>{flag(lodge.city)}</span>{lodge.name}<i className="fa-solid fa-arrow-right" style={{ fontSize: 12, color: "var(--muted,#8a7d6b)" }}></i></div>
+                <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)", marginTop: 2 }}>{lodge.city} · {lodge.dates}</div>
               </div>
-              <div className="min-w-40 text-right">
-                <p className="text-[11px] uppercase tracking-wider text-[var(--muted)]">
-                  бесплатно до
-                </p>
-                <p className="font-display text-lg font-semibold">
-                  {item.label}
-                </p>
-                <span
-                  className={`mt-1 inline-block rounded-full px-3 py-1 text-xs font-bold ${item.tone}`}
-                >
-                  {item.status}
-                </span>
+              <div style={{ textAlign: "right", minWidth: 150 }}>
+                <div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)" }}>бесплатно до</div>
+                <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: 19, marginTop: 2 }}>{item.label}</div>
+                <div style={{ marginTop: 6 }}><span style={{ background: item.background, color: item.color, fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 999, whiteSpace: "nowrap" }}>{item.status}</span></div>
               </div>
               <input
-                aria-label={`Дата отмены ${lodge.name}`}
-                className={`${field} w-auto`}
                 type="date"
                 value={lodge.freeCancel || ""}
+                onClick={(event) => event.stopPropagation()}
                 onChange={(event) =>
                   edit(lodge.id, "freeCancel", event.target.value)
                 }
+                style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "9px 11px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}
               />
-              <button className={subtleButton} onClick={() => window.dispatchEvent(new CustomEvent("trip:open-lodging", { detail: lodge.id }))}>
-                К жилью →
-              </button>
-            </article>
+            </div>
           ))}
+          </div>
         </div>
-      </>
+      </div>
     );
   }
 
@@ -284,53 +221,51 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
     lightbox && data.lodging.find((lodge) => lodge.id === lightbox.id);
   return (
     <>
-      <PanelTitle eyebrow="Где мы остановимся">Жильё</PanelTitle>
-      <div className="lodging-grid grid gap-5 rounded-2xl border border-[var(--line)] bg-[var(--track)] p-4 md:grid-cols-2">
+      <div className="lodging-grid" style={{ animation: "fadeUp .4s ease both", position: "relative", borderRadius: 20, padding: 20, background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: .5, backgroundImage: "radial-gradient(var(--line,#d8c9ac) 1.1px, transparent 1.1px)", backgroundSize: "22px 22px" }}></div>
+        <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 18 }}>
         {data.lodging.map((lodge) => {
           const index = (photo[lodge.id] || 0) % (lodge.photos?.length || 1);
           const photos = lodge.photos || [];
+          const statusColors: Record<string, [string, string]> = { хочу: ["#efe4cf", "#8a7d6b"], бронь: ["#e6ead2", "#6f7a45"], оплачено: ["#f0ddd4", "#b95c3f"] };
+          const [, statusColor] = statusColors[lodge.status] || statusColors.хочу;
           return (
             <article
               id={`lodge-card-${lodge.id}`}
-              className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--paper)]"
               key={lodge.id}
+              style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 1px 3px rgba(59,50,40,.05)", scrollMarginTop: 20, transition: "box-shadow .3s,border-color .3s" }}
             >
               {photos.length ? (
-                <div className="relative h-56 overflow-hidden">
+                <div style={{ position: "relative", height: 230, overflow: "hidden" }}>
                   <img
-                    className="h-full w-full cursor-zoom-in object-cover"
-                    style={{
-                      objectPosition:
-                        lodge.objPosList?.[index] || lodge.objPos || "center",
-                    }}
+                    loading="lazy"
+                    style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: lodge.objPosList?.[index] || lodge.objPos || "center", display: "block", cursor: "zoom-in" }}
                     src={photos[index]}
-                    alt={lodge.name}
+                    alt="фото жилья"
                     onClick={() => setLightbox({ id: lodge.id, index })}
                   />
-                  <span className="absolute left-3 top-3 rounded-full bg-[var(--ac)] px-3 py-1 text-xs font-bold text-white">
-                    {lodge.status}
-                  </span>
+                  <span style={{ position: "absolute", top: 12, left: 12, background: statusColor, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999, letterSpacing: ".04em" }}>{lodge.status}</span>
                   {photos.length > 1 && (
                     <>
                       <button
-                        className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 px-3 py-2 text-white"
                         title="Назад"
                         onClick={() => shift(lodge, -1)}
+                        style={{ position: "absolute", top: "50%", left: 10, transform: "translateY(-50%)", width: 34, height: 34, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 14, display: "grid", placeItems: "center" }}
                       >
-                        ‹
+                        <i className="fa-solid fa-chevron-left"></i>
                       </button>
                       <button
-                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 px-3 py-2 text-white"
                         title="Вперёд"
                         onClick={() => shift(lodge, 1)}
+                        style={{ position: "absolute", top: "50%", right: 10, transform: "translateY(-50%)", width: 34, height: 34, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 14, display: "grid", placeItems: "center" }}
                       >
-                        ›
+                        <i className="fa-solid fa-chevron-right"></i>
                       </button>
-                      <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                      <div style={{ position: "absolute", bottom: 12, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 6 }}>
                         {photos.map((_, dot) => (
                           <span
-                            className={`h-2 w-2 rounded-full ${dot === index ? "bg-white" : "bg-white/50"}`}
                             key={dot}
+                            style={{ width: 7, height: 7, borderRadius: "50%", background: dot === index ? "#fff" : "rgba(255,255,255,.5)", boxShadow: "0 0 2px rgba(0,0,0,.4)" }}
                           />
                         ))}
                       </div>
@@ -338,99 +273,63 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
                   )}
                 </div>
               ) : (
-                <div className="grid h-56 place-items-center bg-[var(--track)] text-sm text-[var(--muted)]">
-                  фото жилья
+                <div className="slot-wrap" style={{ position: "relative", height: 230 }}>
+                  <div style={{ width: "100%", height: 230, display: "grid", placeItems: "center", background: "var(--track,#efe4cf)", color: "var(--muted,#8a7d6b)", fontSize: 13 }}>фото жилья</div>
+                  <span style={{ position: "absolute", top: 12, left: 12, background: statusColor, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999, letterSpacing: ".04em" }}>{lodge.status}</span>
                 </div>
               )}
-              <div className="space-y-3 p-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-[var(--ac)]">
-                  {flag(lodge.city)} {lodge.city}
-                </p>
+              <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--ac,#b95c3f)", fontWeight: 600 }}><span style={{ fontSize: 15, lineHeight: 1 }}>{flag(lodge.city)}</span>{lodge.city}</div>
                 <input
-                  className={`${field} font-display text-xl font-bold`}
                   value={lodge.name}
                   onChange={(event) =>
                     edit(lodge.id, "name", event.target.value)
                   }
+                  style={{ fontFamily: "'Playfair Display',serif", fontSize: 23, fontWeight: 600, border: "none", background: "none", width: "100%", padding: "2px 0", color: "var(--ink,#3b3228)" }}
                 />
-                <div className="grid grid-cols-[1fr_7rem] gap-2">
-                  <input
-                    className={field}
-                    value={lodge.dates}
-                    onChange={(event) =>
-                      edit(lodge.id, "dates", event.target.value)
-                    }
-                  />
-                  <input
-                    className={field}
-                    value={lodge.price}
-                    onChange={(event) =>
-                      edit(lodge.id, "price", event.target.value)
-                    }
-                  />
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "var(--muted,#8a7d6b)" }}><span>{lodge.dates}</span><span style={{ fontWeight: 600, color: "var(--ink,#3b3228)" }}>{lodge.price}</span></div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {statuses.map((status) => (
                     <button
-                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${lodge.status === status ? "border-[var(--ac)] bg-[var(--ac)] text-white" : "border-[var(--line)]"}`}
                       key={status}
                       onClick={() => edit(lodge.id, "status", status)}
+                      style={{ border: `1px solid ${lodge.status === status ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: lodge.status === status ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: lodge.status === status ? "#fff" : "var(--muted,#8a7d6b)", fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: 999, cursor: "pointer" }}
                     >
                       {status}
                     </button>
                   ))}
                 </div>
-                <div className="rounded-xl border border-[var(--line)] bg-[var(--soft)] p-3">
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                    <strong className="text-xs uppercase tracking-wider text-[var(--muted)]">Галерея · {photos.length}</strong>
-                    <label className={`${subtleButton} cursor-pointer`}>
-                      + Фото<input hidden type="file" accept="image/*" onChange={(event) => void uploadPhoto(lodge, event.target.files?.[0])}/>
-                    </label>
-                  </div>
-                  {photos.length > 0 && <div className="grid grid-cols-[64px_1fr] gap-3">
-                    <img className="h-16 w-16 rounded-lg object-cover" style={{objectPosition:lodge.objPosList?.[index] || lodge.objPos || "center"}} src={photos[index]} alt=""/>
-                    <div className="space-y-2">
-                      <input className={field} aria-label="Положение фото" placeholder="center или center 40%" value={lodge.objPosList?.[index] || lodge.objPos || "center"} onChange={(event) => { const positions=photos.map((_,i)=>lodge.objPosList?.[i]||lodge.objPos||"center"); positions[index]=event.target.value; edit(lodge.id,"objPosList",positions); }}/>
-                      <div className="flex gap-3 text-sm"><button disabled={index===0} onClick={()=>changeGallery(lodge,index,index-1)}>← раньше</button><button disabled={index===photos.length-1} onClick={()=>changeGallery(lodge,index,index+1)}>позже →</button><button className="ml-auto text-[var(--muted)]" onClick={()=>void removePhoto(lodge,index)}>убрать</button></div>
-                    </div>
-                  </div>}
-                </div>
-                <textarea
-                  className={`${field} min-h-20 resize-y`}
+                <input
                   placeholder="заметка / удобства…"
                   value={lodge.notes}
                   onChange={(event) =>
                     edit(lodge.id, "notes", event.target.value)
                   }
+                  style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "8px 11px", fontSize: 13, background: "var(--soft,#fdfaf3)", marginTop: 2 }}
                 />
-                <input
-                  className={field}
-                  placeholder="Ссылка на Букинг"
-                  value={lodge.link}
-                  onChange={(event) =>
-                    edit(lodge.id, "link", event.target.value)
-                  }
-                />
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex gap-3 text-sm font-semibold">
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: "auto" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
                     <a
-                      className="text-[var(--ac)]"
                       href={lodge.link || undefined}
                       target="_blank"
                       rel="noreferrer"
+                      style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
                     >
                       Ссылка на Букинг →
                     </a>
                     <button
                       title="Скопировать ссылку"
                       onClick={() => void copy(lodge)}
+                      style={{ border: "none", background: "none", cursor: "pointer", color: "var(--muted,#8a7d6b)", fontSize: 13, padding: "2px 4px", flex: "none" }}
                     >
-                      {copied === lodge.id ? "✓" : "⧉"}
+                      <i className={copied === lodge.id ? "fa-solid fa-check" : "fa-solid fa-copy"}></i>
                     </button>
                   </div>
                   <button
-                    className="text-sm text-[var(--muted)]"
                     onClick={() => void removeLodging(lodge)}
+                    style={{ border: "none", background: "none", color: "#c4b5a0", cursor: "pointer", fontSize: 13, flex: "none" }}
                   >
                     удалить
                   </button>
@@ -440,7 +339,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
           );
         })}
         <button
-          className="min-h-52 rounded-2xl border-2 border-dashed border-[var(--line)] text-sm font-semibold text-[var(--muted)] hover:border-[var(--ac)]"
+          style={{ border: "2px dashed #d8c9ac", background: "none", borderRadius: 16, minHeight: 220, color: "#a2937c", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "grid", placeItems: "center" }}
           onClick={() =>
             guard(() =>
               updateData((current) => {
@@ -468,6 +367,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
         >
           + добавить вариант жилья
         </button>
+        </div>
       </div>
       {active?.photos && lightbox && (
         <div
