@@ -47,7 +47,7 @@ VITE_MAPBOX_TOKEN=pk.example
 - `src/lib/mapbox/` — конфигурация Mapbox
 - `src/styles/` — глобальные стили, шрифты и дизайн-переменные
 - `src/types/` — глобальные TypeScript-типы
-- `images/` — сохранённые фотографии текущего приложения
+- `public/images/` — сохранённые фотографии; Vite копирует их в `dist/images/` без изменения URL
 - `legacy/` — исходные runtime-файлы приложения до миграции
 
 ## Legacy и откат

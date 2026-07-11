@@ -4,7 +4,7 @@
 
 **Goal:** Replace the root legacy runtime with a production-ready React, TypeScript, Vite, and Tailwind foundation while retaining rollback material and all tracked media.
 
-**Architecture:** Vite owns the root HTML entry and builds a typed React shell under `src/`. Existing runtime source moves to `legacy/`, tracked images remain untouched in `images/`, and deployment publishes only `dist/` at the `/italy-trip/` GitHub Pages base path.
+**Architecture:** Vite owns the root HTML entry and builds a typed React shell under `src/`. Existing runtime source moves to `legacy/`, tracked images live under Vite's `public/images/`, and deployment publishes only `dist/` at the `/italy-trip/` GitHub Pages base path.
 
 **Tech Stack:** React 19, TypeScript 7, Vite 8, Tailwind CSS 4, Supabase JS 2, Mapbox GL JS 3, Node 22.
 
@@ -25,7 +25,7 @@
 - Create: `package.json`, `package-lock.json`, `vite.config.ts`, `tsconfig.json`, `tsconfig.app.json`, `tsconfig.node.json`
 - Create: `src/main.tsx`, `src/app/App.tsx`, `src/components/AppShell.tsx`, `src/auth/index.ts`, `src/features/index.ts`, `src/lib/supabase/client.ts`, `src/lib/mapbox/config.ts`, `src/styles/global.css`, `src/types/env.d.ts`
 - Move: `auth.js`, `sync.js`, `support.js`, `image-slot.js`, and the old `index.html` into `legacy/`
-- Preserve: `images/`
+- Move: `images/` to `public/images/`
 - Delete: `tests/walk-sight-cards.test.mjs`
 - Modify: `.gitignore`, `.github/workflows/deploy.yml`, `README.md`
 
@@ -36,7 +36,7 @@
 
 - [ ] **Step 1: Preserve the old runtime and static media**
 
-Move the legacy runtime files to `legacy/`, leave tracked images intact, and remove the obsolete automated test.
+Move the legacy runtime files to `legacy/`, move images into Vite's static public directory, and remove the obsolete automated test.
 
 - [ ] **Step 2: Add the package and TypeScript/Vite configuration**
 
