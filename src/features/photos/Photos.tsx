@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
 import { useTripData } from "../../trip/TripDataContext";
-import { button, useDialogKeyboard } from "../shared";
 import {
   all,
   closePhotoStore,
@@ -91,11 +90,9 @@ export function Photos() {
   const tripId = selectedTrip?.id ?? "legacy";
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [busy, setBusy] = useState("");
-  const [report, setReport] = useState("");
-  const [placeRetryPending, setPlaceRetryPending] = useState(false);
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [, setReport] = useState("");
+  const [, setPlaceRetryPending] = useState(false);
   const [remoteRevision, setRemoteRevision] = useState(0);
-  const closeButton = useRef<HTMLButtonElement>(null);
   const mutatingRemote = useRef(false);
   const refreshAfterMutation = useRef(false);
   const lifecycle = useRef<{
@@ -198,30 +195,6 @@ export function Photos() {
       if (lifecycle.current === state) lifecycle.current = null;
     };
   }, [tripId, remoteRevision, isReadOnly]);
-
-  const sorted = [...photos].sort((a, b) =>
-    (a.iso ?? "9999").localeCompare(b.iso ?? "9999"),
-  );
-  const openIndex = openId
-    ? sorted.findIndex((photo) => photo.id === openId)
-    : -1;
-  const openPhoto = openIndex >= 0 ? sorted[openIndex] : null;
-
-  useEffect(() => {
-    if (openId && !openPhoto) setOpenId(null);
-  }, [openId, openPhoto]);
-
-  const shift = (offset: number) => {
-    if (openIndex < 0 || !sorted.length) return;
-    setOpenId(sorted[(openIndex + offset + sorted.length) % sorted.length].id);
-  };
-  useDialogKeyboard({
-    open: Boolean(openPhoto),
-    onClose: () => setOpenId(null),
-    onPrevious: () => shift(-1),
-    onNext: () => shift(1),
-    initialFocus: closeButton,
-  });
 
   const guard = (action: () => void) =>
     isReadOnly
@@ -332,20 +305,20 @@ export function Photos() {
   for (const photo of photos) {
     const day = photo.iso ? daysByIso.get(photo.iso) : undefined;
     const descriptor = photo.place
-      ? { key: `place:${photo.place}`, title: photo.place, icon: "●" }
+      ? { key: `place:${photo.place}`, title: photo.place, icon: "fa-solid fa-location-dot" }
       : day
         ? {
             key: `day:${destination(day.city)}`,
             title: destination(day.city),
-            icon: "▣",
+             icon: "fa-solid fa-calendar-day",
           }
         : photo.iso
           ? {
               key: `date:${photo.iso}`,
               title: formatDate(photo.iso),
-              icon: "▣",
+               icon: "fa-solid fa-calendar-day",
             }
-          : { key: "none", title: "Без геоданных", icon: "□" };
+           : { key: "none", title: "Без геоданных", icon: "fa-solid fa-images" };
     if (!groups.has(descriptor.key))
       groups.set(descriptor.key, {
         title: descriptor.title,
@@ -361,24 +334,20 @@ export function Photos() {
     a.minIso.localeCompare(b.minIso),
   );
 
-  return (
-    <>
-      <div className="photo-intro">
-        <p>
+  return <div style={{ animation: "fadeUp .4s ease both" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 14, marginBottom: 18 }}>
+        <p style={{ margin: 0, fontSize: 13, color: "var(--muted,#8a7d6b)", maxWidth: 600 }}>
           Загрузите снимки — я прочитаю в каждом GPS и дату съёмки и сам разложу
           их по местам. Где координат нет, разложу по дню маршрута. Фото
           уменьшаются и хранятся в этом браузере.
         </p>
-        <label
-          className={`${button} inline-flex items-center gap-2 whitespace-nowrap`}
-        >
-          ↑ Загрузить фото
+        <label style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "var(--ac,#b95c3f)", color: "#fff", borderRadius: 10, padding: "11px 18px", fontSize: 14, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+          <i className="fa-solid fa-arrow-up-from-bracket" />Загрузить фото
           <input
-            hidden
             type="file"
             accept="image/*"
             multiple
-            onChange={(event) => {
+            style={{ display: "none" }} onChange={(event) => {
               const input = event.currentTarget;
               guard(() => void importFiles(input.files));
               input.value = "";
@@ -387,108 +356,33 @@ export function Photos() {
         </label>
       </div>
       {busy && (
-        <div className="photo-status" role="status">
-          ◌ {busy}
+        <div style={{ display: "flex", alignItems: "center", gap: 10, background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 14, color: "var(--muted,#8a7d6b)" }}>
+          <i className="fa-solid fa-spinner fa-spin" style={{ color: "var(--ac,#b95c3f)" }} />{busy}
         </div>
       )}
-      {report && (
-        <div className="photo-report flex flex-wrap items-center justify-between gap-2" role="status">
-          <span>{report}</span>
-          {placeRetryPending && (
-            <button className={button} onClick={() => setRemoteRevision((value) => value + 1)}>
-              Повторить синхронизацию мест
-            </button>
-          )}
+      {!photos.length && (
+        <div style={{ border: "2px dashed #d8c9ac", borderRadius: 18, padding: "56px 24px", textAlign: "center", color: "#a2937c" }}>
+          <i className="fa-solid fa-images" style={{ fontSize: 34, color: "var(--ac,#b95c3f)", opacity: .7 }} />
+          <div style={{ fontSize: 16, fontWeight: 600, marginTop: 14, color: "var(--ink,#3b3228)" }}>Пока нет фото</div>
+          <div style={{ fontSize: 13, marginTop: 6 }}>
+             Нажмите «Загрузить фото» — снимки сами разложатся по местам и датам.
+          </div>
         </div>
       )}
-      {!busy && !photos.length && (
-        <div className="photo-empty">
-          <span>▧</span>
-          <strong>Пока нет фото</strong>
-          <p>
-            Нажмите «Загрузить фото» — снимки сами разложатся по местам и датам.
-          </p>
-        </div>
-      )}
-      <div className="photo-groups">
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         {orderedGroups.map((group) => (
-          <section
-            className="photo-group"
-            key={`${group.title}:${group.minIso}`}
-          >
-            <div className="photo-group-content">
-              <header>
-                <span aria-hidden="true">{group.icon}</span>
-                <h2>{group.title}</h2>
-                <small>{group.photos.length} фото</small>
-              </header>
-              <div className="photo-grid">
+          <div key={`${group.title}:${group.minIso}`} style={{ position: "relative", borderRadius: 20, padding: 20, background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", overflow: "hidden" }}>
+            <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: .5, backgroundImage: "radial-gradient(var(--line,#d8c9ac) 1.1px, transparent 1.1px)", backgroundSize: "22px 22px" }} />
+            <div style={{ position: "relative" }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 14 }}><i className={group.icon} style={{ color: "var(--ac,#b95c3f)", fontSize: 15, alignSelf: "center" }} /><span style={{ fontFamily: "'Playfair Display',serif", fontSize: 20, fontWeight: 600, color: "var(--ink,#3b3228)" }}>{group.title}</span><span style={{ fontSize: 12, color: "var(--muted,#8a7d6b)" }}>{group.photos.length} фото</span></div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(150px,1fr))", gap: 12 }}>
                 {group.photos.map((photo) => (
-                  <figure key={photo.id}>
-                    <button
-                      className="photo-open"
-                      onClick={() => setOpenId(photo.id)}
-                      aria-label={`Открыть фото${photo.iso ? ` от ${formatDate(photo.iso)}` : ""}`}
-                    >
-                      <img src={photo.thumb} alt="фото" loading="lazy" />
-                    </button>
-                    <button
-                      className="photo-delete"
-                      onClick={() => guard(() => void remove(photo.id))}
-                      title="Удалить фото"
-                      aria-label="Удалить фото"
-                    >
-                      ×
-                    </button>
-                    {photo.iso && (
-                      <figcaption>{formatDate(photo.iso)}</figcaption>
-                    )}
-                  </figure>
+                  <div key={photo.id} style={{ position: "relative", aspectRatio: "1/1", borderRadius: 13, overflow: "hidden", border: "1px solid var(--line,#e7dcc7)", background: "var(--paper,#fbf2df)" }}><img src={photo.thumb} alt="фото" loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} /><button onClick={() => guard(() => void remove(photo.id))} title="Удалить фото" style={{ position: "absolute", top: 6, right: 6, width: 26, height: 26, border: "none", borderRadius: 8, background: "rgba(24,18,12,.55)", color: "#fff", cursor: "pointer", fontSize: 12, display: "grid", placeItems: "center" }}><i className="fa-solid fa-xmark" /></button>{photo.iso && <span style={{ position: "absolute", left: 6, bottom: 6, background: "rgba(24,18,12,.6)", color: "#fff", fontSize: 11, padding: "3px 7px", borderRadius: 7 }}>{formatDate(photo.iso)}</span>}</div>
                 ))}
               </div>
             </div>
-          </section>
+          </div>
         ))}
       </div>
-      {openPhoto && (
-        <div
-          className="lightbox"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Просмотр фото"
-          onMouseDown={(event) =>
-            event.target === event.currentTarget && setOpenId(null)
-          }
-        >
-          <img src={openPhoto.thumb} alt="фото" />
-          <button
-            ref={closeButton}
-            className="lightbox-close"
-            onClick={() => setOpenId(null)}
-            aria-label="Закрыть"
-          >
-            ×
-          </button>
-          {sorted.length > 1 && (
-            <>
-              <button
-                className="lightbox-prev"
-                onClick={() => shift(-1)}
-                aria-label="Предыдущее фото"
-              >
-                ‹
-              </button>
-              <button
-                className="lightbox-next"
-                onClick={() => shift(1)}
-                aria-label="Следующее фото"
-              >
-                ›
-              </button>
-            </>
-          )}
-        </div>
-      )}
-    </>
-  );
+    </div>;
 }
