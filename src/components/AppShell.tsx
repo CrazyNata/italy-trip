@@ -1,5 +1,8 @@
 import { useRef, useState, type KeyboardEvent } from 'react'
 
+import { useAuth } from '../auth'
+import { useTripData } from '../trip/TripDataContext'
+
 const tabs = [
   'Обзор',
   'Маршрут',
@@ -12,6 +15,8 @@ const tabs = [
 ] as const
 
 export function AppShell() {
+  const { isOwner, error: authError } = useAuth()
+  const { data, loading, error, usingCache, refresh } = useTripData()
   const [selectedTab, setSelectedTab] = useState(0)
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
 
@@ -93,6 +98,10 @@ export function AppShell() {
       </header>
 
       <main className="mx-auto max-w-[1120px] px-4 pb-20 pt-7 sm:px-6">
+        {(loading || authError || error || !isOwner || usingCache) && <div className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${authError || error ? 'border-[#d8a08d] bg-[#fff2ed] text-[#7f3524]' : 'border-[var(--line)] bg-[var(--soft)] text-[var(--muted)]'}`} role="status">
+          <span>{loading ? 'Загружаем актуальный план…' : authError ?? error ?? (usingCache ? 'Показана локальная копия плана.' : 'Режим просмотра: редактировать план может только владелец.')}</span>
+          {error && <button className="rounded-lg border border-current px-2.5 py-1 font-semibold" onClick={() => void refresh()}>Повторить</button>}
+        </div>}
         {tabs.map((tab, index) => (
           <section
             aria-labelledby={`tab-${index}`}
@@ -108,8 +117,7 @@ export function AppShell() {
             </p>
             <h2 className="mt-2 font-display text-3xl font-semibold">{tab}</h2>
             <p className="mt-3 max-w-2xl leading-relaxed text-[var(--muted)]">
-              Каркас готов для поэтапного переноса данных и функций. На этом
-              этапе разделы намеренно остаются без старого интерфейса.
+              {data ? `Данные поездки загружены: ${data.days.length} дней, ${data.lodging.length} вариантов жилья и ${data.sights.length} мест. Перенос интерфейса раздела продолжится следующим этапом.` : 'Данные поездки пока недоступны.'}
             </p>
           </section>
         ))}
