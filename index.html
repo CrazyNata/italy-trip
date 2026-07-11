@@ -522,34 +522,36 @@
     <!-- ============ БЮДЖЕТ ============ -->
     <sc-if value="{{ isBudget }}" hint-placeholder-val="{{ true }}">
     <div style="animation:fadeUp .4s ease both">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px">
-        <div style="background:var(--ac,#b95c3f);color:#fff;border-radius:16px;padding:20px 22px">
-          <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.85">Общая сумма</div>
-          <div style="font-family:'Playfair Display',serif;font-size:34px;font-weight:700;margin-top:6px">€{{ budgetTotal }}</div>
-        </div>
-        <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:20px 22px">
-          <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#8a7d6b)">На семью</div>
-          <div style="font-family:'Playfair Display',serif;font-size:34px;font-weight:700;margin-top:6px;color:var(--ol,#7c8450)">€{{ perFamily }}</div>
-        </div>
-        <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:20px 22px">
-          <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#8a7d6b)">В день</div>
-          <div style="font-family:'Playfair Display',serif;font-size:34px;font-weight:700;margin-top:6px;color:var(--ac2,#cf9440)">€{{ perDay }}</div>
+      <div style="position:relative;overflow:hidden;border-radius:20px;padding:24px;background:linear-gradient(125deg,var(--ac,#2a7089),#195866);color:#fff;margin-bottom:18px">
+        <div style="position:absolute;right:-38px;top:-54px;width:180px;height:180px;border:1px solid rgba(255,255,255,.18);border-radius:50%"></div>
+        <div style="position:absolute;right:30px;bottom:-70px;width:150px;height:150px;border:1px solid rgba(255,255,255,.12);border-radius:50%"></div>
+        <div style="position:relative;display:flex;justify-content:space-between;gap:18px;align-items:flex-end;flex-wrap:wrap">
+          <div><div style="font-size:11px;letter-spacing:.18em;text-transform:uppercase;opacity:.72;font-weight:700"><i class="fa-solid fa-wallet" style="margin-right:7px"></i>Бюджет поездки</div><h2 style="font-family:'Playfair Display',serif;font-size:32px;font-weight:600;margin:8px 0 0">Италия, осень 2026</h2></div>
+          <div style="text-align:right"><div style="font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.76">Общая сумма</div><div style="font-family:'Playfair Display',serif;font-size:42px;font-weight:700;line-height:1;margin-top:4px">€{{ budgetTotal }}</div></div>
         </div>
       </div>
-      <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-bottom:18px">
+        <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:15px;padding:16px 18px;display:flex;align-items:center;gap:12px"><span style="width:34px;height:34px;border-radius:11px;background:var(--soft,#f1f7f6);color:var(--ac,#2a7089);display:grid;place-items:center"><i class="fa-solid fa-people-group"></i></span><div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8a7d6b);font-weight:700">На семью</div><div style="font-family:'Playfair Display',serif;font-size:27px;font-weight:700;line-height:1.15;margin-top:3px">€{{ perFamily }}</div></div></div>
+        <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:15px;padding:16px 18px;display:flex;align-items:center;gap:12px"><span style="width:34px;height:34px;border-radius:11px;background:#f7eee1;color:var(--ac2,#d99a4e);display:grid;place-items:center"><i class="fa-regular fa-calendar"></i></span><div><div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8a7d6b);font-weight:700">В день</div><div style="font-family:'Playfair Display',serif;font-size:27px;font-weight:700;line-height:1.15;margin-top:3px">€{{ perDay }}</div></div></div>
+      </div>
+      <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:18px;overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line,#e7dcc7)"><div><h2 style="font-family:'Playfair Display',serif;font-size:23px;font-weight:600;margin:0">Расходы</h2><div style="font-size:12px;color:var(--muted,#8a7d6b);margin-top:2px">Общий бюджет поездки</div></div><span style="width:34px;height:34px;border-radius:50%;background:var(--soft,#f1f7f6);color:var(--ac,#2a7089);display:grid;place-items:center"><i class="fa-solid fa-receipt"></i></span></div>
         <sc-for list="{{ expenses }}" as="e" hint-placeholder-count="5">
-          <div style="display:flex;align-items:center;gap:14px;padding:14px 20px;border-bottom:1px solid var(--line,#f0e5d1)">
-            <span style="width:10px;height:10px;border-radius:50%;background:{{ e.dot }};flex:none"></span>
-            <div style="flex:1"><div style="font-weight:600;font-size:15px">{{ e.label }}</div><div style="font-size:12px;color:var(--muted,#8a7d6b)">{{ e.category }}</div></div>
-            <div style="font-family:'Playfair Display',serif;font-weight:600;font-size:18px">€{{ e.amount }}</div>
-            <button onClick="{{ onRemoveExpense }}" data-id="{{ e.id }}" style="border:none;background:none;color:#c4b5a0;cursor:pointer;font-size:18px;line-height:1" style-hover="color:var(--ac,#b95c3f)">×</button>
+          <div style="display:flex;align-items:center;gap:13px;padding:15px 20px;border-bottom:1px solid var(--line,#f0e5d1)">
+            <span style="width:11px;height:11px;border-radius:50%;background:{{ e.dot }};flex:none;box-shadow:0 0 0 4px color-mix(in srgb,{{ e.dot }} 14%,transparent)"></span>
+            <div style="flex:1"><div style="font-weight:700;font-size:15px">{{ e.label }}</div><div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted,#8a7d6b);margin-top:3px">{{ e.category }}</div></div>
+            <div style="font-family:'Playfair Display',serif;font-weight:700;font-size:20px">€{{ e.amount }}</div>
+            <button onClick="{{ onRemoveExpense }}" data-id="{{ e.id }}" title="Удалить расход" style="border:none;background:none;color:#c4b5a0;cursor:pointer;font-size:18px;line-height:1;padding:4px" style-hover="color:var(--ac,#b95c3f)">×</button>
           </div>
         </sc-for>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px;background:var(--soft,#faf4e8)">
-          <input value="{{ draft.eLabel }}" onInput="{{ onDraft }}" data-k="eLabel" placeholder="статья расхода" style="flex:1;min-width:160px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--card,#fff)">
-          <input value="{{ draft.eCat }}" onInput="{{ onDraft }}" data-k="eCat" placeholder="категория" style="width:150px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--card,#fff)">
-          <input value="{{ draft.eAmount }}" onInput="{{ onDraft }}" data-k="eAmount" onKeyDown="{{ onExpKey }}" placeholder="€" type="number" style="width:110px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;font-size:14px;background:var(--card,#fff)">
-          <button onClick="{{ onAddExpense }}" style="border:none;background:var(--ac,#b95c3f);color:#fff;border-radius:9px;padding:0 18px;font-weight:600;font-size:14px;cursor:pointer">Добавить</button>
+        <div style="padding:16px 20px 18px;background:var(--soft,#f1f7f6)">
+          <div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#8a7d6b);font-weight:700;margin-bottom:9px">Добавить расход</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input value="{{ draft.eLabel }}" onInput="{{ onDraft }}" data-k="eLabel" placeholder="например, билеты в музей" style="flex:1;min-width:180px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:10px 12px;font-size:14px;background:var(--card,#fff)">
+            <input value="{{ draft.eCat }}" onInput="{{ onDraft }}" data-k="eCat" placeholder="категория" style="width:145px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:10px 12px;font-size:14px;background:var(--card,#fff)">
+            <input value="{{ draft.eAmount }}" onInput="{{ onDraft }}" data-k="eAmount" onKeyDown="{{ onExpKey }}" placeholder="€" type="number" style="width:95px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:10px 12px;font-size:14px;background:var(--card,#fff)">
+            <button onClick="{{ onAddExpense }}" style="border:none;background:var(--ac,#2a7089);color:#fff;border-radius:9px;padding:0 16px;font-weight:700;font-size:14px;cursor:pointer"><i class="fa-solid fa-plus" style="margin-right:6px;font-size:11px"></i>Добавить</button>
+          </div>
         </div>
       </div>
     </div>
