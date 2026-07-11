@@ -1,50 +1,67 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
-import { useAuth } from '../auth'
-import { useTripData } from '../trip/TripDataContext'
-import { Overview } from '../features/overview/Overview'
-import { Itinerary } from '../features/itinerary/Itinerary'
-import { Lodging } from '../features/lodging/Lodging'
-import { Sights } from '../features/sights/Sights'
-import { Budget } from '../features/budget/Budget'
-import { Photos } from '../features/photos/Photos'
-import { Notes } from '../features/notes/Notes'
+import { useAuth } from "../auth";
+import { useTripData } from "../trip/TripDataContext";
+import { Overview } from "../features/overview/Overview";
+import { Itinerary } from "../features/itinerary/Itinerary";
+import { Lodging } from "../features/lodging/Lodging";
+import { Sights } from "../features/sights/Sights";
+import { Budget } from "../features/budget/Budget";
+import { Photos } from "../features/photos/Photos";
+import { Notes } from "../features/notes/Notes";
 
 const tabs = [
-  'Обзор',
-  'Маршрут',
-  'Жильё',
-  'Отмена',
-  'Места',
-  'Бюджет',
-  'Фото',
-  'Заметки',
-] as const
+  "Обзор",
+  "Маршрут",
+  "Жильё",
+  "Отмена",
+  "Места",
+  "Бюджет",
+  "Фото",
+  "Заметки",
+] as const;
 
 export function AppShell() {
-  const { isOwner, error: authError } = useAuth()
-  const { data, loading, error, usingCache, syncState, refresh, retrySave } = useTripData()
-  const [selectedTab, setSelectedTab] = useState(0)
-  const [toast, setToast] = useState<string | null>(null)
-  const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
-  useEffect(() => { const show=()=>{setToast('Режим просмотра: изменения доступны только владельцу');window.setTimeout(()=>setToast(null),2200)};window.addEventListener('trip:readonly',show);return()=>window.removeEventListener('trip:readonly',show)},[])
+  const { isOwner, error: authError } = useAuth();
+  const { data, loading, error, usingCache, syncState, refresh, retrySave } =
+    useTripData();
+  const [selectedTab, setSelectedTab] = useState(0);
+  const [toast, setToast] = useState<string | null>(null);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  useEffect(() => {
+    const show = (event: Event) => {
+      setToast(
+        event instanceof CustomEvent && typeof event.detail === "string"
+          ? event.detail
+          : "Режим просмотра: изменения доступны только владельцу",
+      );
+      window.setTimeout(() => setToast(null), 2200);
+    };
+    window.addEventListener("trip:readonly", show);
+    window.addEventListener("trip:toast", show);
+    return () => {
+      window.removeEventListener("trip:readonly", show);
+      window.removeEventListener("trip:toast", show);
+    };
+  }, []);
 
   function selectTab(index: number) {
-    setSelectedTab(index)
-    tabRefs.current[index]?.focus()
+    setSelectedTab(index);
+    tabRefs.current[index]?.focus();
   }
 
   function handleTabKeyDown(event: KeyboardEvent, index: number) {
-    let nextIndex: number | undefined
+    let nextIndex: number | undefined;
 
-    if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length
-    if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length
-    if (event.key === 'Home') nextIndex = 0
-    if (event.key === 'End') nextIndex = tabs.length - 1
+    if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
+    if (event.key === "ArrowLeft")
+      nextIndex = (index - 1 + tabs.length) % tabs.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = tabs.length - 1;
 
     if (nextIndex !== undefined) {
-      event.preventDefault()
-      selectTab(nextIndex)
+      event.preventDefault();
+      selectTab(nextIndex);
     }
   }
 
@@ -61,17 +78,37 @@ export function AppShell() {
               Отпуск с семьёй
               <br />в Италии <span aria-hidden="true">🍋</span>
             </h1>
-              <p className="mt-4 max-w-[540px] text-[15px] leading-relaxed text-[var(--muted)]">
-              25 сентября — 12 октября · выезжаем из Праги вдвоём с 2 собаками. В Риме встречаем родственников — и нас становится 4 человека и 2 собаки. Планируем маршрут, жильё, места и бюджет.
+            <p className="mt-4 max-w-[540px] text-[15px] leading-relaxed text-[var(--muted)]">
+              25 сентября — 12 октября · выезжаем из Праги вдвоём с 2 собаками.
+              В Риме встречаем родственников — и нас становится 4 человека и 2
+              собаки. Планируем маршрут, жильё, места и бюджет.
             </p>
           </div>
 
-          <div className="flex gap-3"><div className="rounded-[14px] border border-[var(--line)] bg-[var(--card)] px-5 py-3.5 text-center"><p className="font-mono text-4xl font-bold leading-none text-[var(--ac)]">{Math.max(0,Math.ceil((new Date('2026-09-25T00:00:00').getTime()-Date.now())/86400000))}</p><p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">дней до выезда</p></div><div className="rounded-[14px] border border-[var(--line)] bg-[var(--card)] px-5 py-3.5 text-center">
-            <p className="font-mono text-4xl font-bold leading-none text-[var(--ol)]">17</p>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
-              ночей
-            </p>
-          </div></div>
+          <div className="flex gap-3">
+            <div className="rounded-[14px] border border-[var(--line)] bg-[var(--card)] px-5 py-3.5 text-center">
+              <p className="font-mono text-4xl font-bold leading-none text-[var(--ac)]">
+                {Math.max(
+                  0,
+                  Math.ceil(
+                    (new Date("2026-09-25T00:00:00").getTime() - Date.now()) /
+                      86400000,
+                  ),
+                )}
+              </p>
+              <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
+                дней до выезда
+              </p>
+            </div>
+            <div className="rounded-[14px] border border-[var(--line)] bg-[var(--card)] px-5 py-3.5 text-center">
+              <p className="font-mono text-4xl font-bold leading-none text-[var(--ol)]">
+                17
+              </p>
+              <p className="mt-1 text-[11px] uppercase tracking-[0.14em] text-[var(--muted)]">
+                ночей
+              </p>
+            </div>
+          </div>
         </div>
 
         <nav
@@ -83,8 +120,8 @@ export function AppShell() {
             <button
               className={`shrink-0 border-b-2 px-3 py-3 text-base font-semibold transition-colors sm:px-[18px] sm:text-[17px] ${
                 index === selectedTab
-                  ? 'border-[var(--ac)] text-[var(--ac)]'
-                  : 'border-transparent text-[var(--muted)] hover:text-[var(--ink)]'
+                  ? "border-[var(--ac)] text-[var(--ac)]"
+                  : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
               }`}
               aria-controls={`panel-${index}`}
               aria-selected={index === selectedTab}
@@ -93,7 +130,7 @@ export function AppShell() {
               onClick={() => setSelectedTab(index)}
               onKeyDown={(event) => handleTabKeyDown(event, index)}
               ref={(element) => {
-                tabRefs.current[index] = element
+                tabRefs.current[index] = element;
               }}
               role="tab"
               tabIndex={index === selectedTab ? 0 : -1}
@@ -106,10 +143,48 @@ export function AppShell() {
       </header>
 
       <main className="mx-auto max-w-[1120px] px-4 pb-20 pt-7 sm:px-6">
-        {(loading || authError || error || !isOwner || usingCache || syncState !== 'clean') && <div className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${authError || error || syncState === 'failed' ? 'border-[#d8a08d] bg-[#fff2ed] text-[#7f3524]' : 'border-[var(--line)] bg-[var(--soft)] text-[var(--muted)]'}`} role="status">
-          <span>{loading ? 'Загружаем актуальный план…' : authError ?? error ?? (syncState === 'dirty' ? 'Есть несохранённые изменения…' : syncState === 'saving' ? 'Сохраняем изменения…' : usingCache ? 'Показана локальная копия плана.' : 'Режим просмотра: редактировать план может только владелец.')}</span>
-          {syncState === 'failed' ? <button className="rounded-lg border border-current px-2.5 py-1 font-semibold" onClick={() => void retrySave()}>Повторить сохранение</button> : error && <button className="rounded-lg border border-current px-2.5 py-1 font-semibold" onClick={() => void refresh()}>Повторить загрузку</button>}
-        </div>}
+        {(loading ||
+          authError ||
+          error ||
+          !isOwner ||
+          usingCache ||
+          syncState !== "clean") && (
+          <div
+            className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${authError || error || syncState === "failed" ? "border-[#d8a08d] bg-[#fff2ed] text-[#7f3524]" : "border-[var(--line)] bg-[var(--soft)] text-[var(--muted)]"}`}
+            role="status"
+          >
+            <span>
+              {loading
+                ? "Загружаем актуальный план…"
+                : (authError ??
+                  error ??
+                  (syncState === "dirty"
+                    ? "Есть несохранённые изменения…"
+                    : syncState === "saving"
+                      ? "Сохраняем изменения…"
+                      : usingCache
+                        ? "Показана локальная копия плана."
+                        : "Режим просмотра: редактировать план может только владелец."))}
+            </span>
+            {syncState === "failed" ? (
+              <button
+                className="rounded-lg border border-current px-2.5 py-1 font-semibold"
+                onClick={() => void retrySave()}
+              >
+                Повторить сохранение
+              </button>
+            ) : (
+              error && (
+                <button
+                  className="rounded-lg border border-current px-2.5 py-1 font-semibold"
+                  onClick={() => void refresh()}
+                >
+                  Повторить загрузку
+                </button>
+              )
+            )}
+          </div>
+        )}
         {tabs.map((tab, index) => (
           <section
             aria-labelledby={`tab-${index}`}
@@ -120,11 +195,25 @@ export function AppShell() {
             role="tabpanel"
             tabIndex={0}
           >
-            {data && [<Overview/>,<Itinerary/>,<Lodging/>,<Lodging cancellation/>,<Sights/>,<Budget/>,<Photos/>,<Notes/>][index]}
+            {data &&
+              [
+                <Overview />,
+                <Itinerary />,
+                <Lodging />,
+                <Lodging cancellation />,
+                <Sights />,
+                <Budget />,
+                <Photos />,
+                <Notes />,
+              ][index]}
           </section>
         ))}
       </main>
-      {toast&&<div className="fixed bottom-6 left-1/2 z-[20000] -translate-x-1/2 rounded-full bg-[var(--ink)] px-5 py-3 text-sm font-bold text-[var(--card)] shadow-xl">{toast}</div>}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 z-[20000] -translate-x-1/2 rounded-full bg-[var(--ink)] px-5 py-3 text-sm font-bold text-[var(--card)] shadow-xl">
+          {toast}
+        </div>
+      )}
     </div>
-  )
+  );
 }

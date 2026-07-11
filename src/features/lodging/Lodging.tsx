@@ -1,2 +1,415 @@
-import { useState } from 'react'; import { useTripData } from '../../trip/TripDataContext'; import { button, field, PanelTitle, subtleButton, uid } from '../shared'
-export function Lodging({ cancellation=false }:{cancellation?:boolean}) { const {data,updateData,isReadOnly}=useTripData(); const [sort,setSort]=useState(1); if(!data)return null; const edit=(id:string,key:string,value:string)=>{if(isReadOnly)return window.dispatchEvent(new CustomEvent('trip:readonly'));updateData(d=>({...d,lodging:d.lodging.map(l=>l.id===id?{...l,[key]:value}:l)}))}; const list=cancellation?[...data.lodging].filter(l=>l.freeCancel).sort((a,b)=>sort*(a.freeCancel||'').localeCompare(b.freeCancel||'')):data.lodging; return <><PanelTitle eyebrow={cancellation?'Не пропустить срок':'Где мы остановимся'}>{cancellation?'Бесплатная отмена':'Жильё'}</PanelTitle>{cancellation&&<button className={`${subtleButton} mb-4`} onClick={()=>setSort(-sort)}>Сортировка: {sort>0?'сначала ближайшие':'сначала поздние'}</button>}<div className="grid gap-5 md:grid-cols-2">{list.map(l=><article className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--card)]" key={l.id}>{!cancellation&&l.photos?.[0]&&<img className="h-48 w-full object-cover" style={{objectPosition:l.objPos}} src={l.photos[0]} alt={l.name}/>}<div className="p-5"><p className="text-xs font-bold uppercase tracking-wider text-[var(--ac)]">{l.city}</p><input className={`${field} mt-2 font-bold`} value={l.name} onChange={e=>edit(l.id,'name',e.target.value)}/><div className="mt-3 flex gap-2"><input className={field} value={l.dates} onChange={e=>edit(l.id,'dates',e.target.value)}/><input className={`${field} max-w-28`} value={l.price} onChange={e=>edit(l.id,'price',e.target.value)}/></div>{cancellation?<><input type="date" className={`${field} mt-3`} value={l.freeCancel||''} onChange={e=>edit(l.id,'freeCancel',e.target.value)}/><p className="mt-2 text-sm text-[var(--muted)]">Отмена до {new Date(`${l.freeCancel}T00:00:00`).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}</p></>:<><select className={`${field} mt-3`} value={l.status} onChange={e=>edit(l.id,'status',e.target.value)}><option>хочу</option><option>бронь</option><option>оплачено</option></select><textarea className={`${field} mt-3 min-h-28`} value={l.notes} onChange={e=>edit(l.id,'notes',e.target.value)}/></>}<a className={`${subtleButton} mt-3 inline-block`} href={l.link} target="_blank" rel="noreferrer">Открыть бронирование</a></div></article>)}</div>{!cancellation&&<button className={`${button} mt-5`} onClick={()=>!isReadOnly&&updateData(d=>({...d,lodging:[...d.lodging,{id:uid('l'),slot:'new',city:'Новый город',name:'Название жилья',dates:'даты',price:'€',status:'хочу',link:'',notes:''}]}))}>+ Добавить жильё</button>}</> }
+import { useEffect, useState } from "react";
+import { useTripData } from "../../trip/TripDataContext";
+import type { Lodging as LodgingRecord } from "../../types/trip";
+import { button, field, PanelTitle, subtleButton, uid } from "../shared";
+
+const statuses = ["хочу", "бронь", "оплачено"];
+const flag = (city: string) =>
+  /зальцбург|австри/i.test(city)
+    ? "🇦🇹"
+    : /мюнхен|германи/i.test(city)
+      ? "🇩🇪"
+      : /праг/i.test(city)
+        ? "🇨🇿"
+        : "🇮🇹";
+const readonly = () => window.dispatchEvent(new CustomEvent("trip:readonly"));
+
+function deadline(lodge: LodgingRecord) {
+  if (!lodge.freeCancel)
+    return {
+      order: Infinity,
+      label: "— не указана",
+      status: "дата не указана",
+      tone: "bg-[var(--track)] text-[var(--muted)]",
+    };
+  const days = Math.round(
+    (new Date(`${lodge.freeCancel}T00:00:00`).getTime() -
+      new Date().setHours(0, 0, 0, 0)) /
+      86400000,
+  );
+  const label = new Date(`${lodge.freeCancel}T00:00:00`).toLocaleDateString(
+    "ru-RU",
+    { day: "numeric", month: "long", year: "numeric" },
+  );
+  if (days < 0)
+    return {
+      order: days,
+      label,
+      status: "отмена уже платная",
+      tone: "bg-[#f0ddd4] text-[#b95c3f]",
+    };
+  if (days === 0)
+    return {
+      order: days,
+      label,
+      status: "сегодня последний день",
+      tone: "bg-[#f6ead0] text-[#c8892f]",
+    };
+  if (days <= 7)
+    return {
+      order: days,
+      label,
+      status: `осталось ${days} дн. — скоро платно`,
+      tone: "bg-[#f6ead0] text-[#c8892f]",
+    };
+  return {
+    order: days,
+    label,
+    status: `бесплатно ещё ${days} дн.`,
+    tone: "bg-[#e6ead2] text-[#6f7a45]",
+  };
+}
+
+export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
+  const { data, updateData, isReadOnly } = useTripData();
+  const [sort, setSort] = useState<"asc" | "desc">("asc");
+  const [photo, setPhoto] = useState<Record<string, number>>({});
+  const [lightbox, setLightbox] = useState<{
+    id: string;
+    index: number;
+  } | null>(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  useEffect(() => {
+    if (!lightbox) return;
+    const key = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setLightbox(null);
+      if (event.key === "ArrowLeft") shiftLightbox(-1);
+      if (event.key === "ArrowRight") shiftLightbox(1);
+    };
+    window.addEventListener("keydown", key);
+    return () => window.removeEventListener("keydown", key);
+  });
+  if (!data) return null;
+
+  const guard = (action: () => void) => (isReadOnly ? readonly() : action());
+  const edit = (id: string, key: keyof LodgingRecord, value: string) =>
+    guard(() =>
+      updateData((current) => ({
+        ...current,
+        lodging: current.lodging.map((lodge) =>
+          lodge.id === id ? { ...lodge, [key]: value } : lodge,
+        ),
+      })),
+    );
+  const shift = (lodge: LodgingRecord, amount: number) =>
+    setPhoto((current) => ({
+      ...current,
+      [lodge.id]:
+        ((current[lodge.id] || 0) + amount + (lodge.photos?.length || 1)) %
+        (lodge.photos?.length || 1),
+    }));
+  const shiftLightbox = (amount: number) =>
+    setLightbox((current) => {
+      if (!current) return null;
+      const count =
+        data.lodging.find((lodge) => lodge.id === current.id)?.photos?.length ||
+        1;
+      return { ...current, index: (current.index + amount + count) % count };
+    });
+  const copy = async (lodge: LodgingRecord) => {
+    if (!lodge.link)
+      return window.alert("Для этого жилья ссылка ещё не добавлена.");
+    try {
+      await navigator.clipboard.writeText(lodge.link);
+    } catch {
+      /* Opening the link remains available. */
+    }
+    setCopied(lodge.id);
+    window.setTimeout(() => setCopied(null), 1600);
+  };
+
+  if (cancellation) {
+    const list = data.lodging
+      .map((lodge) => ({ lodge, deadline: deadline(lodge) }))
+      .sort((a, b) => {
+        if (!Number.isFinite(a.deadline.order))
+          return Number.isFinite(b.deadline.order) ? 1 : 0;
+        if (!Number.isFinite(b.deadline.order)) return -1;
+        return (
+          (a.deadline.order - b.deadline.order) * (sort === "asc" ? 1 : -1)
+        );
+      });
+    return (
+      <>
+        <PanelTitle eyebrow="Не пропустить срок">Бесплатная отмена</PanelTitle>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="max-w-xl text-sm text-[var(--muted)]">
+            Сроки бесплатной отмены по каждому жилью. Дату можно менять здесь.
+          </p>
+          <button
+            className={subtleButton}
+            onClick={() => setSort(sort === "asc" ? "desc" : "asc")}
+          >
+            Сначала {sort === "asc" ? "ближние" : "дальние"}
+          </button>
+        </div>
+        <div className="space-y-3 rounded-2xl border border-[var(--line)] bg-[var(--track)] p-4">
+          {list.map(({ lodge, deadline: item }) => (
+            <article
+              className="flex flex-wrap items-center gap-4 rounded-xl border border-[var(--line)] bg-[var(--paper)] p-4"
+              key={lodge.id}
+            >
+              <div className="min-w-48 flex-1">
+                <h3 className="font-display text-xl font-semibold">
+                  {flag(lodge.city)} {lodge.name}
+                </h3>
+                <p className="text-xs text-[var(--muted)]">
+                  {lodge.city} · {lodge.dates}
+                </p>
+              </div>
+              <div className="min-w-40 text-right">
+                <p className="text-[11px] uppercase tracking-wider text-[var(--muted)]">
+                  бесплатно до
+                </p>
+                <p className="font-display text-lg font-semibold">
+                  {item.label}
+                </p>
+                <span
+                  className={`mt-1 inline-block rounded-full px-3 py-1 text-xs font-bold ${item.tone}`}
+                >
+                  {item.status}
+                </span>
+              </div>
+              <input
+                aria-label={`Дата отмены ${lodge.name}`}
+                className={`${field} w-auto`}
+                type="date"
+                value={lodge.freeCancel || ""}
+                onChange={(event) =>
+                  edit(lodge.id, "freeCancel", event.target.value)
+                }
+              />
+            </article>
+          ))}
+        </div>
+      </>
+    );
+  }
+
+  const active =
+    lightbox && data.lodging.find((lodge) => lodge.id === lightbox.id);
+  return (
+    <>
+      <PanelTitle eyebrow="Где мы остановимся">Жильё</PanelTitle>
+      <div className="grid gap-5 rounded-2xl border border-[var(--line)] bg-[var(--track)] p-4 md:grid-cols-2">
+        {data.lodging.map((lodge) => {
+          const index = (photo[lodge.id] || 0) % (lodge.photos?.length || 1);
+          const photos = lodge.photos || [];
+          return (
+            <article
+              id={`lodge-card-${lodge.id}`}
+              className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--paper)]"
+              key={lodge.id}
+            >
+              {photos.length ? (
+                <div className="relative h-56 overflow-hidden">
+                  <img
+                    className="h-full w-full cursor-zoom-in object-cover"
+                    style={{
+                      objectPosition:
+                        lodge.objPosList?.[index] || lodge.objPos || "center",
+                    }}
+                    src={photos[index]}
+                    alt={lodge.name}
+                    onClick={() => setLightbox({ id: lodge.id, index })}
+                  />
+                  <span className="absolute left-3 top-3 rounded-full bg-[var(--ac)] px-3 py-1 text-xs font-bold text-white">
+                    {lodge.status}
+                  </span>
+                  {photos.length > 1 && (
+                    <>
+                      <button
+                        className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 px-3 py-2 text-white"
+                        title="Назад"
+                        onClick={() => shift(lodge, -1)}
+                      >
+                        ‹
+                      </button>
+                      <button
+                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/55 px-3 py-2 text-white"
+                        title="Вперёд"
+                        onClick={() => shift(lodge, 1)}
+                      >
+                        ›
+                      </button>
+                      <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+                        {photos.map((_, dot) => (
+                          <span
+                            className={`h-2 w-2 rounded-full ${dot === index ? "bg-white" : "bg-white/50"}`}
+                            key={dot}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              ) : (
+                <div className="grid h-56 place-items-center bg-[var(--track)] text-sm text-[var(--muted)]">
+                  фото жилья
+                </div>
+              )}
+              <div className="space-y-3 p-5">
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--ac)]">
+                  {flag(lodge.city)} {lodge.city}
+                </p>
+                <input
+                  className={`${field} font-display text-xl font-bold`}
+                  value={lodge.name}
+                  onChange={(event) =>
+                    edit(lodge.id, "name", event.target.value)
+                  }
+                />
+                <div className="grid grid-cols-[1fr_7rem] gap-2">
+                  <input
+                    className={field}
+                    value={lodge.dates}
+                    onChange={(event) =>
+                      edit(lodge.id, "dates", event.target.value)
+                    }
+                  />
+                  <input
+                    className={field}
+                    value={lodge.price}
+                    onChange={(event) =>
+                      edit(lodge.id, "price", event.target.value)
+                    }
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {statuses.map((status) => (
+                    <button
+                      className={`rounded-full border px-3 py-1.5 text-xs font-semibold ${lodge.status === status ? "border-[var(--ac)] bg-[var(--ac)] text-white" : "border-[var(--line)]"}`}
+                      key={status}
+                      onClick={() => edit(lodge.id, "status", status)}
+                    >
+                      {status}
+                    </button>
+                  ))}
+                </div>
+                <textarea
+                  className={`${field} min-h-20 resize-y`}
+                  placeholder="заметка / удобства…"
+                  value={lodge.notes}
+                  onChange={(event) =>
+                    edit(lodge.id, "notes", event.target.value)
+                  }
+                />
+                <input
+                  className={field}
+                  placeholder="Ссылка на Букинг"
+                  value={lodge.link}
+                  onChange={(event) =>
+                    edit(lodge.id, "link", event.target.value)
+                  }
+                />
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex gap-3 text-sm font-semibold">
+                    <a
+                      className="text-[var(--ac)]"
+                      href={lodge.link || undefined}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      Ссылка на Букинг →
+                    </a>
+                    <button
+                      title="Скопировать ссылку"
+                      onClick={() => void copy(lodge)}
+                    >
+                      {copied === lodge.id ? "✓" : "⧉"}
+                    </button>
+                  </div>
+                  <button
+                    className="text-sm text-[var(--muted)]"
+                    onClick={() =>
+                      guard(() =>
+                        updateData((current) => ({
+                          ...current,
+                          lodging: current.lodging.filter(
+                            (item) => item.id !== lodge.id,
+                          ),
+                        })),
+                      )
+                    }
+                  >
+                    удалить
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+        <button
+          className="min-h-52 rounded-2xl border-2 border-dashed border-[var(--line)] text-sm font-semibold text-[var(--muted)] hover:border-[var(--ac)]"
+          onClick={() =>
+            guard(() =>
+              updateData((current) => {
+                const id = uid("l");
+                return {
+                  ...current,
+                  lodging: [
+                    ...current.lodging,
+                    {
+                      id,
+                      slot: `lodge_${id}`,
+                      city: "Новый город",
+                      name: "Название жилья",
+                      dates: "даты",
+                      price: "€",
+                      status: "хочу",
+                      link: "",
+                      notes: "",
+                    },
+                  ],
+                };
+              }),
+            )
+          }
+        >
+          + добавить вариант жилья
+        </button>
+      </div>
+      {active?.photos && lightbox && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/90 p-8"
+          role="dialog"
+          aria-modal="true"
+          onClick={(event) =>
+            event.currentTarget === event.target && setLightbox(null)
+          }
+        >
+          <img
+            className="max-h-full max-w-full object-contain"
+            src={active.photos[lightbox.index]}
+            alt={active.name}
+          />
+          <button
+            className="absolute right-6 top-5 text-4xl text-white"
+            title="Закрыть"
+            onClick={() => setLightbox(null)}
+          >
+            ×
+          </button>
+          {active.photos.length > 1 && (
+            <>
+              <button
+                className="absolute left-5 top-1/2 text-5xl text-white"
+                title="Назад"
+                onClick={() => shiftLightbox(-1)}
+              >
+                ‹
+              </button>
+              <button
+                className="absolute right-5 top-1/2 text-5xl text-white"
+                title="Вперёд"
+                onClick={() => shiftLightbox(1)}
+              >
+                ›
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
