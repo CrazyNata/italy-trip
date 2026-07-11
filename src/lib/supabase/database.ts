@@ -7,6 +7,7 @@ export interface TripSummary {
   startDate: string | null;
   endDate: string | null;
   role: TripRole;
+  revision: number;
 }
 
 export interface TripMember {
@@ -21,7 +22,7 @@ export interface TripInvitation {
   id: string;
   tripId: string;
   email: string;
-  status: "pending" | "accepted" | "revoked";
+  status: "pending" | "accepted" | "revoked" | "expired";
   expiresAt: string;
   createdAt: string;
 }
