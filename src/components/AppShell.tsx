@@ -16,7 +16,7 @@ const tabs = [
 
 export function AppShell() {
   const { isOwner, error: authError } = useAuth()
-  const { data, loading, error, usingCache, refresh } = useTripData()
+  const { data, loading, error, usingCache, syncState, refresh, retrySave } = useTripData()
   const [selectedTab, setSelectedTab] = useState(0)
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([])
 
@@ -98,9 +98,9 @@ export function AppShell() {
       </header>
 
       <main className="mx-auto max-w-[1120px] px-4 pb-20 pt-7 sm:px-6">
-        {(loading || authError || error || !isOwner || usingCache) && <div className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${authError || error ? 'border-[#d8a08d] bg-[#fff2ed] text-[#7f3524]' : 'border-[var(--line)] bg-[var(--soft)] text-[var(--muted)]'}`} role="status">
-          <span>{loading ? 'Загружаем актуальный план…' : authError ?? error ?? (usingCache ? 'Показана локальная копия плана.' : 'Режим просмотра: редактировать план может только владелец.')}</span>
-          {error && <button className="rounded-lg border border-current px-2.5 py-1 font-semibold" onClick={() => void refresh()}>Повторить</button>}
+        {(loading || authError || error || !isOwner || usingCache || syncState !== 'clean') && <div className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${authError || error || syncState === 'failed' ? 'border-[#d8a08d] bg-[#fff2ed] text-[#7f3524]' : 'border-[var(--line)] bg-[var(--soft)] text-[var(--muted)]'}`} role="status">
+          <span>{loading ? 'Загружаем актуальный план…' : authError ?? error ?? (syncState === 'dirty' ? 'Есть несохранённые изменения…' : syncState === 'saving' ? 'Сохраняем изменения…' : usingCache ? 'Показана локальная копия плана.' : 'Режим просмотра: редактировать план может только владелец.')}</span>
+          {syncState === 'failed' ? <button className="rounded-lg border border-current px-2.5 py-1 font-semibold" onClick={() => void retrySave()}>Повторить сохранение</button> : error && <button className="rounded-lg border border-current px-2.5 py-1 font-semibold" onClick={() => void refresh()}>Повторить загрузку</button>}
         </div>}
         {tabs.map((tab, index) => (
           <section

@@ -1,5 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import type { User } from '@supabase/supabase-js'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import type { AuthChangeEvent, User } from '@supabase/supabase-js'
 
 import { supabase } from '../lib/supabase/client'
 
@@ -44,17 +44,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mapboxToken, setMapboxToken] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [rememberLogin, setRememberLogin] = useState(remembered)
+  const userId = useRef<string | null>(null)
 
   useEffect(() => {
     let active = true
     let generation = 0
 
-    async function applyUser(nextUser: User | null) {
+    async function applyIdentity(nextUser: User | null, preserveError = false) {
       const current = ++generation
       setLoading(true)
-      setError(null)
+      if (!preserveError) setError(null)
       if (!nextUser) {
         if (!active) return
+        userId.current = null
         setUser(null)
         setIsOwner(false)
         setMapboxToken(null)
@@ -67,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         supabase.from('app_config').select('value').eq('key', 'mapbox_token').maybeSingle(),
       ])
       if (!active || current !== generation) return
+      userId.current = nextUser.id
       setUser(nextUser)
       setIsOwner(!adminResult.error && Boolean(adminResult.data?.length))
       setMapboxToken(!configResult.error && typeof configResult.data?.value === 'string' ? configResult.data.value : null)
@@ -74,16 +77,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false)
     }
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      void applyUser(session?.user ?? null)
+    function onAuthChange(event: AuthChangeEvent, nextUser: User | null) {
+      if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || (event === 'SIGNED_IN' && nextUser?.id === userId.current)) {
+        if (nextUser) setUser(nextUser)
+        return
+      }
+      if (event === 'INITIAL_SESSION') return
+      void applyIdentity(nextUser)
+    }
+
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      onAuthChange(event, session?.user ?? null)
     })
 
     if (!remembered()) {
-      void supabase.auth.signOut({ scope: 'local' }).then(() => applyUser(null))
+      void supabase.auth.signOut({ scope: 'local' }).then(() => applyIdentity(null))
     } else {
       void supabase.auth.getSession().then(({ data, error: sessionError }) => {
-        if (sessionError && active) setError(humanAuthError(sessionError))
-        void applyUser(data.session?.user ?? null)
+        if (sessionError) {
+          if (active) setError(humanAuthError(sessionError))
+          void applyIdentity(null, true)
+          return
+        }
+        void applyIdentity(data.session?.user ?? null)
       })
     }
 

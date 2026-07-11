@@ -4,12 +4,17 @@ import { useAppearance, type ThemeName } from '../appearance/AppearanceContext'
 import { useAuth } from './AuthContext'
 
 const swatches: Array<{ name: ThemeName; color: string }> = [{ name: 'Терракота', color: '#2a7089' }, { name: 'Охра', color: '#d99a4e' }, { name: 'Олива', color: '#5f8a6a' }]
+const MAX_AVATAR_BYTES = 10 * 1024 * 1024
+const MAX_AVATAR_DIMENSION = 12000
+const MAX_AVATAR_PIXELS = 40_000_000
 
 async function avatarDataUrl(file: File) {
   if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) throw new Error('Выберите PNG, JPEG или WebP')
+  if (file.size > MAX_AVATAR_BYTES) throw new Error('Фото должно быть меньше 10 МБ')
   const url = URL.createObjectURL(file)
   try {
     const image = await new Promise<HTMLImageElement>((resolve, reject) => { const element = new Image(); element.onload = () => resolve(element); element.onerror = reject; element.src = url })
+    if (!image.naturalWidth || !image.naturalHeight || image.naturalWidth > MAX_AVATAR_DIMENSION || image.naturalHeight > MAX_AVATAR_DIMENSION || image.naturalWidth * image.naturalHeight > MAX_AVATAR_PIXELS) throw new Error('Размер изображения слишком большой')
     const scale = Math.min(320, Math.max(image.naturalWidth, image.naturalHeight)) / Math.max(image.naturalWidth, image.naturalHeight)
     const canvas = document.createElement('canvas')
     canvas.width = Math.round(image.naturalWidth * scale); canvas.height = Math.round(image.naturalHeight * scale)

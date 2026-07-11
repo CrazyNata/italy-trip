@@ -82,7 +82,7 @@ export interface TripData {
 }
 
 export interface TripPayload {
-  v: number
+  v: typeof TRIP_STATE_VERSION
   data: TripData
 }
 
@@ -96,26 +96,50 @@ function hasString(value: JsonRecord, key: string) {
   return typeof value[key] === 'string'
 }
 
+function hasFiniteNumber(value: JsonRecord, key: string) {
+  return typeof value[key] === 'number' && Number.isFinite(value[key])
+}
+
+function hasOptionalString(value: JsonRecord, key: string) {
+  return value[key] === undefined || typeof value[key] === 'string'
+}
+
+function hasOptionalFiniteNumber(value: JsonRecord, key: string) {
+  return value[key] === undefined || hasFiniteNumber(value, key)
+}
+
+function hasOptionalStringArray(value: JsonRecord, key: string) {
+  return value[key] === undefined || (Array.isArray(value[key]) && value[key].every((item) => typeof item === 'string'))
+}
+
 function isItem(value: unknown): value is ItineraryItem {
-  return isRecord(value) && hasString(value, 'id') && hasString(value, 'title') && typeof value.done === 'boolean'
+  return isRecord(value) && hasString(value, 'id') && hasString(value, 'title') &&
+    typeof value.done === 'boolean' && hasOptionalString(value, 'time')
 }
 
 function isDay(value: unknown): value is TripDay {
   return isRecord(value) && hasString(value, 'id') && hasString(value, 'iso') &&
-    typeof value.dayNum === 'number' && hasString(value, 'month') && hasString(value, 'weekday') &&
-    hasString(value, 'city') && hasString(value, 'draft') && Array.isArray(value.items) && value.items.every(isItem)
+    hasFiniteNumber(value, 'dayNum') && hasString(value, 'month') && hasString(value, 'weekday') &&
+    hasString(value, 'city') && hasString(value, 'draft') && hasOptionalString(value, 'dayMapUrl') &&
+    Array.isArray(value.items) && value.items.every(isItem)
 }
 
 function isLodging(value: unknown): value is Lodging {
-  return isRecord(value) && ['id', 'slot', 'city', 'name', 'dates', 'price', 'status', 'link', 'notes'].every((key) => hasString(value, key))
+  return isRecord(value) && ['id', 'slot', 'city', 'name', 'dates', 'price', 'status', 'link', 'notes'].every((key) => hasString(value, key)) &&
+    hasOptionalString(value, 'freeCancel') && hasOptionalString(value, 'objPos') &&
+    hasOptionalStringArray(value, 'photos') && hasOptionalStringArray(value, 'objPosList')
 }
 
 function isSight(value: unknown): value is Sight {
-  return isRecord(value) && ['id', 'name', 'city', 'group', 'subcategory'].every((key) => hasString(value, key)) && typeof value.done === 'boolean'
+  const coordinates = value && isRecord(value) ? value.lnglat : undefined
+  return isRecord(value) && ['id', 'name', 'city', 'group', 'subcategory'].every((key) => hasString(value, key)) &&
+    typeof value.done === 'boolean' && hasOptionalString(value, 'description') && hasOptionalString(value, 'photo') &&
+    hasOptionalFiniteNumber(value, 'walkDay') && hasOptionalFiniteNumber(value, 'walkOrder') &&
+    (coordinates === undefined || (Array.isArray(coordinates) && coordinates.length === 2 && coordinates.every((coordinate) => typeof coordinate === 'number' && Number.isFinite(coordinate))))
 }
 
 function isExpense(value: unknown): value is Expense {
-  return isRecord(value) && hasString(value, 'id') && hasString(value, 'label') && hasString(value, 'category') && typeof value.amount === 'number'
+  return isRecord(value) && hasString(value, 'id') && hasString(value, 'label') && hasString(value, 'category') && hasFiniteNumber(value, 'amount')
 }
 
 function isLink(value: unknown): value is TripLink {
@@ -123,16 +147,16 @@ function isLink(value: unknown): value is TripLink {
 }
 
 export function parseTripPayload(value: unknown): TripPayload | null {
-  if (!isRecord(value) || typeof value.v !== 'number' || !isRecord(value.data)) return null
+  if (!isRecord(value) || value.v !== TRIP_STATE_VERSION || !isRecord(value.data)) return null
   const data = value.data
   if (!isRecord(data.trip) || !hasString(data.trip, 'start') || !hasString(data.trip, 'end') ||
-    typeof data.trip.people !== 'number' || typeof data.trip.dogs !== 'number' ||
+    !hasFiniteNumber(data.trip, 'people') || !hasFiniteNumber(data.trip, 'dogs') ||
     !Array.isArray(data.days) || !data.days.every(isDay) ||
     !Array.isArray(data.lodging) || !data.lodging.every(isLodging) ||
     !Array.isArray(data.sights) || !data.sights.every(isSight) ||
     !Array.isArray(data.expenses) || !data.expenses.every(isExpense) ||
     !Array.isArray(data.links) || !data.links.every(isLink) ||
-    typeof data.romeSightsV !== 'number' || typeof data.budgetV !== 'number' || typeof data.notes !== 'string') return null
+    !hasFiniteNumber(data, 'romeSightsV') || !hasFiniteNumber(data, 'budgetV') || typeof data.notes !== 'string') return null
   return value as unknown as TripPayload
 }
 
