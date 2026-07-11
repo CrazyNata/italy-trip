@@ -45,6 +45,26 @@ type RouteState = {
   duration: number;
 } | null;
 
+function CoordinateInputs({ sight, onChange }: { sight: Sight; onChange: (lnglat?: [number, number]) => void }) {
+  const [draft, setDraft] = useState({ lng: sight.lnglat?.[0]?.toString() ?? "", lat: sight.lnglat?.[1]?.toString() ?? "" });
+  useEffect(() => {
+    setDraft({ lng: sight.lnglat?.[0]?.toString() ?? "", lat: sight.lnglat?.[1]?.toString() ?? "" });
+  }, [sight.id, sight.lnglat?.[0], sight.lnglat?.[1]]);
+  const update = (key: "lng" | "lat", value: string) => {
+    const next = { ...draft, [key]: value };
+    setDraft(next);
+    if (!next.lng.trim() && !next.lat.trim()) return onChange(undefined);
+    if (!next.lng.trim() || !next.lat.trim()) return;
+    const lng = Number(next.lng);
+    const lat = Number(next.lat);
+    if (Number.isFinite(lng) && lng >= -180 && lng <= 180 && Number.isFinite(lat) && lat >= -90 && lat <= 90) onChange([lng, lat]);
+  };
+  return <div className="mt-3 grid grid-cols-2 gap-2">
+    <label className="text-xs text-[var(--muted)]">Долгота<input className={`${field} mt-1`} type="number" min="-180" max="180" step="any" value={draft.lng} onChange={(event) => update("lng", event.target.value)}/></label>
+    <label className="text-xs text-[var(--muted)]">Широта<input className={`${field} mt-1`} type="number" min="-90" max="90" step="any" value={draft.lat} onChange={(event) => update("lat", event.target.value)}/></label>
+  </div>;
+}
+
 function WalkingMap({
   sights,
   readOnly,
@@ -210,6 +230,8 @@ export function Sights() {
     photo?: string;
   } | null>(null);
   const wikiRequest = useRef<{ id: string; controller: AbortController } | null>(null);
+  const geocodeController = useRef(new AbortController());
+  const mounted = useRef(true);
   const [walkCity, setWalkCity] = useState("");
   const [walkDay, setWalkDay] = useState(1);
   const [geocoding, setGeocoding] = useState(false);
@@ -220,7 +242,15 @@ export function Sights() {
   const closeButton = useRef<HTMLButtonElement>(null);
   const closeInfo = () => { wikiRequest.current?.controller.abort(); wikiRequest.current = null; setOpen(null); };
   useDialogKeyboard({ open: !!open, onClose: closeInfo, initialFocus: closeButton });
-  useEffect(() => () => wikiRequest.current?.controller.abort(), []);
+  useEffect(() => {
+    mounted.current = true;
+    geocodeController.current = new AbortController();
+    return () => {
+      mounted.current = false;
+      wikiRequest.current?.controller.abort();
+      geocodeController.current.abort();
+    };
+  }, []);
   if (!data) return null;
   const cities = [
     ...new Set(data.sights.map((sight) => sight.city).filter(Boolean)),
@@ -270,21 +300,24 @@ export function Sights() {
   async function geocodeSight(sight: Sight) {
     try {
       let center: [number, number] | undefined;
-      if (mapboxToken) {
-        const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(`${sight.name}, ${sight.city}`)}.json?limit=1&language=ru&access_token=${encodeURIComponent(mapboxToken)}`);
-        if (response.ok) center = ((await response.json()) as {features?:Array<{center:[number,number]}>}).features?.[0]?.center;
-      }
-      if (!center) {
-        const wait = Math.max(0, nextNominatimRequest - Date.now());
-        if (wait) await new Promise((resolve) => window.setTimeout(resolve, wait));
-        nextNominatimRequest = Date.now() + 1100;
-        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ru&q=${encodeURIComponent(`${sight.name}, ${sight.city}`)}`);
-        if (response.ok) {
-          const item = ((await response.json()) as Array<{lat:string;lon:string}>)[0];
+      const wait = Math.max(0, nextNominatimRequest - Date.now());
+      if (wait) await new Promise((resolve) => window.setTimeout(resolve, wait));
+      if (!mounted.current) return false;
+      nextNominatimRequest = Date.now() + 1100;
+      try {
+        const nominatim = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ru&q=${encodeURIComponent(`${sight.name}, ${sight.city}`)}`, { signal: geocodeController.current.signal });
+        if (nominatim.ok) {
+          const item = ((await nominatim.json()) as Array<{lat:string;lon:string}>)[0];
           if (item && Number.isFinite(+item.lon) && Number.isFinite(+item.lat)) center = [+item.lon, +item.lat];
         }
+      } catch (error) {
+        if ((error as Error).name === "AbortError") throw error;
       }
-      if (!center) return false;
+      if (!center && mapboxToken) {
+        const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(`${sight.name}, ${sight.city}`)}.json?limit=1&language=ru&access_token=${encodeURIComponent(mapboxToken)}`, { signal: geocodeController.current.signal });
+        if (response.ok) center = ((await response.json()) as {features?:Array<{center:[number,number]}>}).features?.[0]?.center;
+      }
+      if (!center || !mounted.current) return false;
       updateData((current) => ({
         ...current,
         sights: current.sights.map((item) =>
@@ -305,8 +338,8 @@ export function Sights() {
     let found = 0;
     for (const sight of missing) {
       if (await geocodeSight(sight)) found += 1;
-      await new Promise((resolve) => window.setTimeout(resolve, 1100));
     }
+    if (!mounted.current) return;
     setGeocoding(false);
     toast(
       found
@@ -360,26 +393,42 @@ export function Sights() {
     if (result.error) return void toast("Не удалось загрузить фото");
     const photo = supabase.storage.from("place-photos").getPublicUrl(path)
       .data.publicUrl;
-    updateData((current) => ({
-      ...current,
-      sights: current.sights.map((item) =>
-        item.id === sight.id ? { ...item, photo, photoPath: path } : item,
-      ),
-    }));
-    if (sight.photoPath && sight.photoPath !== path) {
-      const { error } = await supabase.storage.from("place-photos").remove([sight.photoPath]);
+    let oldPath = "";
+    let retained = false;
+    updateData((current) => ({ ...current, sights: current.sights.map((item) => {
+      if (item.id !== sight.id) return item;
+      retained = true;
+      oldPath = item.photoPath || "";
+      return { ...item, photo, photoPath: path };
+    }) }));
+    if (!retained) {
+      await supabase.storage.from("place-photos").remove([path]);
+      return;
+    }
+    if (oldPath && oldPath !== path) {
+      const { error } = await supabase.storage.from("place-photos").remove([oldPath]);
       if (error) toast("Новое фото сохранено, старое не удалось удалить");
     }
     toast("Фото сохранено");
   }
   async function removeSightPhoto(sight: Sight) {
     if (isReadOnly) return void toast();
-    if (sight.photoPath) {
-      const { error } = await supabase.storage.from("place-photos").remove([sight.photoPath]);
+    const path = data?.sights.find((item) => item.id === sight.id)?.photoPath || "";
+    if (path) {
+      const { error } = await supabase.storage.from("place-photos").remove([path]);
       if (error) return void toast("Не удалось удалить фото из хранилища");
     }
-    mutate(sight.id, { photo: "", photoPath: "" });
+    updateData((current) => ({ ...current, sights: current.sights.map((item) => item.id === sight.id && (item.photoPath || "") === path ? { ...item, photo: "", photoPath: "" } : item) }));
     toast("Фото удалено");
+  }
+  async function removeSight(sight: Sight) {
+    if (isReadOnly) return void toast();
+    const path = data?.sights.find((item) => item.id === sight.id)?.photoPath || "";
+    if (path) {
+      const { error } = await supabase.storage.from("place-photos").remove([path]);
+      if (error) return void toast("Не удалось удалить фото места из хранилища");
+    }
+    updateData((current) => ({ ...current, sights: current.sights.filter((item) => item.id !== sight.id || (item.photoPath || "") !== path) }));
   }
   function add() {
     if (!draft.name.trim()) return;
@@ -787,16 +836,7 @@ export function Sights() {
                           </label>
                           <button
                             title="Удалить место"
-                            onClick={() =>
-                              guard(() =>
-                                updateData((current) => ({
-                                  ...current,
-                                  sights: current.sights.filter(
-                                    (item) => item.id !== sight.id,
-                                  ),
-                                })),
-                              )
-                            }
+                            onClick={() => void removeSight(sight)}
                           >
                             ×
                           </button>
@@ -896,10 +936,7 @@ export function Sights() {
                 <strong className="mb-1 block text-xs uppercase tracking-wider">Wikipedia</strong>
                 {wiki?.id === selected.id ? wiki.text : "Загружаем описание…"}
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <label className="text-xs text-[var(--muted)]">Долгота<input className={`${field} mt-1`} type="number" step="any" value={selected.lnglat?.[0] ?? ""} onChange={(event) => { const value=Number(event.target.value); if(Number.isFinite(value)) mutate(selected.id,{lnglat:[value,selected.lnglat?.[1] ?? 0]}); }}/></label>
-                <label className="text-xs text-[var(--muted)]">Широта<input className={`${field} mt-1`} type="number" step="any" value={selected.lnglat?.[1] ?? ""} onChange={(event) => { const value=Number(event.target.value); if(Number.isFinite(value)) mutate(selected.id,{lnglat:[selected.lnglat?.[0] ?? 0,value]}); }}/></label>
-              </div>
+              <CoordinateInputs sight={selected} onChange={(lnglat) => mutate(selected.id, { lnglat })}/>
               <a
                 className={`${subtleButton} mt-4 inline-block`}
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.name}, ${selected.city}`)}`}

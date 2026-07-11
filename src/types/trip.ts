@@ -184,10 +184,14 @@ function isSight(value: unknown): value is Sight {
     (coordinates === undefined ||
       (Array.isArray(coordinates) &&
         coordinates.length === 2 &&
-        coordinates.every(
-          (coordinate) =>
-            typeof coordinate === "number" && Number.isFinite(coordinate),
-        )))
+        typeof coordinates[0] === "number" &&
+        Number.isFinite(coordinates[0]) &&
+        coordinates[0] >= -180 &&
+        coordinates[0] <= 180 &&
+        typeof coordinates[1] === "number" &&
+        Number.isFinite(coordinates[1]) &&
+        coordinates[1] >= -90 &&
+        coordinates[1] <= 90))
   );
 }
 

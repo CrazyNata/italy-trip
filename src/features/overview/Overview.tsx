@@ -73,6 +73,8 @@ export function Overview() {
   const done = data.days.reduce((sum, day) => sum + day.items.filter((item) => item.done).length, 0) + data.sights.filter((sight) => sight.done).length;
   const progress = total ? Math.round(done / total * 100) : 0;
   const cities = [...new Set(data.lodging.map((lodge) => lodge.city))];
+  const tripDays = Math.round((new Date(`${data.trip.end}T00:00:00`).getTime() - new Date(`${data.trip.start}T00:00:00`).getTime()) / 86400000);
+  const nights = Number.isFinite(tripDays) ? Math.max(0, tripDays) : 0;
   const routeUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent("U Vlachovky 8, Praha, Česko")}&destination=${encodeURIComponent("U Vlachovky 8, Praha, Česko")}&waypoints=${data.lodging.map((lodge) => encodeURIComponent(lodge.city)).join("%7C")}&travelmode=driving`;
   return <>
     <section className="hero relative min-h-[340px] overflow-hidden rounded-[18px] border border-[var(--line)]" aria-label="Города маршрута">
@@ -98,7 +100,7 @@ export function Overview() {
     <section className="overview-summary">
       <div><p className="eyebrow">Маршрут путешествия</p><h2 className="font-display text-3xl font-semibold">Прага → Италия → Прага</h2><p className="mt-2 text-sm text-[var(--muted)]">{cities.join(" · ")}</p></div>
       <div className="progress-block"><div className="flex justify-between text-sm font-bold"><span>Готовность плана</span><span>{progress}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--track)]"><div className="h-full rounded-full bg-[var(--ol)] transition-[width]" style={{ width: `${progress}%` }} /></div><p className="mt-2 text-xs text-[var(--muted)]">{done} из {total} пунктов выполнено</p></div>
-      <div className="trip-stats"><span><b>{cities.length}</b> городов</span><span><b>{data.lodging.length}</b> ночёвок</span><span><b>{data.sights.filter((s) => s.done).length}/{data.sights.length}</b> мест</span><span><b>{data.trip.people}+{data.trip.dogs}</b> людей + собак</span></div>
+      <div className="trip-stats"><span><b>{cities.length}</b> городов</span><span><b>{nights}</b> ночёвок</span><span><b>{data.sights.filter((s) => s.done).length}/{data.sights.length}</b> мест</span><span><b>{data.trip.people}+{data.trip.dogs}</b> людей + собак</span></div>
     </section>
 
     <h2 className="section-heading">Карта маршрута</h2><p className="section-note">Нажмите на город, чтобы открыть его на Google Maps.</p>

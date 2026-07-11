@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { useTripData } from "../../trip/TripDataContext";
 import { button, useDialogKeyboard } from "../shared";
-import { all, closePhotoStore, del, exif, put, scale, type Photo } from "./store";
+import { all, closePhotoStore, del, exif, openPhotoStore, put, scale, type Photo } from "./store";
 
 const MONTHS = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 const wait = (delay: number) => new Promise((resolve) => window.setTimeout(resolve, delay));
@@ -19,13 +19,15 @@ function destination(city: string) {
   return (city.split("→").pop() ?? city).replace(/\(.*?\)/g, "").trim();
 }
 
-async function reverseGeocode(photo: Photo) {
+async function reverseGeocode(photo: Photo, signal: AbortSignal) {
   if (photo.lat == null || photo.lng == null) return null;
   const request = geocodeQueue.then(async () => {
+    if (signal.aborted) throw new DOMException("Aborted", "AbortError");
     await wait(Math.max(0, 1100 - (Date.now() - lastGeocodeRequest)));
+    if (signal.aborted) throw new DOMException("Aborted", "AbortError");
     lastGeocodeRequest = Date.now();
     try {
-      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${photo.lat}&lon=${photo.lng}&zoom=12&accept-language=ru`);
+      const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${photo.lat}&lon=${photo.lng}&zoom=12&accept-language=ru`, { signal });
       if (!response.ok) return null;
       const json: unknown = await response.json();
       if (!json || typeof json !== "object") return null;
@@ -33,11 +35,12 @@ async function reverseGeocode(photo: Photo) {
       const address = record.address && typeof record.address === "object" ? record.address as Record<string, unknown> : {};
       const place = address.city ?? address.town ?? address.village ?? address.municipality ?? address.county ?? record.name;
       return typeof place === "string" && place.trim() ? place : null;
-    } catch {
+    } catch (error) {
+      if ((error as Error).name === "AbortError") throw error;
       return null;
     }
   });
-  geocodeQueue = request;
+  geocodeQueue = request.catch(() => undefined);
   return request;
 }
 
@@ -48,30 +51,35 @@ export function Photos() {
   const [report, setReport] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
+  const lifecycle = useRef<{ active: boolean; session: number; controller: AbortController } | null>(null);
 
   useEffect(() => {
-    let active = true;
-    void all().then(async (stored) => {
-      if (!active) return;
+    const state = { active: true, session: openPhotoStore(), controller: new AbortController() };
+    lifecycle.current = state;
+    void all(state.session).then(async (stored) => {
+      if (!state.active) return;
       setPhotos(stored);
       const pending = stored.filter((photo) => photo.lat != null && photo.lng != null && !photo.place);
       for (const photo of pending) {
-        if (!active) break;
-        const place = await reverseGeocode(photo);
+        if (!state.active) break;
+        const place = await reverseGeocode(photo, state.controller.signal);
         if (place) {
           const resolved = { ...photo, place };
           try {
-            await put(resolved);
-            if (active) setPhotos((current) => current.map((item) => item.id === photo.id ? resolved : item));
+            if (!state.active) break;
+            await put(state.session, resolved);
+            if (state.active) setPhotos((current) => current.map((item) => item.id === photo.id ? resolved : item));
           } catch {
             // The photo remains available even if enriching the persisted record fails.
           }
         }
       }
-    }).catch(() => active && setReport("Не удалось загрузить сохранённые фото."));
+    }).catch((error) => state.active && (error as Error).name !== "AbortError" && setReport("Не удалось загрузить сохранённые фото."));
     return () => {
-      active = false;
-      closePhotoStore();
+      state.active = false;
+      state.controller.abort();
+      closePhotoStore(state.session);
+      if (lifecycle.current === state) lifecycle.current = null;
     };
   }, []);
 
@@ -102,12 +110,15 @@ export function Photos() {
   async function importFiles(fileList: FileList | null) {
     const files = [...(fileList ?? [])].filter((file) => file.type.startsWith("image/"));
     if (!files.length) return;
+    const state = lifecycle.current;
+    if (!state?.active) return;
     let succeeded = 0;
     let failed = 0;
     setReport("");
     setBusy(`Обработка 0 из ${files.length}…`);
     try {
       for (let index = 0; index < files.length; index += 1) {
+        if (!state.active) return;
         try {
           const file = files[index];
           const metadata = exif(await file.arrayBuffer());
@@ -116,25 +127,29 @@ export function Photos() {
           let photo: Photo = {
             id: `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
             thumb,
-            iso: metadata.iso ?? null,
+            iso: metadata.iso ?? new Date(file.lastModified).toISOString().slice(0, 10),
             lat: metadata.lat ?? null,
             lng: metadata.lng ?? null,
             place: null,
           };
           if (photo.lat != null && photo.lng != null) {
-            const place = await reverseGeocode(photo);
+            const place = await reverseGeocode(photo, state.controller.signal);
             if (place) photo = { ...photo, place };
           }
-          await put(photo);
+          if (!state.active) return;
+          await put(state.session, photo);
+          if (!state.active) return;
           setPhotos((current) => [...current, photo]);
           succeeded += 1;
-        } catch {
+        } catch (error) {
+          if (!state.active || (error as Error).name === "AbortError") return;
           failed += 1;
         } finally {
-          setBusy(`Обработка ${index + 1} из ${files.length}…`);
+          if (state.active) setBusy(`Обработка ${index + 1} из ${files.length}…`);
         }
       }
     } finally {
+      if (!state.active) return;
       setBusy("");
       setReport(failed
         ? `Загружено: ${succeeded}. Не удалось обработать: ${failed}.`
@@ -143,12 +158,15 @@ export function Photos() {
   }
 
   async function remove(id: string) {
+    const state = lifecycle.current;
+    if (!state?.active) return;
     try {
-      await del(id);
+      await del(state.session, id);
+      if (!state.active) return;
       setPhotos((current) => current.filter((photo) => photo.id !== id));
       setReport("Фото удалено.");
     } catch {
-      setReport("Не удалось удалить фото.");
+      if (state.active) setReport("Не удалось удалить фото.");
     }
   }
 

@@ -8,8 +8,10 @@ export type Photo = {
 };
 
 let databasePromise: Promise<IDBDatabase> | null = null;
+let storeSession = 0;
 
-function database() {
+function database(session: number) {
+  if (session !== storeSession) return Promise.reject(new Error("Photo store session closed"));
   if (databasePromise) return databasePromise;
   databasePromise = new Promise<IDBDatabase>((resolve, reject) => {
     const request = indexedDB.open("italy_photos_db", 1);
@@ -19,7 +21,10 @@ function database() {
       }
     };
     request.onsuccess = () => {
-      request.result.onversionchange = () => closePhotoStore();
+      request.result.onversionchange = () => {
+        request.result.close();
+        databasePromise = null;
+      };
       resolve(request.result);
     };
     request.onerror = () => {
@@ -34,14 +39,22 @@ function database() {
   return databasePromise;
 }
 
-export function closePhotoStore() {
+export function openPhotoStore() {
+  storeSession += 1;
+  return storeSession;
+}
+
+export function closePhotoStore(session: number) {
+  if (session !== storeSession) return;
+  storeSession += 1;
   const openDatabase = databasePromise;
   databasePromise = null;
   void openDatabase?.then((db) => db.close()).catch(() => undefined);
 }
 
-export async function all() {
-  const db = await database();
+export async function all(session: number) {
+  const db = await database(session);
+  if (session !== storeSession) throw new Error("Photo store session closed");
   return new Promise<Photo[]>((resolve, reject) => {
     const request = db.transaction("photos").objectStore("photos").getAll();
     request.onsuccess = () => resolve(request.result ?? []);
@@ -49,8 +62,9 @@ export async function all() {
   });
 }
 
-export async function put(photo: Photo) {
-  const db = await database();
+export async function put(session: number, photo: Photo) {
+  const db = await database(session);
+  if (session !== storeSession) throw new Error("Photo store session closed");
   return new Promise<void>((resolve, reject) => {
     const transaction = db.transaction("photos", "readwrite");
     transaction.objectStore("photos").put(photo);
@@ -60,8 +74,9 @@ export async function put(photo: Photo) {
   });
 }
 
-export async function del(id: string) {
-  const db = await database();
+export async function del(session: number, id: string) {
+  const db = await database(session);
+  if (session !== storeSession) throw new Error("Photo store session closed");
   return new Promise<void>((resolve, reject) => {
     const transaction = db.transaction("photos", "readwrite");
     transaction.objectStore("photos").delete(id);

@@ -15,11 +15,14 @@ const flag = (city: string) =>
         : "🇮🇹";
 const readonly = () => window.dispatchEvent(new CustomEvent("trip:readonly"));
 const toast = (message: string) => window.dispatchEvent(new CustomEvent("trip:toast", { detail: message }));
+const storageBase = new URL(supabase.storage.from("place-photos").getPublicUrl("__probe__").data.publicUrl);
+const storagePrefix = storageBase.pathname.slice(0, -"__probe__".length);
 const storagePath = (url: string) => {
   try {
-    const marker = "/storage/v1/object/public/place-photos/";
-    const index = new URL(url).pathname.indexOf(marker);
-    return index < 0 ? "" : decodeURIComponent(new URL(url).pathname.slice(index + marker.length));
+    const parsed = new URL(url);
+    return parsed.origin === storageBase.origin && parsed.pathname.startsWith(storagePrefix)
+      ? decodeURIComponent(parsed.pathname.slice(storagePrefix.length))
+      : "";
   } catch { return ""; }
 };
 
@@ -143,16 +146,23 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
   });
   const removePhoto = async (lodge: LodgingRecord, index: number) => {
     if (isReadOnly) return readonly();
-    const url = lodge.photos?.[index];
+    const url = data?.lodging.find((item) => item.id === lodge.id)?.photos?.[index];
     const path = url ? storagePath(url) : "";
     if (path) {
       const { error } = await supabase.storage.from("place-photos").remove([path]);
       if (error) return toast("Не удалось удалить фото из хранилища");
     }
-    const photos = (lodge.photos || []).filter((_, i) => i !== index);
-    const positions = (lodge.photos || []).map((_, i) => lodge.objPosList?.[i] || lodge.objPos || "center").filter((_, i) => i !== index);
-    edit(lodge.id, "photos", photos); edit(lodge.id, "objPosList", positions);
-    setPhoto((current) => ({ ...current, [lodge.id]: Math.min(current[lodge.id] || 0, Math.max(0, photos.length - 1)) }));
+    let photoCount = 0;
+    updateData((current) => ({ ...current, lodging: current.lodging.map((item) => {
+      if (item.id !== lodge.id) return item;
+      const currentIndex = (item.photos || []).indexOf(url || "");
+      if (currentIndex < 0) return item;
+      const photos = (item.photos || []).filter((_, i) => i !== currentIndex);
+      const objPosList = (item.photos || []).map((_, i) => item.objPosList?.[i] || item.objPos || "center").filter((_, i) => i !== currentIndex);
+      photoCount = photos.length;
+      return { ...item, photos, objPosList };
+    }) }));
+    setPhoto((current) => ({ ...current, [lodge.id]: Math.min(current[lodge.id] || 0, Math.max(0, photoCount - 1)) }));
   };
   const uploadPhoto = async (lodge: LodgingRecord, file?: File) => {
     if (!file) return;
@@ -163,10 +173,40 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
     const { error } = await supabase.storage.from("place-photos").upload(path, file, { contentType: file.type || "image/jpeg" });
     if (error) return toast("Не удалось загрузить фото");
     const url = supabase.storage.from("place-photos").getPublicUrl(path).data.publicUrl;
-    edit(lodge.id, "photos", [...(lodge.photos || []), url]);
-    edit(lodge.id, "objPosList", [...(lodge.objPosList || lodge.photos?.map(() => lodge.objPos || "center") || []), "center"]);
-    setPhoto((current) => ({ ...current, [lodge.id]: lodge.photos?.length || 0 }));
+    let appendedAt = -1;
+    updateData((current) => ({ ...current, lodging: current.lodging.map((item) => {
+      if (item.id !== lodge.id) return item;
+      const photos = item.photos || [];
+      appendedAt = photos.length;
+      return { ...item, photos: [...photos, url], objPosList: [...photos.map((_, i) => item.objPosList?.[i] || item.objPos || "center"), "center"] };
+    }) }));
+    if (appendedAt < 0) {
+      await supabase.storage.from("place-photos").remove([path]);
+      return;
+    }
+    setPhoto((current) => ({ ...current, [lodge.id]: appendedAt }));
     toast("Фото добавлено");
+  };
+  const removeLodging = async (lodge: LodgingRecord) => {
+    if (isReadOnly) return readonly();
+    const current = data?.lodging.find((item) => item.id === lodge.id);
+    if (!current) return;
+    const paths = [...new Set((current.photos || []).map(storagePath).filter(Boolean))];
+    if (paths.length) {
+      const { error } = await supabase.storage.from("place-photos").remove(paths);
+      if (error) return toast("Не удалось удалить фото жилья из хранилища");
+    }
+    const deletedPaths = new Set(paths);
+    let changed = false;
+    updateData((payload) => ({ ...payload, lodging: payload.lodging.filter((item) => {
+      if (item.id !== lodge.id) return true;
+      if ((item.photos || []).some((url) => { const path = storagePath(url); return path && !deletedPaths.has(path); })) {
+        changed = true;
+        return true;
+      }
+      return false;
+    }) }));
+    if (changed) toast("Галерея изменилась во время удаления. Повторите попытку.");
   };
 
   if (cancellation) {
@@ -390,16 +430,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
                   </div>
                   <button
                     className="text-sm text-[var(--muted)]"
-                    onClick={() =>
-                      guard(() =>
-                        updateData((current) => ({
-                          ...current,
-                          lodging: current.lodging.filter(
-                            (item) => item.id !== lodge.id,
-                          ),
-                        })),
-                      )
-                    }
+                    onClick={() => void removeLodging(lodge)}
                   >
                     удалить
                   </button>
