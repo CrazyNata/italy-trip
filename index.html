@@ -649,6 +649,16 @@
     </div>
   </sc-if>
 
+  <sc-if value="{{ sightInfoOpen }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ onCloseSightInfo }}" style="position:fixed;inset:0;z-index:10000;background:rgba(14,10,7,.68);display:grid;place-items:center;padding:20px">
+      <div style="width:min(100%,540px);max-height:min(760px,calc(100vh - 40px));overflow:auto;background:var(--card,#fff);border-radius:18px;box-shadow:0 18px 60px rgba(0,0,0,.35);position:relative">
+        <sc-if value="{{ sightInfoHasPhoto }}" hint-placeholder-val="{{ false }}"><img src="{{ sightInfoPhoto }}" alt="{{ sightInfoName }}" style="width:100%;height:230px;object-fit:cover;display:block"></sc-if>
+        <button onClick="{{ onCloseSightInfo }}" title="Закрыть" style="position:absolute;top:12px;right:12px;width:34px;height:34px;border:none;border-radius:50%;background:rgba(20,18,14,.62);color:#fff;cursor:pointer;font-size:16px"><i class="fa-solid fa-xmark"></i></button>
+        <div style="padding:22px"><div style="font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--ac,#2a7089);font-weight:700">{{ sightInfoCategory }} · {{ sightInfoCity }}</div><h2 style="font-family:'Playfair Display',serif;font-size:30px;line-height:1.05;font-weight:600;margin:8px 0 12px">{{ sightInfoName }}</h2><p style="font-size:15px;line-height:1.55;color:var(--muted,#5f7c7e);margin:0">{{ sightInfoDescription }}</p><a href="{{ sightInfoMapUrl }}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:7px;margin-top:18px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:9px 12px;color:var(--ink,#3b3228);font-size:13px;font-weight:700;text-decoration:none"><i class="fa-solid fa-location-dot" style="color:var(--ac,#2a7089)"></i>Открыть на карте</a></div>
+      </div>
+    </div>
+  </sc-if>
+
   <sc-if value="{{ heroFsOpen }}" hint-placeholder-val="{{ false }}">
     <div onClick="{{ onCloseHeroFs }}" style="position:fixed;inset:0;z-index:9999;background:rgba(14,10,7,.92);display:flex;align-items:center;justify-content:center;padding:40px">
       <img src="{{ heroFsSrc }}" alt="фото города" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;box-shadow:0 12px 60px rgba(0,0,0,.5)" />
@@ -918,8 +928,15 @@ class Component extends DCLogic {
     try { const t = localStorage.getItem('italy_theme'); if (t) this.setState({ theme: t }); } catch (e) {}
     this._onThemeChange = (e) => { const theme = e.detail; if (!theme) return; try { localStorage.setItem('italy_theme', theme); } catch (_) {} this.setState({ theme }); };
     this._onDarkChange = () => this.setState(s => { const dark = !s.dark; try { localStorage.setItem('italy_dark', dark ? '1' : '0'); } catch (_) {} return { dark }; });
+    this._onSightPhotoClick = (e) => {
+      const img = e.target;
+      if (!img || img.tagName !== 'IMG') return;
+      const sight = this.state.data.sights.find(s => s.photo && img.src === s.photo);
+      if (sight) this.setState({ sightInfoId: sight.id });
+    };
     window.addEventListener('trip:set-theme', this._onThemeChange);
     window.addEventListener('trip:toggle-dark', this._onDarkChange);
+    document.addEventListener('click', this._onSightPhotoClick);
     this.idbAll().then(list => { if (list && list.length) this.setState({ photos: list }, () => this.resolvePlaces()); }).catch(() => {});
     this.loadWeather();
     this.loadPhotos();
@@ -931,6 +948,7 @@ class Component extends DCLogic {
   componentWillUnmount() {
     window.removeEventListener('trip:set-theme', this._onThemeChange);
     window.removeEventListener('trip:toggle-dark', this._onDarkChange);
+    document.removeEventListener('click', this._onSightPhotoClick);
   }
 
   // Токен Mapbox не хранится в коде — auth.js подтягивает его из Supabase после входа
@@ -1079,6 +1097,26 @@ class Component extends DCLogic {
     if (!prevState || prevState.data !== this.state.data) {
       try { localStorage.setItem('italy_trip', JSON.stringify({ v: this.SEED_V, data: this.state.data })); } catch (e) {}
     }
+  }
+  sightDescription(id) {
+    const descriptions = {
+      rome_colosseum: 'Главный амфитеатр Древнего Рима. Лучше бронировать вход заранее, особенно на утро.',
+      rome_forum: 'Сердце античного Рима: храмы, арки и руины между Колизеем и Капитолием.',
+      rome_trevi: 'Самый известный фонтан Рима. Приходите рано утром или поздно вечером, когда меньше людей.',
+      rome_spanish_steps: 'Барочная лестница между площадью Испании и церковью Тринита-деи-Монти.',
+      rome_pantheon: 'Античный храм с огромным куполом и окулюсом. Вход бесплатный, но часто бывает очередь.',
+      rome_navona: 'Площадь на месте стадиона Домициана с фонтанами Бернини и атмосферными кафе.',
+      rome_sant_angelo: 'Бывший мавзолей Адриана, крепость и музей с панорамой Тибра и Ватикана.',
+      rome_st_peter: 'Главный собор Ватикана. Для купола и собора лучше заложить отдельное время.',
+      rome_vatican_museums: 'Большой музейный комплекс с Сикстинской капеллой. Билеты стоит купить заранее.',
+      rome_borghese_gallery: 'Небольшой музей шедевров Бернини, Караваджо и Рафаэля; посещение по времени.',
+      rome_villa_borghese: 'Большой парк для прогулки, отдыха и вида с холма Пинчо на город.',
+      rome_campo_de_fiori: 'Живая рыночная площадь: утром рынок, вечером рестораны и бары вокруг.',
+      rome_capitoline_museums: 'Музеи на Капитолийском холме с античной скульптурой и видом на Форум.',
+      rome_circus_maximus: 'Огромная долина древнеримского ипподрома между Палатином и Авентином.',
+      rome_caracalla: 'Монументальные руины терм III века, обычно заметно спокойнее центральных памятников.',
+    };
+    return descriptions[id] || 'Добавьте заметку или ссылку в карточку места, чтобы сохранить детали посещения.';
   }
   romeSights() {
     const city = 'Рим, Италия';
@@ -1315,6 +1353,7 @@ class Component extends DCLogic {
       const waypoints = walkLocated.slice(1, -1).map(point).join('|');
       return 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(origin) + '&destination=' + encodeURIComponent(destination) + (waypoints ? '&waypoints=' + encodeURIComponent(waypoints) : '') + '&travelmode=walking';
     })();
+    const sightInfo = this.state.sightInfoId && d.sights.find(s => s.id === this.state.sightInfoId);
     const walkRoute = this.state.walkRoute;
     const walkRouteLabel = this.state.walkRouteError || (walkRoute && walkRoute.signature === walkLocated.map(s => s.id + ':' + s.lnglat.join(',')).join('|')
       ? `Пешком: ${(walkRoute.distance / 1000).toFixed(1).replace('.', ',')} км · ${Math.round(walkRoute.duration / 60)} мин.`
@@ -1421,10 +1460,12 @@ class Component extends DCLogic {
       onHeroFsPrev: (e) => { e.stopPropagation(); this.setState(s => ({ heroFs: ((s.heroFs || 0) + 12) % 13 })); },
       onHeroFsNext: (e) => { e.stopPropagation(); this.setState(s => ({ heroFs: ((s.heroFs || 0) + 1) % 13 })); },
       lightboxOpen: !!this.state.lightbox,
+      sightInfoOpen: !!sightInfo, sightInfoName: sightInfo ? sightInfo.name : '', sightInfoCity: sightInfo ? sightInfo.city : '', sightInfoCategory: sightInfo ? subOf(sightInfo) : '', sightInfoDescription: sightInfo ? this.sightDescription(sightInfo.id) : '', sightInfoPhoto: sightInfo && sightInfo.photo || '', sightInfoHasPhoto: !!(sightInfo && sightInfo.photo), sightInfoMapUrl: sightInfo ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(sightInfo.name + ', ' + sightInfo.city) : '',
       lightboxMany: (() => { const lb = this.state.lightbox; if (!lb) return false; const lg = d.lodging.find(x => x.id === lb.id); return !!(lg && lg.photos && lg.photos.length > 1); })(),
       lightboxSrc: (() => { const lb = this.state.lightbox; if (!lb) return ''; const lg = d.lodging.find(x => x.id === lb.id); if (!lg || !lg.photos) return ''; return lg.photos[lb.idx % lg.photos.length]; })(),
       onOpenLightbox: (e) => { const id = e.currentTarget.dataset.id; const idx = ((this.state.lodgePhotoIdx || {})[id] || 0); this.setState({ lightbox: { id, idx } }); },
       onCloseLightbox: (e) => { if (e.currentTarget === e.target || e.currentTarget.title === 'Закрыть') this.setState({ lightbox: null }); },
+      onCloseSightInfo: (e) => { if (e.currentTarget === e.target || e.currentTarget.title === 'Закрыть') this.setState({ sightInfoId: null }); },
       onLightboxPrev: (e) => { e.stopPropagation(); this.setState(s => { const lb = s.lightbox; if (!lb) return {}; const lg = d.lodging.find(x => x.id === lb.id); const n = (lg && lg.photos) ? lg.photos.length : 1; return { lightbox: { id: lb.id, idx: (lb.idx - 1 % n + n) % n } }; }); },
       onLightboxNext: (e) => { e.stopPropagation(); this.setState(s => { const lb = s.lightbox; if (!lb) return {}; const lg = d.lodging.find(x => x.id === lb.id); const n = (lg && lg.photos) ? lg.photos.length : 1; return { lightbox: { id: lb.id, idx: (lb.idx + 1) % n } }; }); },
       onPrevPhoto: (e) => { const id = e.currentTarget.dataset.id; const lg = d.lodging.find(x => x.id === id); const n = (lg && lg.photos) ? lg.photos.length : 1; this.setState(s => { const m = { ...(s.lodgePhotoIdx || {}) }; m[id] = (((m[id] || 0) - 1) % n + n) % n; return { lodgePhotoIdx: m }; }); },
