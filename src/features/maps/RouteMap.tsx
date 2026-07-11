@@ -1,24 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useAuth } from '../../auth'
+import { WARM_STYLE, warmConfig } from './mapTheme'
 const coords:Record<string,[number,number]>={'Зальцбург, Австрия':[13.04,47.8],'Верона, Италия':[10.99,45.44],'Рим, Италия':[12.5,41.9],'Фильине-Вальдарно, Тоскана':[11.47,43.62],'Кьоджа, Италия':[12.28,45.22],'Милан, Италия':[9.19,45.46],'Вальдидентро, Альпы':[10.28,46.48],'Мюнхен, Германия':[11.6,48.15]}
-// Warm colour grade for the Mapbox Standard "warm" gallery look — a cube-strip
-// LUT (N blue-slices wide, red on x, green on y) that pushes the palette golden.
-let warmLutCache:string|null=null
-function warmLut():string{
-  if(warmLutCache)return warmLutCache
-  const N=32,canvas=document.createElement('canvas');canvas.width=N*N;canvas.height=N
-  const ctx=canvas.getContext('2d');if(!ctx)return ''
-  const img=ctx.createImageData(N*N,N),d=img.data,clamp=(v:number)=>v<0?0:v>255?255:v
-  for(let b=0;b<N;b++)for(let g=0;g<N;g++)for(let r=0;r<N;r++){
-    const x=b*N+r,i=(g*N*N+x)*4,R=r/(N-1)*255,G=g/(N-1)*255,B=b/(N-1)*255
-    // light + soft warm grade: gentle desaturation, lifted (airy) tones, red warmer than blue
-    const lum=0.3*R+0.59*G+0.11*B,s=0.9
-    d[i]=clamp((lum+(R-lum)*s)*0.93+20);d[i+1]=clamp((lum+(G-lum)*s)*0.94+16);d[i+2]=clamp((lum+(B-lum)*s)*0.95+12);d[i+3]=255
-  }
-  ctx.putImageData(img,0,0)
-  warmLutCache=canvas.toDataURL('image/png').split(',')[1]
-  return warmLutCache
-}
 export function RouteMap({cities}:{cities:string[]}) {
   const ref=useRef<HTMLDivElement>(null), {mapboxToken,loading}=useAuth();
   const [error,setError]=useState("");
@@ -31,7 +14,7 @@ export function RouteMap({cities}:{cities:string[]}) {
       try {
         m.accessToken=mapboxToken;
         const ps:[[number,number],...Array<[number,number]>]=[[14.44,50.08],...cities.map(c=>coords[c]).filter(Boolean),[14.44,50.08]] as typeof ps;
-        map=new m.Map({container:ref.current,style:'mapbox://styles/mapbox/standard',config:{basemap:{theme:'custom','theme-data':warmLut()}},center:ps[0],zoom:4,cooperativeGestures:true,attributionControl:false});
+        map=new m.Map({container:ref.current,style:WARM_STYLE,config:warmConfig(),center:ps[0],zoom:4,cooperativeGestures:true,attributionControl:false});
         map.on('error',()=>live&&setError("Не удалось загрузить карту. Проверьте токен и подключение."));
         map.addControl(new m.NavigationControl({showCompass:false}),'top-left');
         map.addControl(new m.AttributionControl({compact:true}));

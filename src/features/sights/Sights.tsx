@@ -4,6 +4,7 @@ import { supabase } from "../../lib/supabase/client";
 import { useTripData } from "../../trip/TripDataContext";
 import type { Sight } from "../../types/trip";
 import { useConfirm } from "../../components/ConfirmDialog";
+import { WARM_STYLE, warmConfig } from "../maps/mapTheme";
 import { uid, useDialogKeyboard, useTransientState } from "../shared";
 
 const subs = [
@@ -73,7 +74,8 @@ function WalkingMap({
         mapbox.accessToken = mapboxToken;
         map = new mapbox.Map({
         container: element.current,
-        style: "mapbox://styles/mapbox/outdoors-v12",
+        style: WARM_STYLE,
+        config: warmConfig(),
         center: sights[0]?.lnglat || [12.5, 41.9],
         zoom: 12,
         cooperativeGestures: true,
@@ -153,6 +155,7 @@ function WalkingMap({
             id: "walking-route",
             type: "line",
             source: "walking-route",
+            slot: "middle",
             layout: { "line-cap": "round", "line-join": "round" },
             paint: {
               "line-color": "#b95c3f",
