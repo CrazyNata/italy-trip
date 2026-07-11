@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Mulish:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Space+Mono:wght@700&display=swap');
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Mulish', system-ui, sans-serif;
+  --font-display: 'Playfair Display', serif;
+  --font-mono: 'Space Mono', ui-monospace, monospace;
+}
+
+:root {
+  font-family: 'Mulish', system-ui, sans-serif;
+  color: #173a3d;
+  background: #eaf1f1;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  --ac: #2a7089;
+  --ac2: #d99a4e;
+  --ol: #2f8a6a;
+  --ink: #173a3d;
+  --bg: #eaf1f1;
+  --card: #ffffff;
+  --line: #d5e2e1;
+  --muted: #5f7c7e;
+  --soft: #f1f7f6;
+  --track: #dbeae8;
+  --paper: #f4faf9;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}

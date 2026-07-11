@@ -1,2 +1,5 @@
 .claude/
 nohup.out
+node_modules/
+dist/
+*.local
