@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.10/dist/umd/supabase.js"></script>
+<script src="./auth.js?v=__BUILD__"></script>
 <script src="./sync.js?v=__BUILD__"></script>
 <script src="./support.js?v=__BUILD__"></script>
 </head>
@@ -13,6 +15,8 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Mulish:wght@400;500;600;700&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v3.9.4/mapbox-gl.css">
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.9.4/mapbox-gl.js"></script>
 <style>
   *{box-sizing:border-box}
   body{margin:0;background:#eaf1f1;font-family:'Mulish',system-ui,sans-serif;color:var(--ink,#3b3228);-webkit-font-smoothing:antialiased}
@@ -23,13 +27,30 @@
   ::placeholder{color:#b3a690}
   @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   .slot-wrap image-slot{width:100%;height:100%;display:block}
+  /* --- Мобильная адаптация (все вкладки) --- */
+  @media (max-width:600px){
+    .app-header{padding:20px 14px 0 !important}
+    .app-main{padding:20px 14px 80px !important}
+    .app-header h1{font-size:clamp(32px,9vw,44px) !important}
+    /* Вкладки: горизонтальная прокрутка вместо переноса в 3 ряда */
+    .tabbar{flex-wrap:nowrap !important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:24px -14px 0 !important;padding:0 14px}
+    .tabbar::-webkit-scrollbar{display:none}
+    .tabbar button{flex:0 0 auto;white-space:nowrap;padding:12px 13px !important;font-size:16px !important}
+    /* Заметки: одна колонка вместо двух */
+    .notes-grid{grid-template-columns:1fr !important}
+    .notes-grid>*{min-width:0}
+    /* Маршрут: шапка дня переносит кнопки на новую строку, не обрезает */
+    .day-head{flex-wrap:wrap !important;row-gap:8px !important}
+    /* Карта чуть ниже на телефоне */
+    .map-box{height:340px !important}
+  }
 </style>
 </helmet>
 
 <div style="{{ rootStyle }}">
 
   <!-- ========== HEADER ========== -->
-  <header style="max-width:1120px;margin:0 auto;padding:38px 24px 0">
+  <header class="app-header" style="max-width:1120px;margin:0 auto;padding:38px 24px 0">
     <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px">
       <div>
         <div style="display:flex;align-items:center;gap:10px;color:var(--ac,#b95c3f);font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:600">
@@ -57,14 +78,14 @@
     </div>
 
     <!-- NAV -->
-    <nav style="display:flex;gap:4px;flex-wrap:wrap;margin-top:26px;border-bottom:1px solid var(--line,#e7dcc7)">
+    <nav class="tabbar" style="display:flex;gap:4px;flex-wrap:wrap;margin-top:26px;border-bottom:1px solid var(--line,#e7dcc7)">
       <sc-for list="{{ tabs }}" as="tab" hint-placeholder-count="6">
         <button onClick="{{ onTab }}" data-tab="{{ tab.id }}" style="{{ tab.style }}"><i class="{{ tab.icon }}" style="margin-right:8px;font-size:14px;width:17px;text-align:center"></i>{{ tab.label }}</button>
       </sc-for>
     </nav>
   </header>
 
-  <main style="max-width:1120px;margin:0 auto;padding:28px 24px 90px">
+  <main class="app-main" style="max-width:1120px;margin:0 auto;padding:28px 24px 90px">
 
     <!-- ============ ОБЗОР ============ -->
     <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
@@ -245,8 +266,8 @@
           </a>
         </sc-for>
       </div>
-      <div style="position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line,#e7dcc7);height:440px;background:var(--track,#efe4cf)">
-        <iframe src="{{ mapEmbedUrl }}" title="Маршрут поездки" style="width:100%;height:100%;border:0;display:block" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+      <div class="map-box" style="position:relative;border-radius:16px;overflow:hidden;border:1px solid var(--line,#e7dcc7);height:440px;background:var(--track,#efe4cf)">
+        <div id="mapbox-slot" style="position:absolute;inset:0"></div>
         <div style="position:absolute;right:14px;bottom:14px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
           <button onClick="{{ onCopyMap }}" data-url="{{ mapOpenUrl }}" title="Скопировать ссылку на карту" style="display:inline-flex;align-items:center;gap:7px;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);color:var(--ink);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,.14);cursor:pointer"><i class="{{ copyIcon }}"></i>{{ copyLabel }}</button>
           <a href="{{ mapOpenUrl }}" target="_blank" rel="noopener" title="Открыть маршрут в Google Maps" style="display:inline-flex;align-items:center;gap:7px;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);color:var(--ink);border-radius:10px;padding:9px 14px;font-size:13px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,.14);text-decoration:none"><i class="fa-solid fa-arrow-up-right-from-square"></i>Открыть в Google Maps</a>
@@ -262,7 +283,7 @@
       <div style="position:relative;display:flex;flex-direction:column;gap:16px">
       <sc-for list="{{ days }}" as="day" hint-placeholder-count="4">
         <div style="background:var(--paper,#fbf2df);border:1px solid var(--line,#e7dcc7);border-radius:16px;overflow:hidden;box-shadow:0 1px 3px rgba(59,50,40,.05)">
-          <div style="display:flex;align-items:center;gap:14px;padding:14px 20px;background:{{ day.headBg }};border-bottom:1px solid var(--track,#efe4cf)">
+          <div class="day-head" style="display:flex;align-items:center;gap:14px;padding:14px 20px;background:{{ day.headBg }};border-bottom:1px solid var(--track,#efe4cf)">
             <div style="text-align:center;min-width:52px">
               <div style="font-family:'Marcellus',serif;font-size:22px;font-weight:700;line-height:1">{{ day.dayNum }}</div>
               <div style="font-size:11px;color:var(--muted,#8a7d6b);text-transform:uppercase">{{ day.month }}</div>
@@ -507,7 +528,7 @@
 
     <!-- ============ ЗАМЕТКИ ============ -->
     <sc-if value="{{ isNotes }}" hint-placeholder-val="{{ true }}">
-    <div style="animation:fadeUp .4s ease both;display:grid;grid-template-columns:1.4fr 1fr;gap:20px">
+    <div class="notes-grid" style="animation:fadeUp .4s ease both;display:grid;grid-template-columns:1.4fr 1fr;gap:20px">
       <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:20px 22px">
         <div style="font-family:'Marcellus',serif;font-size:20px;font-weight:600;margin-bottom:12px">Заметки</div>
         <textarea value="{{ notes }}" onInput="{{ onNotes }}" placeholder="важное, о собаках, документы, что не забыть…" style="width:100%;min-height:320px;border:1px solid var(--line,#e7dcc7);border-radius:12px;padding:14px 16px;font-size:15px;line-height:1.6;background:var(--soft,#fdfaf3);resize:vertical"></textarea>
@@ -770,8 +791,84 @@ class Component extends DCLogic {
     this.idbAll().then(list => { if (list && list.length) this.setState({ photos: list }, () => this.resolvePlaces()); }).catch(() => {});
     this.loadWeather();
     this.loadPhotos();
+    // auth.js дёрнет этот колбэк после входа, чтобы поднять карту
+    window.__onAuthed = () => this.syncMapbox();
+    this.syncMapbox();
+  }
+
+  // Токен Mapbox не хранится в коде — auth.js подтягивает его из Supabase после входа
+  // Постоянная точка старта/финиша — Прага [lng, lat]
+  HOME_LNGLAT = [14.44, 50.08];
+  // Собирает упорядоченные остановки маршрута из проживания
+  mapStops() {
+    const coords = this.cityCoords();
+    const stops = [{ name: 'Прага', lnglat: this.HOME_LNGLAT, home: true }];
+    (this.state.data.lodging || []).forEach(l => {
+      const c = coords[l.city];
+      if (c) stops.push({ name: l.city.split(',')[0].trim(), lnglat: [c[1], c[0]] });
+    });
+    stops.push({ name: 'Прага', lnglat: this.HOME_LNGLAT, home: true });
+    return stops;
+  }
+  // Монтирует/переносит интерактивную карту Mapbox в слот, переживая ре-рендеры VDOM
+  syncMapbox() {
+    if (!window.__authed) return; // карту инициализируем только после входа (не гоняем WebGL за экраном логина)
+    if (!window.mapboxgl || !window.__MAPBOX_TOKEN) { // ждём загрузку скрипта и токен из Supabase
+      if (!this._mapWait) { this._mapWait = setTimeout(() => { this._mapWait = null; this.syncMapbox(); }, 400); }
+      return;
+    }
+    const slot = document.getElementById('mapbox-slot');
+    if (!slot) return; // не на вкладке «Обзор»
+    if (!this._mapEl) {
+      this._mapEl = document.createElement('div');
+      this._mapEl.style.cssText = 'position:absolute;inset:0';
+    }
+    if (this._mapEl.parentNode !== slot) slot.appendChild(this._mapEl);
+    if (this._map) { try { this._map.resize(); } catch (e) {} return; }
+
+    const stops = this.mapStops();
+    mapboxgl.accessToken = window.__MAPBOX_TOKEN;
+    const map = new mapboxgl.Map({
+      container: this._mapEl,
+      style: 'mapbox://styles/mapbox/outdoors-v12',
+      center: stops[0].lnglat,
+      zoom: 4,
+      cooperativeGestures: true,
+      attributionControl: false,
+    });
+    this._map = map;
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-left');
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }));
+
+    const ac = (getComputedStyle(document.documentElement).getPropertyValue('--ac') || '#b95c3f').trim();
+    let cityN = 0;
+    stops.forEach((s, i) => {
+      if (s.home && i !== 0) return; // Прага-финиш в той же точке, что и старт — один маркер
+      const el = document.createElement('div');
+      if (s.home) {
+        el.style.cssText = 'width:30px;height:30px;border-radius:50%;background:#2a7089;color:#fff;display:grid;place-items:center;font-size:13px;box-shadow:0 1px 6px rgba(0,0,0,.35);border:2px solid #fff';
+        el.innerHTML = '<i class="fa-solid fa-house"></i>';
+      } else {
+        cityN++;
+        el.style.cssText = 'width:28px;height:28px;border-radius:50%;background:' + ac + ';color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;box-shadow:0 1px 6px rgba(0,0,0,.35);border:2px solid #fff';
+        el.textContent = String(cityN);
+      }
+      new mapboxgl.Marker({ element: el })
+        .setLngLat(s.lnglat)
+        .setPopup(new mapboxgl.Popup({ offset: 18, closeButton: false }).setText(s.name))
+        .addTo(map);
+    });
+
+    map.on('load', () => {
+      map.addSource('route', { type: 'geojson', data: { type: 'Feature', geometry: { type: 'LineString', coordinates: stops.map(s => s.lnglat) } } });
+      map.addLayer({ id: 'route', type: 'line', source: 'route', layout: { 'line-cap': 'round', 'line-join': 'round' }, paint: { 'line-color': ac, 'line-width': 3, 'line-opacity': 0.85, 'line-dasharray': [1, 1.6] } });
+      const b = new mapboxgl.LngLatBounds();
+      stops.forEach(s => b.extend(s.lnglat));
+      map.fitBounds(b, { padding: 50, duration: 0 });
+    });
   }
   componentDidUpdate(prevProps, prevState) {
+    this.syncMapbox();
     if (!prevState || prevState.data !== this.state.data) {
       try { localStorage.setItem('italy_trip', JSON.stringify({ v: this.SEED_V, data: this.state.data })); } catch (e) {}
     }
@@ -831,6 +928,10 @@ class Component extends DCLogic {
 
   // ---- helpers to update data immutably
   setData(mut) {
+    if (window.__tripReadOnly) {
+      if (window.__tripToast) window.__tripToast('Только владелец может редактировать план');
+      return;
+    }
     this.setState(s => { const data = JSON.parse(JSON.stringify(s.data)); mut(data); return { data }; });
   }
   uid() { return Math.random().toString(36).slice(2, 8); }
@@ -982,8 +1083,6 @@ class Component extends DCLogic {
     });
     const enc = (s) => encodeURIComponent(s);
     const homeCity = 'U Vlachovky 8, Praha, Česko';
-    const routeStops = [homeCity, ...d.lodging.map(l => l.city), homeCity];
-    const mapEmbedUrl = 'https://maps.google.com/maps?saddr=' + enc(routeStops[0]) + '&daddr=' + routeStops.slice(1).map(enc).join('+to:') + '&output=embed';
     const mapOpenUrl = 'https://www.google.com/maps/dir/?api=1&origin=' + enc(homeCity) + '&destination=' + enc(homeCity) + '&waypoints=' + d.lodging.map(l => enc(l.city)).join('%7C') + '&travelmode=driving';
     const cities = [...new Set(d.lodging.map(l => l.city))];
 
@@ -1094,7 +1193,7 @@ class Component extends DCLogic {
       ].map(t => ({ key: t.key, color: t.color, style: `width:26px;height:26px;border-radius:50%;cursor:pointer;background:${t.color};border:2px solid ${activeTheme === t.key ? 'var(--ink,#3b3228)' : 'transparent'};box-shadow:0 0 0 1px var(--line,#e7dcc7);padding:0` })),
       onSetTheme: (e) => { const t = e.currentTarget.dataset.theme; try { localStorage.setItem('italy_theme', t); } catch (err) {} this.setState({ theme: t }); },
       routeSummary: cities.join('  ·  '),
-      weather, mapPins, mapEmbedUrl, mapOpenUrl,
+      weather, mapPins, mapOpenUrl,
       onOpenExt: (e) => { e.preventDefault(); const url = e.currentTarget.dataset.url || e.currentTarget.href; if (url) window.open(url, '_blank', 'noopener'); },
       copyLabel: this.state.mapCopied ? 'Скопировано' : 'Скопировать ссылку',
       copyIcon: this.state.mapCopied ? 'fa-solid fa-check' : 'fa-solid fa-copy',
