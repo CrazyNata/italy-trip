@@ -50,6 +50,20 @@ export function AppShell() {
       if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
     };
   }, []);
+  useEffect(() => {
+    const openLodging = (event: Event) => {
+      const id = event instanceof CustomEvent ? String(event.detail || "") : "";
+      setSelectedTab(2);
+      window.setTimeout(() => {
+        const card = document.getElementById(`lodge-card-${id}`);
+        card?.scrollIntoView({ behavior: "smooth", block: "center" });
+        card?.classList.add("lodge-highlight");
+        window.setTimeout(() => card?.classList.remove("lodge-highlight"), 1600);
+      }, 50);
+    };
+    window.addEventListener("trip:open-lodging", openLodging);
+    return () => window.removeEventListener("trip:open-lodging", openLodging);
+  }, []);
 
   function selectTab(index: number) {
     setSelectedTab(index);
@@ -191,29 +205,9 @@ export function AppShell() {
             )}
           </div>
         )}
-        {tabs.map((tab, index) => (
-          <section
-            aria-labelledby={`tab-${index}`}
-            className="animate-[fadeUp_.4s_ease_both]"
-            hidden={index !== selectedTab}
-            id={`panel-${index}`}
-            key={tab}
-            role="tabpanel"
-            tabIndex={0}
-          >
-            {data &&
-              [
-                <Overview />,
-                <Itinerary />,
-                <Lodging />,
-                <Lodging cancellation />,
-                <Sights />,
-                <Budget />,
-                <Photos />,
-                <Notes />,
-              ][index]}
-          </section>
-        ))}
+        <section aria-labelledby={`tab-${selectedTab}`} className="animate-[fadeUp_.4s_ease_both]" id={`panel-${selectedTab}`} role="tabpanel" tabIndex={0}>
+          {data && [<Overview />, <Itinerary />, <Lodging />, <Lodging cancellation />, <Sights />, <Budget />, <Photos />, <Notes />][selectedTab]}
+        </section>
       </main>
       {toast && (
         <div className="fixed bottom-6 left-1/2 z-[20000] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-full bg-[var(--ink)] px-5 py-3 text-center text-sm font-bold text-[var(--card)] shadow-xl" role="status">

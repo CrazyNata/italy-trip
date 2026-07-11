@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useTripData } from "../../trip/TripDataContext";
+import { supabase } from "../../lib/supabase/client";
 import type { Lodging as LodgingRecord } from "../../types/trip";
 import { button, field, PanelTitle, subtleButton, uid, useDialogKeyboard, useTransientState } from "../shared";
 
@@ -13,6 +14,14 @@ const flag = (city: string) =>
         ? "🇨🇿"
         : "🇮🇹";
 const readonly = () => window.dispatchEvent(new CustomEvent("trip:readonly"));
+const toast = (message: string) => window.dispatchEvent(new CustomEvent("trip:toast", { detail: message }));
+const storagePath = (url: string) => {
+  try {
+    const marker = "/storage/v1/object/public/place-photos/";
+    const index = new URL(url).pathname.indexOf(marker);
+    return index < 0 ? "" : decodeURIComponent(new URL(url).pathname.slice(index + marker.length));
+  } catch { return ""; }
+};
 
 function deadline(lodge: LodgingRecord) {
   if (!lodge.freeCancel)
@@ -89,7 +98,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
   if (!data) return null;
 
   const guard = (action: () => void) => (isReadOnly ? readonly() : action());
-  const edit = (id: string, key: keyof LodgingRecord, value: string) =>
+  const edit = (id: string, key: keyof LodgingRecord, value: LodgingRecord[keyof LodgingRecord]) =>
     guard(() =>
       updateData((current) => ({
         ...current,
@@ -122,6 +131,42 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
       /* Opening the link remains available. */
     }
     showCopied(lodge.id, null);
+  };
+  const changeGallery = (lodge: LodgingRecord, from: number, to: number) => guard(() => {
+    if (to < 0 || to >= (lodge.photos?.length || 0)) return;
+    const photos = [...(lodge.photos || [])];
+    const positions = photos.map((_, i) => lodge.objPosList?.[i] || lodge.objPos || "center");
+    [photos[from], photos[to]] = [photos[to], photos[from]];
+    [positions[from], positions[to]] = [positions[to], positions[from]];
+    edit(lodge.id, "photos", photos); edit(lodge.id, "objPosList", positions);
+    setPhoto((current) => ({ ...current, [lodge.id]: to }));
+  });
+  const removePhoto = async (lodge: LodgingRecord, index: number) => {
+    if (isReadOnly) return readonly();
+    const url = lodge.photos?.[index];
+    const path = url ? storagePath(url) : "";
+    if (path) {
+      const { error } = await supabase.storage.from("place-photos").remove([path]);
+      if (error) return toast("Не удалось удалить фото из хранилища");
+    }
+    const photos = (lodge.photos || []).filter((_, i) => i !== index);
+    const positions = (lodge.photos || []).map((_, i) => lodge.objPosList?.[i] || lodge.objPos || "center").filter((_, i) => i !== index);
+    edit(lodge.id, "photos", photos); edit(lodge.id, "objPosList", positions);
+    setPhoto((current) => ({ ...current, [lodge.id]: Math.min(current[lodge.id] || 0, Math.max(0, photos.length - 1)) }));
+  };
+  const uploadPhoto = async (lodge: LodgingRecord, file?: File) => {
+    if (!file) return;
+    if (isReadOnly) return readonly();
+    toast("Загружаю фото…");
+    const extension = (file.name.split(".").pop() || "jpg").replace(/[^a-z0-9]/gi, "") || "jpg";
+    const path = `lodging/${lodge.id}_${Date.now()}.${extension}`;
+    const { error } = await supabase.storage.from("place-photos").upload(path, file, { contentType: file.type || "image/jpeg" });
+    if (error) return toast("Не удалось загрузить фото");
+    const url = supabase.storage.from("place-photos").getPublicUrl(path).data.publicUrl;
+    edit(lodge.id, "photos", [...(lodge.photos || []), url]);
+    edit(lodge.id, "objPosList", [...(lodge.objPosList || lodge.photos?.map(() => lodge.objPos || "center") || []), "center"]);
+    setPhoto((current) => ({ ...current, [lodge.id]: lodge.photos?.length || 0 }));
+    toast("Фото добавлено");
   };
 
   if (cancellation) {
@@ -185,6 +230,9 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
                   edit(lodge.id, "freeCancel", event.target.value)
                 }
               />
+              <button className={subtleButton} onClick={() => window.dispatchEvent(new CustomEvent("trip:open-lodging", { detail: lodge.id }))}>
+                К жилью →
+              </button>
             </article>
           ))}
         </div>
@@ -291,6 +339,21 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
                       {status}
                     </button>
                   ))}
+                </div>
+                <div className="rounded-xl border border-[var(--line)] bg-[var(--soft)] p-3">
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                    <strong className="text-xs uppercase tracking-wider text-[var(--muted)]">Галерея · {photos.length}</strong>
+                    <label className={`${subtleButton} cursor-pointer`}>
+                      + Фото<input hidden type="file" accept="image/*" onChange={(event) => void uploadPhoto(lodge, event.target.files?.[0])}/>
+                    </label>
+                  </div>
+                  {photos.length > 0 && <div className="grid grid-cols-[64px_1fr] gap-3">
+                    <img className="h-16 w-16 rounded-lg object-cover" style={{objectPosition:lodge.objPosList?.[index] || lodge.objPos || "center"}} src={photos[index]} alt=""/>
+                    <div className="space-y-2">
+                      <input className={field} aria-label="Положение фото" placeholder="center или center 40%" value={lodge.objPosList?.[index] || lodge.objPos || "center"} onChange={(event) => { const positions=photos.map((_,i)=>lodge.objPosList?.[i]||lodge.objPos||"center"); positions[index]=event.target.value; edit(lodge.id,"objPosList",positions); }}/>
+                      <div className="flex gap-3 text-sm"><button disabled={index===0} onClick={()=>changeGallery(lodge,index,index-1)}>← раньше</button><button disabled={index===photos.length-1} onClick={()=>changeGallery(lodge,index,index+1)}>позже →</button><button className="ml-auto text-[var(--muted)]" onClick={()=>void removePhoto(lodge,index)}>убрать</button></div>
+                    </div>
+                  </div>}
                 </div>
                 <textarea
                   className={`${field} min-h-20 resize-y`}

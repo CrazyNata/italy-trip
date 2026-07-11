@@ -37,6 +37,7 @@ const toast = (message?: string) =>
     }),
   );
 const subOf = (sight: Sight) => sight.subcategory || "разное";
+let nextNominatimRequest = 0;
 
 type RouteState = {
   signature: string;
@@ -57,22 +58,28 @@ function WalkingMap({
 }) {
   const { mapboxToken } = useAuth();
   const element = useRef<HTMLDivElement>(null);
+  const [mapError, setMapError] = useState("");
   useEffect(() => {
     if (!element.current || !mapboxToken) return;
     let live = true;
     let map: import("mapbox-gl").Map | undefined;
     const markers: import("mapbox-gl").Marker[] = [];
+    const controller = new AbortController();
+    setMapError("");
     void import("mapbox-gl").then(({ default: mapbox }) => {
       if (!live || !element.current) return;
-      mapbox.accessToken = mapboxToken;
-      map = new mapbox.Map({
+      try {
+        mapbox.accessToken = mapboxToken;
+        map = new mapbox.Map({
         container: element.current,
         style: "mapbox://styles/mapbox/outdoors-v12",
         center: sights[0]?.lnglat || [12.5, 41.9],
         zoom: 12,
         cooperativeGestures: true,
         attributionControl: false,
-      });
+        });
+      } catch { setMapError("Не удалось запустить карту в этом браузере."); return; }
+      map.on("error", () => live && setMapError("Не удалось загрузить карту. Проверьте токен и подключение."));
       map.addControl(
         new mapbox.NavigationControl({ showCompass: false }),
         "top-left",
@@ -125,7 +132,9 @@ function WalkingMap({
             .join(";");
           const response = await fetch(
             `https://api.mapbox.com/directions/v5/mapbox/walking/${coordinates}?geometries=geojson&overview=full&access_token=${encodeURIComponent(mapboxToken)}`,
+            { signal: controller.signal },
           );
+          if (!response.ok) throw new Error("route");
           const json = (await response.json()) as {
             routes?: Array<{
               geometry: { type: "LineString"; coordinates: number[][] };
@@ -154,13 +163,14 @@ function WalkingMap({
             { signature, distance: route.distance, duration: route.duration },
             "",
           );
-        } catch {
-          if (live) onRoute(null, "Не удалось построить пеший маршрут");
+        } catch (error) {
+          if (live && (error as Error).name !== "AbortError") onRoute(null, "Не удалось построить пеший маршрут");
         }
       });
-    });
+    }).catch(() => { map?.remove(); if (live) setMapError("Не удалось загрузить модуль карты."); });
     return () => {
       live = false;
+      controller.abort();
       markers.forEach((marker) => marker.remove());
       map?.remove();
     };
@@ -174,9 +184,9 @@ function WalkingMap({
       className="h-[380px] min-h-72 overflow-hidden rounded-xl bg-[var(--track)]"
       ref={element}
     >
-      {!mapboxToken && (
+      {(mapError || !mapboxToken) && (
         <div className="grid h-full place-items-center text-sm text-[var(--muted)]">
-          Карта ещё загружается
+          {mapError || "Токен карты недоступен"}
         </div>
       )}
     </div>
@@ -199,6 +209,7 @@ export function Sights() {
     text: string;
     photo?: string;
   } | null>(null);
+  const wikiRequest = useRef<{ id: string; controller: AbortController } | null>(null);
   const [walkCity, setWalkCity] = useState("");
   const [walkDay, setWalkDay] = useState(1);
   const [geocoding, setGeocoding] = useState(false);
@@ -207,7 +218,9 @@ export function Sights() {
   const [copied, setCopied] = useState(false);
   const showCopied = useTransientState(setCopied);
   const closeButton = useRef<HTMLButtonElement>(null);
-  useDialogKeyboard({ open: !!open, onClose: () => setOpen(null), initialFocus: closeButton });
+  const closeInfo = () => { wikiRequest.current?.controller.abort(); wikiRequest.current = null; setOpen(null); };
+  useDialogKeyboard({ open: !!open, onClose: closeInfo, initialFocus: closeButton });
+  useEffect(() => () => wikiRequest.current?.controller.abort(), []);
   if (!data) return null;
   const cities = [
     ...new Set(data.sights.map((sight) => sight.city).filter(Boolean)),
@@ -255,15 +268,22 @@ export function Sights() {
         }&travelmode=walking`;
 
   async function geocodeSight(sight: Sight) {
-    if (!mapboxToken) return false;
     try {
-      const response = await fetch(
-        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(`${sight.name}, ${sight.city}`)}.json?limit=1&language=ru&access_token=${encodeURIComponent(mapboxToken)}`,
-      );
-      const json = (await response.json()) as {
-        features?: Array<{ center: [number, number] }>;
-      };
-      const center = json.features?.[0]?.center;
+      let center: [number, number] | undefined;
+      if (mapboxToken) {
+        const response = await fetch(`https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(`${sight.name}, ${sight.city}`)}.json?limit=1&language=ru&access_token=${encodeURIComponent(mapboxToken)}`);
+        if (response.ok) center = ((await response.json()) as {features?:Array<{center:[number,number]}>}).features?.[0]?.center;
+      }
+      if (!center) {
+        const wait = Math.max(0, nextNominatimRequest - Date.now());
+        if (wait) await new Promise((resolve) => window.setTimeout(resolve, wait));
+        nextNominatimRequest = Date.now() + 1100;
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ru&q=${encodeURIComponent(`${sight.name}, ${sight.city}`)}`);
+        if (response.ok) {
+          const item = ((await response.json()) as Array<{lat:string;lon:string}>)[0];
+          if (item && Number.isFinite(+item.lon) && Number.isFinite(+item.lat)) center = [+item.lon, +item.lat];
+        }
+      }
       if (!center) return false;
       updateData((current) => ({
         ...current,
@@ -281,10 +301,12 @@ export function Sights() {
     const missing = walkAll.filter((sight) => !sight.lnglat);
     if (!missing.length)
       return void toast("У всех мест этого города уже есть точки");
-    if (!mapboxToken) return void toast("Карта ещё загружается");
     setGeocoding(true);
     let found = 0;
-    for (const sight of missing) if (await geocodeSight(sight)) found += 1;
+    for (const sight of missing) {
+      if (await geocodeSight(sight)) found += 1;
+      await new Promise((resolve) => window.setTimeout(resolve, 1100));
+    }
     setGeocoding(false);
     toast(
       found
@@ -293,24 +315,29 @@ export function Sights() {
     );
   }
   async function openInfo(sight: Sight) {
+    wikiRequest.current?.controller.abort();
+    const controller = new AbortController();
+    wikiRequest.current = { id: sight.id, controller };
     setOpen(sight.id);
     setWiki(null);
-    if (sight.description) return;
     try {
       const response = await fetch(
         `https://ru.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(sight.name)}`,
+        { signal: controller.signal },
       );
       if (!response.ok) throw new Error();
       const json = (await response.json()) as {
         extract?: string;
         thumbnail?: { source?: string };
       };
+      if (wikiRequest.current?.id !== sight.id) return;
       setWiki({
         id: sight.id,
         text: json.extract || "Описание пока не найдено.",
         photo: json.thumbnail?.source,
       });
-    } catch {
+    } catch (error) {
+      if ((error as Error).name === "AbortError" || wikiRequest.current?.id !== sight.id) return;
       setWiki({
         id: sight.id,
         text: "Добавьте заметку или ссылку в карточку места, чтобы сохранить детали посещения.",
@@ -339,6 +366,20 @@ export function Sights() {
         item.id === sight.id ? { ...item, photo, photoPath: path } : item,
       ),
     }));
+    if (sight.photoPath && sight.photoPath !== path) {
+      const { error } = await supabase.storage.from("place-photos").remove([sight.photoPath]);
+      if (error) toast("Новое фото сохранено, старое не удалось удалить");
+    }
+    toast("Фото сохранено");
+  }
+  async function removeSightPhoto(sight: Sight) {
+    if (isReadOnly) return void toast();
+    if (sight.photoPath) {
+      const { error } = await supabase.storage.from("place-photos").remove([sight.photoPath]);
+      if (error) return void toast("Не удалось удалить фото из хранилища");
+    }
+    mutate(sight.id, { photo: "", photoPath: "" });
+    toast("Фото удалено");
   }
   function add() {
     if (!draft.name.trim()) return;
@@ -365,10 +406,10 @@ export function Sights() {
   }
   function move(id: string, direction: number) {
     guard(() => {
-      const index = located.findIndex((sight) => sight.id === id);
+      const index = walkAll.findIndex((sight) => sight.id === id);
       const target = index + direction;
-      if (index < 0 || target < 0 || target >= located.length) return;
-      const ids = located.map((sight) => sight.id);
+      if (index < 0 || target < 0 || target >= walkAll.length) return;
+      const ids = walkAll.map((sight) => sight.id);
       [ids[index], ids[target]] = [ids[target], ids[index]];
       updateData((current) => ({
         ...current,
@@ -538,7 +579,7 @@ export function Sights() {
         {activeCity ? (
           <div className="grid gap-4 md:grid-cols-[minmax(240px,.8fr)_1.5fr]">
             <div className="max-h-[380px] space-y-2 overflow-auto">
-              {located.map((sight, index) => (
+              {walkAll.map((sight, index) => (
                 <div
                   className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--soft)] p-2"
                   key={sight.id}
@@ -546,8 +587,8 @@ export function Sights() {
                   <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--ac)] text-xs font-bold text-white">
                     {index + 1}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-semibold">
-                    {sight.name}
+                   <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                    {sight.name} {!sight.lnglat && <small className="font-normal text-[var(--muted)]">· без точки</small>}
                   </span>
                   <button title="Раньше" onClick={() => move(sight.id, -1)}>
                     ↑
@@ -557,16 +598,17 @@ export function Sights() {
                   </button>
                 </div>
               ))}
-              {!located.length && (
+              {!walkAll.length && (
                 <p className="text-sm text-[var(--muted)]">
                   У мест нет координат. Нажмите «Найти точки».
                 </p>
               )}
-              {walkAll.length > located.length && (
+              {walkAll.filter((sight) => !sight.lnglat).length > 0 && (
                 <p className="text-xs text-[var(--muted)]">
-                  Без точки: {walkAll.length - located.length}
+                  Без точки: {walkAll.filter((sight) => !sight.lnglat).length}
                 </p>
               )}
+              {walkAll.filter((sight) => sight.lnglat).length > 25 && <p className="text-xs text-[var(--muted)]">На карте и в маршруте показаны первые 25 точек; полный порядок сохранён в списке.</p>}
               <p className="text-xs text-[var(--muted)]">
                 {routeError ||
                   (route
@@ -684,22 +726,7 @@ export function Sights() {
                             <button
                               className="absolute right-2 top-2 rounded-full bg-black/60 px-2 text-white"
                               title="Убрать фото"
-                              onClick={() =>
-                                guard(() => {
-                                  updateData((current) => ({
-                                    ...current,
-                                    sights: current.sights.map((item) =>
-                                      item.id === sight.id
-                                        ? { ...item, photo: "", photoPath: "" }
-                                        : item,
-                                    ),
-                                  }));
-                                  if (sight.photoPath)
-                                    void supabase.storage
-                                      .from("place-photos")
-                                      .remove([sight.photoPath]);
-                                })
-                              }
+                              onClick={() => void removeSightPhoto(sight)}
                             >
                               ×
                             </button>
@@ -830,15 +857,15 @@ export function Sights() {
           className="fixed inset-0 z-[10000] grid place-items-center bg-black/70 p-5"
           role="dialog"
           aria-modal="true"
-          onClick={(event) =>
-            event.currentTarget === event.target && setOpen(null)
+            onClick={(event) =>
+            event.currentTarget === event.target && closeInfo()
           }
         >
           <div className="relative max-h-[calc(100vh-40px)] w-full max-w-xl overflow-auto rounded-2xl bg-[var(--card)]">
-            {(selected.photo || wiki?.photo) && (
+            {(selected.photo || (wiki?.id === selected.id && wiki.photo)) && (
               <img
                 className="h-56 w-full object-cover"
-                src={selected.photo || wiki?.photo}
+                src={selected.photo || (wiki?.id === selected.id ? wiki.photo : undefined)}
                 alt={selected.name}
               />
             )}
@@ -846,7 +873,7 @@ export function Sights() {
               ref={closeButton}
               className="absolute right-3 top-3 rounded-full bg-black/60 px-3 py-1 text-2xl text-white"
               title="Закрыть"
-              onClick={() => setOpen(null)}
+              onClick={closeInfo}
             >
               ×
             </button>
@@ -859,13 +886,20 @@ export function Sights() {
               </h2>
               <textarea
                 className={`${field} mt-4 min-h-32 resize-y leading-relaxed`}
-                value={
-                  selected.description || wiki?.text || "Загружаем описание…"
-                }
+                placeholder="Сохранённая заметка о месте…"
+                value={selected.description || ""}
                 onChange={(event) =>
                   mutate(selected.id, { description: event.target.value })
                 }
               />
+              <div className="mt-3 rounded-xl bg-[var(--soft)] p-3 text-sm leading-relaxed text-[var(--muted)]">
+                <strong className="mb-1 block text-xs uppercase tracking-wider">Wikipedia</strong>
+                {wiki?.id === selected.id ? wiki.text : "Загружаем описание…"}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <label className="text-xs text-[var(--muted)]">Долгота<input className={`${field} mt-1`} type="number" step="any" value={selected.lnglat?.[0] ?? ""} onChange={(event) => { const value=Number(event.target.value); if(Number.isFinite(value)) mutate(selected.id,{lnglat:[value,selected.lnglat?.[1] ?? 0]}); }}/></label>
+                <label className="text-xs text-[var(--muted)]">Широта<input className={`${field} mt-1`} type="number" step="any" value={selected.lnglat?.[1] ?? ""} onChange={(event) => { const value=Number(event.target.value); if(Number.isFinite(value)) mutate(selected.id,{lnglat:[selected.lnglat?.[0] ?? 0,value]}); }}/></label>
+              </div>
               <a
                 className={`${subtleButton} mt-4 inline-block`}
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.name}, ${selected.city}`)}`}
