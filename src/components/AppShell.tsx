@@ -21,7 +21,7 @@ const tabs = [
 ] as const;
 
 export function AppShell() {
-  const { data, loading, error, usingCache, syncState, refresh, retrySave, keepLocalChanges, useServerVersion, restoredChanges, isReadOnly } =
+  const { data, loading, error, usingCache, syncState, refresh, retrySave } =
     useTripData();
   const [selectedTab, setSelectedTab] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
@@ -156,7 +156,7 @@ export function AppShell() {
       </header>
 
       <main className="app-main">
-        {(loading || error || syncState !== "clean") && (
+        {(loading || error || usingCache || syncState !== "clean") && (
           <div
             className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${error || syncState === "failed" ? "border-[#d8a08d] bg-[#fff2ed] text-[#7f3524]" : "border-[var(--line)] bg-[var(--soft)] text-[var(--muted)]"}`}
             role="status"
@@ -165,11 +165,7 @@ export function AppShell() {
               {loading
                 ? "Загружаем актуальный план…"
                 : (error ??
-                  (syncState === "conflict"
-                    ? "План изменился на сервере. Выберите, какую версию сохранить."
-                    : restoredChanges
-                      ? "Восстановлены несохранённые изменения из этого браузера."
-                      : syncState === "dirty"
+                  (syncState === "dirty"
                     ? "Есть несохранённые изменения…"
                     : syncState === "saving"
                       ? "Сохраняем изменения…"
@@ -177,17 +173,12 @@ export function AppShell() {
                          ? "Показана локальная копия плана."
                           : ""))}
             </span>
-            {syncState === "conflict" ? (
-              <span className="flex flex-wrap gap-2">
-                <button className="rounded-lg border border-current px-2.5 py-1 font-semibold" onClick={() => void keepLocalChanges()}>Сохранить мои изменения</button>
-                <button className="rounded-lg border border-current px-2.5 py-1 font-semibold" onClick={useServerVersion}>Использовать серверную версию</button>
-              </span>
-            ) : syncState === "failed" || restoredChanges ? (
+            {syncState === "failed" ? (
               <button
                 className="rounded-lg border border-current px-2.5 py-1 font-semibold"
                 onClick={() => void retrySave()}
               >
-                {restoredChanges ? "Сохранить восстановленные изменения" : "Повторить сохранение"}
+                Повторить сохранение
               </button>
             ) : (
               error && (

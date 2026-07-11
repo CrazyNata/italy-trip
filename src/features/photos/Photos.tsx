@@ -11,13 +11,6 @@ import {
   scale,
   type Photo,
 } from "./store";
-import {
-  cleanupPendingPhotoDeletes,
-  deleteTripPhoto,
-  loadTripPhotos,
-  updateTripPhotoPlace,
-  uploadTripPhoto,
-} from "../../trip/normalizedRepository";
 
 const MONTHS = [
   "янв",
@@ -86,15 +79,10 @@ async function reverseGeocode(photo: Photo, signal: AbortSignal) {
 }
 
 export function Photos() {
-  const { data, isReadOnly, selectedTrip } = useTripData();
-  const tripId = selectedTrip?.id ?? "legacy";
+  const { data, isReadOnly } = useTripData();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [busy, setBusy] = useState("");
   const [, setReport] = useState("");
-  const [, setPlaceRetryPending] = useState(false);
-  const [remoteRevision, setRemoteRevision] = useState(0);
-  const mutatingRemote = useRef(false);
-  const refreshAfterMutation = useRef(false);
   const lifecycle = useRef<{
     active: boolean;
     session: number;
@@ -102,73 +90,27 @@ export function Photos() {
   } | null>(null);
 
   useEffect(() => {
-    const refresh = (event: Event) => {
-      if (!(event instanceof CustomEvent) || event.detail !== selectedTrip?.id)
-        return;
-      if (mutatingRemote.current) refreshAfterMutation.current = true;
-      else setRemoteRevision((value) => value + 1);
-    };
-    window.addEventListener("trip:photos-changed", refresh);
-    return () => window.removeEventListener("trip:photos-changed", refresh);
-  }, [selectedTrip?.id]);
-  useEffect(() => {
-    const retry = () => setRemoteRevision((value) => value + 1);
-    window.addEventListener("online", retry);
-    return () => window.removeEventListener("online", retry);
-  }, []);
-  useEffect(() => {
     const state = {
       active: true,
       session: openPhotoStore(),
       controller: new AbortController(),
     };
     lifecycle.current = state;
-    void all(state.session, tripId)
+    void all(state.session)
       .then(async (stored) => {
         if (!state.active) return;
-        let available = stored;
-        if (selectedTrip) {
-          try {
-            if (!isReadOnly) await cleanupPendingPhotoDeletes(selectedTrip.id);
-            const remote = await loadTripPhotos(selectedTrip.id);
-            const localById = new Map(stored.map((photo) => [photo.id, photo]));
-        available = remote
-           .map((photo) => {
-             const local = localById.get(photo.id);
-             return {
-               ...photo,
-               thumb: local?.thumb.startsWith("data:") ? local.thumb : photo.thumb,
-               place: photo.place ?? local?.place ?? null,
-               placeSynced: Boolean(photo.place) || !local?.place,
-             };
-          })
-          .filter((photo) => photo.thumb);
-            for (const photo of available) await put(state.session, photo);
-          } catch {
-            setReport(
-              "Не удалось обновить фото из Supabase. Показана локальная копия.",
-            );
-          }
-        }
-        if (!state.active) return;
-        setPhotos(available);
-        const pending = available.filter((photo) =>
-          photo.lat != null && photo.lng != null && (!photo.place || (!isReadOnly && !photo.placeSynced)),
+        setPhotos(stored);
+        const pending = stored.filter((photo) =>
+          photo.lat != null && photo.lng != null && !photo.place,
         );
         for (const photo of pending) {
           if (!state.active) break;
-          const place = photo.place ?? await reverseGeocode(photo, state.controller.signal);
+          const place = await reverseGeocode(photo, state.controller.signal);
           if (place) {
-            const resolved = { ...photo, place, placeSynced: !selectedTrip };
+            const resolved = { ...photo, place };
             try {
               if (!state.active) break;
               await put(state.session, resolved);
-              if (selectedTrip && !isReadOnly) {
-                await updateTripPhotoPlace(selectedTrip.id, resolved.id, place);
-                resolved.placeSynced = true;
-                await put(state.session, resolved);
-                setPlaceRetryPending(false);
-              }
               if (state.active)
                 setPhotos((current) =>
                   current.map((item) =>
@@ -176,8 +118,7 @@ export function Photos() {
                   ),
                 );
             } catch {
-              setPlaceRetryPending(true);
-              if (state.active) setReport("Место фото определено локально, но ещё не синхронизировано. Повторим позже.");
+              // The photo remains available even if enriching the stored record fails.
             }
           }
         }
@@ -194,7 +135,7 @@ export function Photos() {
       closePhotoStore(state.session);
       if (lifecycle.current === state) lifecycle.current = null;
     };
-  }, [tripId, remoteRevision, isReadOnly]);
+  }, []);
 
   const guard = (action: () => void) =>
     isReadOnly
@@ -212,7 +153,6 @@ export function Photos() {
     let failed = 0;
     setReport("");
     setBusy(`Обработка 0 из ${files.length}…`);
-    mutatingRemote.current = true;
     try {
       for (let index = 0; index < files.length; index += 1) {
         if (!state.active) return;
@@ -223,7 +163,6 @@ export function Photos() {
           if (!thumb) throw new Error("Image decoding failed");
           let photo: Photo = {
             id: `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
-            tripId,
             thumb,
             iso:
               metadata.iso ??
@@ -231,21 +170,10 @@ export function Photos() {
             lat: metadata.lat ?? null,
             lng: metadata.lng ?? null,
             place: null,
-            placeSynced: false,
           };
           if (photo.lat != null && photo.lng != null) {
             const place = await reverseGeocode(photo, state.controller.signal);
-            if (place) photo = { ...photo, place, placeSynced: false };
-          }
-          if (selectedTrip) {
-            const remoteId = await uploadTripPhoto(selectedTrip.id, file, {
-              iso: photo.iso,
-              lat: photo.lat,
-              lng: photo.lng,
-              place: photo.place,
-            });
-            photo = { ...photo, id: remoteId };
-            photo.placeSynced = true;
+            if (place) photo = { ...photo, place };
           }
           if (!state.active) return;
           await put(state.session, photo);
@@ -261,7 +189,6 @@ export function Photos() {
         }
       }
     } finally {
-      mutatingRemote.current = false;
       if (!state.active) return;
       setBusy("");
       setReport(
@@ -269,10 +196,6 @@ export function Photos() {
           ? `Загружено: ${succeeded}. Не удалось обработать: ${failed}.`
           : `Загружено фото: ${succeeded}.`,
       );
-      if (refreshAfterMutation.current) {
-        refreshAfterMutation.current = false;
-        setRemoteRevision((value) => value + 1);
-      }
     }
   }
 
@@ -280,20 +203,12 @@ export function Photos() {
     const state = lifecycle.current;
     if (!state?.active) return;
     try {
-      mutatingRemote.current = true;
-      if (selectedTrip) await deleteTripPhoto(selectedTrip.id, id);
-      await del(state.session, tripId, id);
+      await del(state.session, id);
       if (!state.active) return;
       setPhotos((current) => current.filter((photo) => photo.id !== id));
       setReport("Фото удалено.");
     } catch {
       if (state.active) setReport("Не удалось удалить фото.");
-    } finally {
-      mutatingRemote.current = false;
-      if (refreshAfterMutation.current) {
-        refreshAfterMutation.current = false;
-        setRemoteRevision((value) => value + 1);
-      }
     }
   }
 

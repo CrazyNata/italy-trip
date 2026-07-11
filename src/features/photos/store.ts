@@ -1,48 +1,40 @@
 export type Photo = {
   id: string;
-  tripId: string;
   thumb: string;
   iso: string | null;
   lat: number | null;
   lng: number | null;
   place: string | null;
-  placeSynced?: boolean;
 };
 
 let databasePromise: Promise<IDBDatabase> | null = null;
 let storeSession = 0;
 
 function database(session: number) {
-  if (session !== storeSession)
-    return Promise.reject(new Error("Photo store session closed"));
+  if (session !== storeSession) return Promise.reject(new Error("Photo store session closed"));
   if (databasePromise) return databasePromise;
   databasePromise = new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open("italy_photos_db", 3);
-    request.onupgradeneeded = (event) => {
+    const request = indexedDB.open("italy_photos_db", 4);
+    request.onupgradeneeded = () => {
       const db = request.result;
-      const transaction = request.transaction!;
       if (!db.objectStoreNames.contains("photos")) {
-        db.createObjectStore("photos", { keyPath: ["tripId", "id"] });
+        db.createObjectStore("photos", { keyPath: "id" });
         return;
       }
-      if (event.oldVersion < 3) {
-        const read = transaction.objectStore("photos").getAll();
+      if (request.transaction?.objectStore("photos").keyPath !== "id") {
+        const read = request.transaction!.objectStore("photos").getAll();
         read.onsuccess = () => {
-          const records = (read.result ?? []) as Array<Partial<Photo>>;
+          const records = read.result as Photo[];
           db.deleteObjectStore("photos");
-          const store = db.createObjectStore("photos", {
-            keyPath: ["tripId", "id"],
-          });
-          for (const record of records) {
-            if (
-              typeof record.id !== "string" ||
-              typeof record.thumb !== "string"
-            )
-              continue;
+          const store = db.createObjectStore("photos", { keyPath: "id" });
+          for (const photo of records) {
             store.put({
-              ...record,
-              tripId:
-                typeof record.tripId === "string" ? record.tripId : "legacy",
+              id: photo.id,
+              thumb: photo.thumb,
+              iso: photo.iso ?? null,
+              lat: photo.lat ?? null,
+              lng: photo.lng ?? null,
+              place: photo.place ?? null,
             });
           }
         };
@@ -80,15 +72,11 @@ export function closePhotoStore(session: number) {
   void openDatabase?.then((db) => db.close()).catch(() => undefined);
 }
 
-export async function all(session: number, tripId: string) {
+export async function all(session: number) {
   const db = await database(session);
   if (session !== storeSession) throw new Error("Photo store session closed");
   return new Promise<Photo[]>((resolve, reject) => {
-    const range = IDBKeyRange.bound([tripId, ""], [tripId, "\uffff"]);
-    const request = db
-      .transaction("photos")
-      .objectStore("photos")
-      .getAll(range);
+    const request = db.transaction("photos").objectStore("photos").getAll();
     request.onsuccess = () => resolve(request.result ?? []);
     request.onerror = () => reject(request.error);
   });
@@ -106,12 +94,12 @@ export async function put(session: number, photo: Photo) {
   });
 }
 
-export async function del(session: number, tripId: string, id: string) {
+export async function del(session: number, id: string) {
   const db = await database(session);
   if (session !== storeSession) throw new Error("Photo store session closed");
   return new Promise<void>((resolve, reject) => {
     const transaction = db.transaction("photos", "readwrite");
-    transaction.objectStore("photos").delete([tripId, id]);
+    transaction.objectStore("photos").delete(id);
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error);
     transaction.onabort = () => reject(transaction.error);
@@ -153,8 +141,7 @@ export function exif(buf: ArrayBuffer) {
           const p = n > 4 ? t + u32(e + 8) : e + 8;
           if ([0x9003, 0x9004, 0x132].includes(tag)) {
             let value = "";
-            for (let k = 0; k < n - 1; k += 1)
-              value += String.fromCharCode(v.getUint8(p + k));
+            for (let k = 0; k < n - 1; k += 1) value += String.fromCharCode(v.getUint8(p + k));
             const match = value.match(/(\d{4})\D(\d{2})\D(\d{2})/);
             if (!iso && match) iso = `${match[1]}-${match[2]}-${match[3]}`;
           }
@@ -167,9 +154,7 @@ export function exif(buf: ArrayBuffer) {
         let lngValue: number | null = null;
         const rational = (p: number) => {
           let value = 0;
-          for (let k = 0; k < 3; k += 1)
-            value +=
-              u32(p + k * 8) / (u32(p + k * 8 + 4) || 1) / (k ? 60 ** k : 1);
+          for (let k = 0; k < 3; k += 1) value += u32(p + k * 8) / (u32(p + k * 8 + 4) || 1) / (k ? 60 ** k : 1);
           return value;
         };
         for (let i = 0; i < u16(gp); i += 1) {
