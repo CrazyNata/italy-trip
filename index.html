@@ -458,8 +458,12 @@
         </sc-if>
       </div>
 
+      <sc-if value="{{ sightHasAny }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:12.5px;color:var(--muted,#a2937c);margin:-4px 0 18px;display:flex;align-items:center;gap:7px;flex-wrap:wrap"><i class="fa-solid fa-up-down-left-right" style="font-size:11px"></i><span>Перетащите место между разделами или нажмите <i class="fa-solid fa-star" style="font-size:10px;color:var(--ac,#b95c3f)"></i>, чтобы поменять важность. Значок <i class="fa-solid fa-camera" style="font-size:11px"></i> — добавить фото.</span></div>
+      </sc-if>
+
       <sc-for list="{{ sightGroups }}" as="g" hint-placeholder-count="2">
-        <div style="margin-bottom:32px">
+        <div onDragOver="{{ onSightDragOver }}" onDragLeave="{{ onSightDragLeave }}" onDrop="{{ onSightDrop }}" data-group="{{ g.key }}" style="margin-bottom:32px;border-radius:14px">
           <div style="display:flex;align-items:center;gap:12px;margin:0 0 18px;padding-bottom:11px;border-bottom:1.5px solid var(--line,#e7dcc7)">
             <i class="{{ g.icon }}" style="color:{{ g.iconColor }};font-size:16px"></i>
             <h2 style="font-family:'Playfair Display',serif;font-weight:600;font-size:25px;margin:0;letter-spacing:.005em">{{ g.label }}</h2>
@@ -480,13 +484,25 @@
               </div>
               <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:11px">
                 <sc-for list="{{ sub.items }}" as="st" hint-placeholder-count="4">
-                  <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-left:3px solid {{ st.dot }};border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:12px;transition:box-shadow .16s ease,transform .16s ease" style-hover="box-shadow:0 6px 18px rgba(59,50,40,.11);transform:translateY(-1px)">
-                    <button onClick="{{ onToggleSight }}" data-id="{{ st.id }}" style="{{ st.boxStyle }}">{{ st.check }}</button>
-                    <div style="flex:1;min-width:0">
-                      <div style="font-family:'Playfair Display',serif;font-size:17px;line-height:1.22;{{ st.textStyle }}">{{ st.name }}</div>
-                      <div style="font-size:12px;color:var(--muted,#8a7d6b);margin-top:4px;display:flex;align-items:center;gap:5px"><i class="fa-solid fa-location-dot" style="font-size:10px;opacity:.7"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ st.city }}</span></div>
+                  <div draggable="true" onDragStart="{{ onSightDragStart }}" data-id="{{ st.id }}" style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-left:3px solid {{ st.dot }};border-radius:12px;overflow:hidden;transition:box-shadow .16s ease,transform .16s ease" style-hover="box-shadow:0 6px 18px rgba(59,50,40,.11);transform:translateY(-1px)">
+                    <sc-if value="{{ st.hasPhoto }}" hint-placeholder-val="{{ false }}">
+                      <div style="position:relative;height:132px;background:var(--track,#efe4cf)">
+                        <img src="{{ st.photo }}" alt="{{ st.name }}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">
+                        <button onClick="{{ onRemovePlacePhoto }}" data-id="{{ st.id }}" title="Убрать фото" style="position:absolute;top:8px;right:8px;width:26px;height:26px;border:none;border-radius:50%;background:rgba(24,18,12,.5);color:#fff;cursor:pointer;font-size:13px;display:grid;place-items:center">×</button>
+                      </div>
+                    </sc-if>
+                    <div style="padding:12px 14px;display:flex;align-items:center;gap:11px">
+                      <button onClick="{{ onToggleSight }}" data-id="{{ st.id }}" title="Отметить, что сходили" style="{{ st.boxStyle }}">{{ st.check }}</button>
+                      <div style="flex:1;min-width:0">
+                        <div style="font-family:'Playfair Display',serif;font-size:17px;line-height:1.22;{{ st.textStyle }}">{{ st.name }}</div>
+                        <div style="font-size:12px;color:var(--muted,#8a7d6b);margin-top:4px;display:flex;align-items:center;gap:5px"><i class="fa-solid fa-location-dot" style="font-size:10px;opacity:.7"></i><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ st.city }}</span></div>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:2px;flex:none">
+                        <button onClick="{{ onToggleSightGroup }}" data-id="{{ st.id }}" title="{{ st.starTitle }}" style="border:none;background:none;cursor:pointer;color:{{ st.starColor }};font-size:14px;padding:5px 6px"><i class="{{ st.starIcon }}"></i></button>
+                        <label title="Добавить / заменить фото" style="cursor:pointer;color:#c4b5a0;font-size:14px;padding:5px 6px;display:grid;place-items:center" style-hover="color:var(--ac,#b95c3f)"><i class="fa-solid fa-camera"></i><input type="file" accept="image/*" onChange="{{ onPlacePhoto }}" data-id="{{ st.id }}" style="display:none"></label>
+                        <button onClick="{{ onRemoveSight }}" data-id="{{ st.id }}" title="Удалить место" style="border:none;background:none;color:#c4b5a0;cursor:pointer;font-size:17px;line-height:1;padding:3px 5px" style-hover="color:var(--ac,#b95c3f)">×</button>
+                      </div>
                     </div>
-                    <button onClick="{{ onRemoveSight }}" data-id="{{ st.id }}" style="border:none;background:none;color:#c4b5a0;cursor:pointer;font-size:18px;line-height:1;flex:none" style-hover="color:var(--ac,#b95c3f)">×</button>
                   </div>
                 </sc-for>
               </div>
@@ -1114,9 +1130,14 @@ class Component extends DCLogic {
       const inGroup = filteredSights.filter(s => (s.group || 'необязательные') === gd.key);
       const subs = sightSubs.filter(sub => !sf.sub || sub === sf.sub).map(sub => {
         const dot = sightSubColors[sub] || '#8a7d6b';
+        const isReqGroup = gd.key === 'обязательные';
         const items = inGroup.filter(s => subOf(s) === sub).map(st => ({
           id: st.id, name: st.name, city: st.city, dot, check: st.done ? '✓' : '',
           boxStyle: mkBox(st.done), textStyle: st.done ? 'color:#a2937c;text-decoration:line-through' : '',
+          photo: st.photo || '', hasPhoto: !!st.photo,
+          starIcon: isReqGroup ? 'fa-solid fa-star' : 'fa-regular fa-star',
+          starColor: isReqGroup ? 'var(--ac,#b95c3f)' : '#c4b5a0',
+          starTitle: isReqGroup ? 'Перенести в необязательные' : 'Перенести в обязательные',
         }));
         return { name: sub, dot, count: items.length, items, has: items.length > 0 };
       }).filter(x => x.has);
@@ -1287,7 +1308,7 @@ class Component extends DCLogic {
       onCopyMap: (e) => { const url = e.currentTarget.dataset.url || ''; const done = () => { this.setState({ mapCopied: true }); setTimeout(() => this.setState({ mapCopied: false }), 1600); }; try { if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(done, done); } else { const ta = document.createElement('textarea'); ta.value = url; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done(); } } catch (err) { done(); } },
       days,
       lodging,
-      sightGroups, sightSubs, sightCities, sightFilterActive, sightsNoResults,
+      sightGroups, sightSubs, sightCities, sightFilterActive, sightsNoResults, sightHasAny: d.sights.length > 0,
       sfCity: sf.city, sfGroup: sf.group, sfSub: sf.sub,
       expenses, budgetTotal, perPerson, perDay,
       notes: d.notes, links: d.links,
@@ -1315,6 +1336,32 @@ class Component extends DCLogic {
       onAddSight: () => this.addSight(),
       onSightFilter: (e) => { const k = e.currentTarget.dataset.k, v = e.currentTarget.value; this.setState(s => ({ sf: { ...(s.sf || { city: '', group: '', sub: '' }), [k]: v } })); },
       onSightFilterReset: () => this.setState({ sf: { city: '', group: '', sub: '' } }),
+      onToggleSightGroup: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { const s = dd.sights.find(x => x.id === id); if (s) s.group = (s.group === 'обязательные' ? 'необязательные' : 'обязательные'); }); },
+      onPlacePhoto: async (e) => {
+        const inp = e.currentTarget, id = inp.dataset.id, file = inp.files && inp.files[0]; inp.value = '';
+        if (!file) return;
+        if (window.__tripReadOnly) { if (window.__tripToast) window.__tripToast('Только владелец может редактировать план'); return; }
+        if (!window.sb) return;
+        if (window.__tripToast) window.__tripToast('Загружаю фото…');
+        try {
+          const ext = ((file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')) || 'jpg';
+          const path = id + '_' + Date.now() + '.' + ext;
+          const up = await window.sb.storage.from('place-photos').upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
+          if (up.error) { if (window.__tripToast) window.__tripToast('Не удалось загрузить фото'); return; }
+          const url = window.sb.storage.from('place-photos').getPublicUrl(path).data.publicUrl;
+          this.setData(dd => { const s = dd.sights.find(x => x.id === id); if (s) { s.photo = url; s.photoPath = path; } });
+        } catch (err) { if (window.__tripToast) window.__tripToast('Ошибка загрузки фото'); }
+      },
+      onRemovePlacePhoto: (e) => {
+        const id = e.currentTarget.dataset.id;
+        const s0 = this.state.data.sights.find(x => x.id === id); const path = s0 && s0.photoPath;
+        this.setData(dd => { const s = dd.sights.find(x => x.id === id); if (s) { s.photo = ''; s.photoPath = ''; } });
+        if (path && window.sb) { try { window.sb.storage.from('place-photos').remove([path]); } catch (_) {} }
+      },
+      onSightDragStart: (e) => { this._dragSightId = e.currentTarget.dataset.id; try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', e.currentTarget.dataset.id); } catch (_) {} },
+      onSightDragOver: (e) => { e.preventDefault(); try { e.dataTransfer.dropEffect = 'move'; } catch (_) {} e.currentTarget.style.outline = '2px dashed var(--ac,#b95c3f)'; e.currentTarget.style.outlineOffset = '3px'; e.currentTarget.style.borderRadius = '14px'; },
+      onSightDragLeave: (e) => { e.currentTarget.style.outline = ''; },
+      onSightDrop: (e) => { e.preventDefault(); e.currentTarget.style.outline = ''; const id = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || this._dragSightId; const group = e.currentTarget.dataset.group; this._dragSightId = null; if (!id || !group) return; this.setData(dd => { const s = dd.sights.find(x => x.id === id); if (s && s.group !== group) s.group = group; }); },
       onExpKey: (e) => { if (e.key === 'Enter') this.addExpense(); },
       onAddExpense: () => this.addExpense(),
       onRemoveExpense: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { dd.expenses = dd.expenses.filter(x => x.id !== id); }); },
