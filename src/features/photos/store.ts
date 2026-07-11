@@ -1,7 +1,170 @@
-export type Photo={id:string;thumb:string;iso:string|null;lat:number|null;lng:number|null;place:string|null}
-const db=()=>new Promise<IDBDatabase>((ok,no)=>{const r=indexedDB.open('italy_photos_db',1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains('photos'))r.result.createObjectStore('photos',{keyPath:'id'})};r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)})
-export async function all(){const d=await db();return new Promise<Photo[]>(ok=>{const r=d.transaction('photos').objectStore('photos').getAll();r.onsuccess=()=>ok(r.result);r.onerror=()=>ok([])})}
-export async function put(p:Photo){const d=await db();return new Promise<void>((ok,no)=>{const t=d.transaction('photos','readwrite');t.objectStore('photos').put(p);t.oncomplete=()=>ok();t.onerror=()=>no(t.error)})}
-export async function del(id:string){const d=await db();d.transaction('photos','readwrite').objectStore('photos').delete(id)}
-export function exif(buf:ArrayBuffer){try{const v=new DataView(buf);if(v.getUint16(0)!==0xffd8)return{};let o=2;while(o<v.byteLength){if(v.getUint16(o)!==0xffe1){o+=2+v.getUint16(o+2);continue}if(v.getUint32(o+4)!==0x45786966)return{};const t=o+10,le=v.getUint16(t)===0x4949,u16=(x:number)=>v.getUint16(x,le),u32=(x:number)=>v.getUint32(x,le),ifd=t+u32(t+4);let gp=0,ep=0;for(let i=0;i<u16(ifd);i++){const e=ifd+2+i*12,tag=u16(e);if(tag===0x8825)gp=t+u32(e+8);if(tag===0x8769)ep=t+u32(e+8)}let iso:string|null=null,lat:number|null=null,lng:number|null=null;if(ep)for(let i=0;i<u16(ep);i++){const e=ep+2+i*12,tag=u16(e),n=u32(e+4),p=n>4?t+u32(e+8):e+8;if([0x9003,0x9004,0x132].includes(tag)){let s='';for(let k=0;k<n-1;k++)s+=String.fromCharCode(v.getUint8(p+k));const m=s.match(/(\d{4})\D(\d{2})\D(\d{2})/);if(m)iso=`${m[1]}-${m[2]}-${m[3]}`}}if(gp){let ar='N',or='E',av:null|number=null,ov:null|number=null;const rat=(p:number)=>{let z=0;for(let k=0;k<3;k++)z+=u32(p+k*8)/(u32(p+k*8+4)||1)/(k?60**k:1);return z};for(let i=0;i<u16(gp);i++){const e=gp+2+i*12,tag=u16(e),p=t+u32(e+8);if(tag===1)ar=String.fromCharCode(v.getUint8(e+8));if(tag===3)or=String.fromCharCode(v.getUint8(e+8));if(tag===2)av=rat(p);if(tag===4)ov=rat(p)}if(av!=null)lat=ar==='S'?-av:av;if(ov!=null)lng=or==='W'?-ov:ov}return{iso,lat,lng}}}catch{}return{}}
-export function scale(file:File){return new Promise<string|null>(ok=>{const i=new Image(),u=URL.createObjectURL(file);i.onload=()=>{let w=i.width,h=i.height,r=Math.min(1,1400/w,1400/h);const c=document.createElement('canvas');c.width=w*r;c.height=h*r;c.getContext('2d')!.drawImage(i,0,0,c.width,c.height);URL.revokeObjectURL(u);ok(c.toDataURL('image/jpeg',.82))};i.onerror=()=>ok(null);i.src=u})}
+export type Photo = {
+  id: string;
+  thumb: string;
+  iso: string | null;
+  lat: number | null;
+  lng: number | null;
+  place: string | null;
+};
+
+let databasePromise: Promise<IDBDatabase> | null = null;
+
+function database() {
+  if (databasePromise) return databasePromise;
+  databasePromise = new Promise<IDBDatabase>((resolve, reject) => {
+    const request = indexedDB.open("italy_photos_db", 1);
+    request.onupgradeneeded = () => {
+      if (!request.result.objectStoreNames.contains("photos")) {
+        request.result.createObjectStore("photos", { keyPath: "id" });
+      }
+    };
+    request.onsuccess = () => {
+      request.result.onversionchange = () => closePhotoStore();
+      resolve(request.result);
+    };
+    request.onerror = () => {
+      databasePromise = null;
+      reject(request.error);
+    };
+    request.onblocked = () => {
+      databasePromise = null;
+      reject(new Error("Photo database is blocked"));
+    };
+  });
+  return databasePromise;
+}
+
+export function closePhotoStore() {
+  const openDatabase = databasePromise;
+  databasePromise = null;
+  void openDatabase?.then((db) => db.close()).catch(() => undefined);
+}
+
+export async function all() {
+  const db = await database();
+  return new Promise<Photo[]>((resolve, reject) => {
+    const request = db.transaction("photos").objectStore("photos").getAll();
+    request.onsuccess = () => resolve(request.result ?? []);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function put(photo: Photo) {
+  const db = await database();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction("photos", "readwrite");
+    transaction.objectStore("photos").put(photo);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+}
+
+export async function del(id: string) {
+  const db = await database();
+  return new Promise<void>((resolve, reject) => {
+    const transaction = db.transaction("photos", "readwrite");
+    transaction.objectStore("photos").delete(id);
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+    transaction.onabort = () => reject(transaction.error);
+  });
+}
+
+export function exif(buf: ArrayBuffer) {
+  try {
+    const v = new DataView(buf);
+    if (v.getUint16(0) !== 0xffd8) return {};
+    let o = 2;
+    while (o < v.byteLength) {
+      if (v.getUint16(o) !== 0xffe1) {
+        o += 2 + v.getUint16(o + 2);
+        continue;
+      }
+      if (v.getUint32(o + 4) !== 0x45786966) return {};
+      const t = o + 10;
+      const le = v.getUint16(t) === 0x4949;
+      const u16 = (x: number) => v.getUint16(x, le);
+      const u32 = (x: number) => v.getUint32(x, le);
+      const ifd = t + u32(t + 4);
+      let gp = 0;
+      let ep = 0;
+      for (let i = 0; i < u16(ifd); i += 1) {
+        const e = ifd + 2 + i * 12;
+        const tag = u16(e);
+        if (tag === 0x8825) gp = t + u32(e + 8);
+        if (tag === 0x8769) ep = t + u32(e + 8);
+      }
+      let iso: string | null = null;
+      let lat: number | null = null;
+      let lng: number | null = null;
+      if (ep) {
+        for (let i = 0; i < u16(ep); i += 1) {
+          const e = ep + 2 + i * 12;
+          const tag = u16(e);
+          const n = u32(e + 4);
+          const p = n > 4 ? t + u32(e + 8) : e + 8;
+          if ([0x9003, 0x9004, 0x132].includes(tag)) {
+            let value = "";
+            for (let k = 0; k < n - 1; k += 1) value += String.fromCharCode(v.getUint8(p + k));
+            const match = value.match(/(\d{4})\D(\d{2})\D(\d{2})/);
+            if (!iso && match) iso = `${match[1]}-${match[2]}-${match[3]}`;
+          }
+        }
+      }
+      if (gp) {
+        let latRef = "N";
+        let lngRef = "E";
+        let latValue: number | null = null;
+        let lngValue: number | null = null;
+        const rational = (p: number) => {
+          let value = 0;
+          for (let k = 0; k < 3; k += 1) value += u32(p + k * 8) / (u32(p + k * 8 + 4) || 1) / (k ? 60 ** k : 1);
+          return value;
+        };
+        for (let i = 0; i < u16(gp); i += 1) {
+          const e = gp + 2 + i * 12;
+          const tag = u16(e);
+          const p = t + u32(e + 8);
+          if (tag === 1) latRef = String.fromCharCode(v.getUint8(e + 8));
+          if (tag === 3) lngRef = String.fromCharCode(v.getUint8(e + 8));
+          if (tag === 2) latValue = rational(p);
+          if (tag === 4) lngValue = rational(p);
+        }
+        if (latValue != null) lat = latRef === "S" ? -latValue : latValue;
+        if (lngValue != null) lng = lngRef === "W" ? -lngValue : lngValue;
+      }
+      return { iso, lat, lng };
+    }
+  } catch {
+    // Invalid or truncated EXIF is treated as missing metadata.
+  }
+  return {};
+}
+
+export function scale(file: File) {
+  return new Promise<string | null>((resolve) => {
+    const image = new Image();
+    const url = URL.createObjectURL(file);
+    const finish = (value: string | null) => {
+      URL.revokeObjectURL(url);
+      resolve(value);
+    };
+    image.onload = () => {
+      try {
+        const ratio = Math.min(1, 1400 / image.width, 1400 / image.height);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(image.width * ratio);
+        canvas.height = Math.round(image.height * ratio);
+        const context = canvas.getContext("2d");
+        if (!context) return finish(null);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        finish(canvas.toDataURL("image/jpeg", 0.82));
+      } catch {
+        finish(null);
+      }
+    };
+    image.onerror = () => finish(null);
+    image.src = url;
+  });
+}
