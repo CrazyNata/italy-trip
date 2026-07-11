@@ -933,9 +933,11 @@ class Component extends DCLogic {
     this._onDarkChange = () => this.setState(s => { const dark = !s.dark; try { localStorage.setItem('italy_dark', dark ? '1' : '0'); } catch (_) {} return { dark }; });
     this._onSightPhotoClick = (e) => {
       let img = e.target && e.target.tagName === 'IMG' ? e.target : null;
-      if (!img && e.target && e.target.closest) {
-        const card = e.target.closest('div[style*="min-height:145px"]');
-        img = card && card.querySelector('img');
+      let node = e.target;
+      while (!img && node && node !== document.body) {
+        const candidate = node.querySelector && node.querySelector('img');
+        if (candidate && this.state.data.sights.some(s => s.photo && candidate.src === s.photo)) img = candidate;
+        node = node.parentElement;
       }
       if (!img) return;
       const sight = this.state.data.sights.find(s => s.photo && img.src === s.photo);
