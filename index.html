@@ -931,24 +931,8 @@ class Component extends DCLogic {
     try { const t = localStorage.getItem('italy_theme'); if (t) this.setState({ theme: t }); } catch (e) {}
     this._onThemeChange = (e) => { const theme = e.detail; if (!theme) return; try { localStorage.setItem('italy_theme', theme); } catch (_) {} this.setState({ theme }); };
     this._onDarkChange = () => this.setState(s => { const dark = !s.dark; try { localStorage.setItem('italy_dark', dark ? '1' : '0'); } catch (_) {} return { dark }; });
-    this._onSightPhotoClick = (e) => {
-      if (this.state.sightInfoId) return;
-      let img = e.target && e.target.tagName === 'IMG' ? e.target : null;
-      let node = e.target;
-      let levels = 0;
-      while (!img && node && node !== document.body && levels < 4) {
-        const candidate = node.querySelector && node.querySelector('img');
-        if (candidate && this.state.data.sights.some(s => s.photo && candidate.src === s.photo)) img = candidate;
-        node = node.parentElement;
-        levels++;
-      }
-      if (!img) return;
-      const sight = this.state.data.sights.find(s => s.photo && img.src === s.photo);
-      if (sight) this.setState({ sightInfoId: sight.id });
-    };
     window.addEventListener('trip:set-theme', this._onThemeChange);
     window.addEventListener('trip:toggle-dark', this._onDarkChange);
-    document.addEventListener('click', this._onSightPhotoClick);
     this.idbAll().then(list => { if (list && list.length) this.setState({ photos: list }, () => this.resolvePlaces()); }).catch(() => {});
     this.loadWeather();
     this.loadPhotos();
@@ -960,7 +944,6 @@ class Component extends DCLogic {
   componentWillUnmount() {
     window.removeEventListener('trip:set-theme', this._onThemeChange);
     window.removeEventListener('trip:toggle-dark', this._onDarkChange);
-    document.removeEventListener('click', this._onSightPhotoClick);
   }
 
   // Токен Mapbox не хранится в коде — auth.js подтягивает его из Supabase после входа
