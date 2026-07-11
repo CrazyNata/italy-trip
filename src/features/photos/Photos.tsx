@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTripData } from "../../trip/TripDataContext";
 import { button, useDialogKeyboard } from "../shared";
 import { all, closePhotoStore, del, exif, openPhotoStore, put, scale, type Photo } from "./store";
+import { deleteTripPhoto, loadTripPhotos, uploadTripPhoto } from "../../trip/normalizedRepository";
 
 const MONTHS = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 const wait = (delay: number) => new Promise((resolve) => window.setTimeout(resolve, delay));
@@ -45,21 +46,27 @@ async function reverseGeocode(photo: Photo, signal: AbortSignal) {
 }
 
 export function Photos() {
-  const { data, isReadOnly } = useTripData();
+  const { data, isReadOnly, selectedTrip } = useTripData();
+  const tripId = selectedTrip?.id ?? "legacy";
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [busy, setBusy] = useState("");
   const [report, setReport] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [remoteRevision,setRemoteRevision]=useState(0);
   const closeButton = useRef<HTMLButtonElement>(null);
   const lifecycle = useRef<{ active: boolean; session: number; controller: AbortController } | null>(null);
 
+  useEffect(()=>{const refresh=(event:Event)=>{if(event instanceof CustomEvent&&event.detail===selectedTrip?.id)setRemoteRevision((value)=>value+1);};window.addEventListener("trip:photos-changed",refresh);return()=>window.removeEventListener("trip:photos-changed",refresh);},[selectedTrip?.id]);
   useEffect(() => {
     const state = { active: true, session: openPhotoStore(), controller: new AbortController() };
     lifecycle.current = state;
-    void all(state.session).then(async (stored) => {
+    void all(state.session, tripId).then(async (stored) => {
       if (!state.active) return;
-      setPhotos(stored);
-      const pending = stored.filter((photo) => photo.lat != null && photo.lng != null && !photo.place);
+      let available=stored;
+      if(selectedTrip){try{const remote=await loadTripPhotos(selectedTrip.id);available=remote.filter((photo)=>photo.thumb);for(const photo of available)await put(state.session,photo);}catch{setReport("Не удалось обновить фото из Supabase. Показана локальная копия.");}}
+      if (!state.active) return;
+      setPhotos(available);
+      const pending = available.filter((photo) => photo.lat != null && photo.lng != null && !photo.place);
       for (const photo of pending) {
         if (!state.active) break;
         const place = await reverseGeocode(photo, state.controller.signal);
@@ -81,7 +88,7 @@ export function Photos() {
       closePhotoStore(state.session);
       if (lifecycle.current === state) lifecycle.current = null;
     };
-  }, []);
+  }, [tripId,remoteRevision]);
 
   const sorted = [...photos].sort((a, b) => (a.iso ?? "9999").localeCompare(b.iso ?? "9999"));
   const openIndex = openId ? sorted.findIndex((photo) => photo.id === openId) : -1;
@@ -126,6 +133,7 @@ export function Photos() {
           if (!thumb) throw new Error("Image decoding failed");
           let photo: Photo = {
             id: `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+            tripId,
             thumb,
             iso: metadata.iso ?? new Date(file.lastModified).toISOString().slice(0, 10),
             lat: metadata.lat ?? null,
@@ -136,6 +144,7 @@ export function Photos() {
             const place = await reverseGeocode(photo, state.controller.signal);
             if (place) photo = { ...photo, place };
           }
+          if(selectedTrip){const remoteId=await uploadTripPhoto(selectedTrip.id,file,{iso:photo.iso,lat:photo.lat,lng:photo.lng,place:photo.place});photo={...photo,id:remoteId};}
           if (!state.active) return;
           await put(state.session, photo);
           if (!state.active) return;
@@ -161,6 +170,7 @@ export function Photos() {
     const state = lifecycle.current;
     if (!state?.active) return;
     try {
+      if(selectedTrip)await deleteTripPhoto(selectedTrip.id,id);
       await del(state.session, id);
       if (!state.active) return;
       setPhotos((current) => current.filter((photo) => photo.id !== id));

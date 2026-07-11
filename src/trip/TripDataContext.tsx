@@ -1,179 +1,78 @@
-import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
-import { useAuth } from '../auth/AuthContext'
-import { supabase } from '../lib/supabase/client'
-import { parseTripPayload, readCachedTrip, type TripData, type TripPayload } from '../types/trip'
+import { useAuth } from "../auth/AuthContext";
+import type { CreatedInvitation, TripInvitation, TripMember, TripSummary } from "../lib/supabase/database";
+import { supabase } from "../lib/supabase/client";
+import { parseTripPayload, readCachedTrip, TRIP_STATE_VERSION, type TripData, type TripPayload } from "../types/trip";
+import * as repository from "./normalizedRepository";
 
-const ROW_ID = 'main'
-const PUSH_DELAY = 1500
-const POLL_DELAY = 15000
-
-export type TripSyncState = 'clean' | 'dirty' | 'saving' | 'failed'
+const PUSH_DELAY = 900;
+export type TripSyncState = "clean" | "dirty" | "saving" | "failed";
 
 interface TripDataContextValue {
-  payload: TripPayload | null
-  data: TripData | null
-  loading: boolean
-  error: string | null
-  usingCache: boolean
-  isReadOnly: boolean
-  syncState: TripSyncState
-  updateData: (update: (current: TripData) => TripData) => void
-  refresh: () => Promise<void>
-  retrySave: () => Promise<void>
+  payload: TripPayload | null; data: TripData | null; loading: boolean; error: string | null; usingCache: boolean;
+  isReadOnly: boolean; syncState: TripSyncState; trips: TripSummary[]; selectedTrip: TripSummary | null;
+  members: TripMember[]; invitations: TripInvitation[];
+  updateData: (update: (current: TripData) => TripData) => void; refresh: () => Promise<void>; retrySave: () => Promise<void>;
+  selectTrip: (id: string) => void; createTrip: (name: string) => Promise<string>; renameTrip: (name: string) => Promise<void>;
+  deleteTrip: (confirmation: string) => Promise<void>; createInvitation: (email: string) => Promise<CreatedInvitation>;
+  revokeInvitation: (id: string) => Promise<void>; acceptInvitation: (token: string) => Promise<string>;
 }
+const TripDataContext = createContext<TripDataContextValue | null>(null);
 
-const TripDataContext = createContext<TripDataContextValue | null>(null)
-
-function cachePayload(payload: TripPayload) {
-  try { localStorage.setItem('italy_trip', JSON.stringify(payload)) } catch { /* Cache is optional. */ }
-}
+function cacheKey(userId: string, tripId: string) { return `italy_trip:${userId}:${tripId}`; }
+function readCache(userId: string, tripId: string) { try { const raw=localStorage.getItem(cacheKey(userId,tripId)); return raw ? parseTripPayload(JSON.parse(raw)) : null; } catch { return null; } }
+function writeCache(userId: string, tripId: string, payload: TripPayload) { try { localStorage.setItem(cacheKey(userId,tripId),JSON.stringify(payload)); } catch { /* optional */ } }
 
 export function TripDataProvider({ children }: { children: ReactNode }) {
-  const { user, loading: authLoading, isOwner } = useAuth()
-  const cached = useRef(readCachedTrip())
-  const payloadRef = useRef<TripPayload | null>(cached.current)
-  const pendingPayload = useRef<TripPayload | null>(null)
-  const syncStateRef = useRef<TripSyncState>('clean')
-  const readSequence = useRef(0)
-  const readQueue = useRef<Promise<void>>(Promise.resolve())
-  const pushTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const saveInFlight = useRef(false)
-  const [payload, setPayload] = useState<TripPayload | null>(cached.current)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [usingCache, setUsingCache] = useState(Boolean(cached.current))
-  const [syncState, setSyncStateValue] = useState<TripSyncState>('clean')
+  const { user, loading: authLoading } = useAuth();
+  const [trips,setTrips]=useState<TripSummary[]>([]); const [selectedId,setSelectedId]=useState<string|null>(null);
+  const [payload,setPayload]=useState<TripPayload|null>(null); const [loading,setLoading]=useState(true); const [error,setError]=useState<string|null>(null);
+  const [usingCache,setUsingCache]=useState(false); const [syncState,setSyncState]=useState<TripSyncState>("clean");
+  const [members,setMembers]=useState<TripMember[]>([]); const [invitations,setInvitations]=useState<TripInvitation[]>([]);
+  const generation=useRef(0); const payloadRef=useRef<TripPayload|null>(null); const pending=useRef<{tripId:string;payload:TripPayload}|null>(null);
+  const timer=useRef<number|null>(null); const saving=useRef(false);
+  const selectedTrip=trips.find((trip)=>trip.id===selectedId)??null; const isReadOnly=selectedTrip ? selectedTrip.role!=="owner" : true;
 
-  function setSyncState(next: TripSyncState) {
-    syncStateRef.current = next
-    setSyncStateValue(next)
+  function apply(next: TripPayload, cached=false) { payloadRef.current=next; setPayload(next); setUsingCache(cached); }
+  async function loadAccess(tripId:string, owner:boolean) {
+    const [nextMembers,nextInvitations]=await Promise.all([repository.listMembers(tripId),owner?repository.listInvitations(tripId):Promise.resolve([])]);
+    setMembers(nextMembers); setInvitations(nextInvitations);
   }
-
-  function scheduleSave() {
-    if (!isOwner || !user || !pendingPayload.current || saveInFlight.current) return
-    if (pushTimer.current) clearTimeout(pushTimer.current)
-    pushTimer.current = setTimeout(() => { void savePending() }, PUSH_DELAY)
+  async function loadTrip(tripId:string, silent=false) {
+    if(!user)return; const request=++generation.current; if(!silent)setLoading(true); setError(null);
+    try { const next=await repository.loadTrip(tripId); if(request!==generation.current)return; apply(next); writeCache(user.id,tripId,next); await loadAccess(tripId,trips.find((t)=>t.id===tripId)?.role==="owner"); setLoading(false); }
+    catch(cause){ if(request!==generation.current)return; const cached=readCache(user.id,tripId); if(cached)apply(cached,true); setError(cause instanceof Error?cause.message:"Не удалось загрузить поездку"); setLoading(false); }
   }
-
-  async function savePending() {
-    if (!isOwner || !user || !pendingPayload.current || saveInFlight.current) return
-    if (pushTimer.current) clearTimeout(pushTimer.current)
-    pushTimer.current = null
-    const saving = pendingPayload.current
-    const serialized = JSON.stringify(saving)
-    saveInFlight.current = true
-    setSyncState('saving')
-    readSequence.current += 1
-    const { error: pushError } = await supabase.from('trip_state').upsert({ id: ROW_ID, payload: saving, updated_at: new Date().toISOString() })
-    saveInFlight.current = false
-    setLoading(false)
-    if (pushError) {
-      setSyncState('failed')
-      setError('Не удалось сохранить изменения. Локальная копия сохранена и готова к повторной отправке.')
-      return
-    }
-    if (pendingPayload.current && JSON.stringify(pendingPayload.current) !== serialized) {
-      setSyncState('dirty')
-      scheduleSave()
-      return
-    }
-    pendingPayload.current = null
-    setSyncState('clean')
-    setUsingCache(false)
-    setError(null)
+  async function discover(preferred?:string) {
+    if(!user)return; const request=++generation.current; setLoading(true); setError(null);
+    try {
+      const available=await repository.listTrips(); if(request!==generation.current)return; setTrips(available);
+      if(available.length){ const stored=localStorage.getItem(`italy_trip:selected:${user.id}`); const id=available.some((t)=>t.id===(preferred??stored))?(preferred??stored)!:available[0].id; setSelectedId(id); await loadTrip(id); return; }
+      const legacy=readCachedTrip(); const remote=await supabase.from("trip_state").select("payload").eq("id","main").maybeSingle();
+      const parsed=!remote.error&&remote.data?parseTripPayload(remote.data.payload):null; apply(parsed??legacy??{v:TRIP_STATE_VERSION,data:null as never},!parsed); if(!parsed&&!legacy)setPayload(null);
+      setSelectedId(null); setMembers([]); setInvitations([]); setError(remote.error?"Не удалось загрузить legacy-план.":null); setLoading(false);
+    } catch(cause){ if(request===generation.current){setError(cause instanceof Error?cause.message:"Не удалось загрузить поездки");setLoading(false);} }
   }
-
-  function pullRemote(silent = false): Promise<void> {
-    const request = ++readSequence.current
-    readQueue.current = readQueue.current.then(async () => {
-      if (!user || syncStateRef.current !== 'clean') return
-      if (!silent) setLoading(true)
-      const { data: row, error: pullError } = await supabase.from('trip_state').select('payload').eq('id', ROW_ID).maybeSingle()
-      if (request !== readSequence.current || syncStateRef.current !== 'clean') return
-      if (pullError) {
-        setError('Не удалось загрузить план из Supabase. Показана локальная копия, если она доступна.')
-        setUsingCache(Boolean(payloadRef.current))
-        setLoading(false)
-        return
-      }
-      if (!row) {
-        if (isOwner && cached.current) {
-          pendingPayload.current = cached.current
-          setSyncState('dirty')
-          setLoading(false)
-          await savePending()
-        } else {
-          setError('План пока не опубликован владельцем.')
-          setUsingCache(Boolean(cached.current))
-          setLoading(false)
-        }
-        return
-      }
-      const parsed = parseTripPayload(row.payload)
-      if (!parsed) {
-        setError('Supabase вернул неподдерживаемый формат плана. Показана локальная копия, если она доступна.')
-        setUsingCache(Boolean(payloadRef.current))
-        setLoading(false)
-        return
-      }
-      cached.current = parsed
-      payloadRef.current = parsed
-      cachePayload(parsed)
-      setPayload(parsed)
-      setUsingCache(false)
-      setError(null)
-      setLoading(false)
-    }).catch(() => {
-      if (request === readSequence.current && syncStateRef.current === 'clean') {
-        setError('Не удалось загрузить план из Supabase. Показана локальная копия, если она доступна.')
-        setLoading(false)
-      }
-    })
-    return readQueue.current
+  async function savePending(){ const work=pending.current;if(!work||saving.current||isReadOnly)return; saving.current=true;setSyncState("saving");
+    try{await repository.saveTrip(work.tripId,work.payload.data);if(pending.current===work)pending.current=null;setSyncState(pending.current?"dirty":"clean");setError(null);if(pending.current)schedule();}
+    catch(cause){setSyncState("failed");setError(cause instanceof Error?cause.message:"Не удалось сохранить изменения");}finally{saving.current=false;}
   }
+  function schedule(){if(timer.current)window.clearTimeout(timer.current);timer.current=window.setTimeout(()=>void savePending(),PUSH_DELAY);}
+  function updateData(update:(current:TripData)=>TripData){if(!user||!selectedTrip||isReadOnly||!payloadRef.current)return;const next={...payloadRef.current,data:update(structuredClone(payloadRef.current.data))};apply(next);writeCache(user.id,selectedTrip.id,next);pending.current={tripId:selectedTrip.id,payload:next};setSyncState("dirty");schedule();}
 
-  useEffect(() => {
-    if (authLoading) return
-    if (!user) {
-      setLoading(false)
-      setUsingCache(Boolean(cached.current))
-      return
-    }
-    void pullRemote()
-    const channel = supabase.channel('trip-state-main').on('postgres_changes', { event: '*', schema: 'public', table: 'trip_state', filter: `id=eq.${ROW_ID}` }, () => { void pullRemote(true) }).subscribe()
-    const poll = window.setInterval(() => { void pullRemote(true) }, POLL_DELAY)
-    return () => {
-      readSequence.current += 1
-      window.clearInterval(poll)
-      void supabase.removeChannel(channel)
-    }
-    // Identity and role changes require a new authoritative read.
-  }, [authLoading, user?.id, isOwner])
+  useEffect(()=>{if(authLoading)return;if(!user){setLoading(false);setTrips([]);setPayload(null);return;}void discover();return()=>{generation.current+=1;};},[authLoading,user?.id]);
+  useEffect(()=>{if(!user||!selectedTrip)return;localStorage.setItem(`italy_trip:selected:${user.id}`,selectedTrip.id);return repository.subscribeToTrip(selectedTrip.id,()=>{window.dispatchEvent(new CustomEvent("trip:photos-changed",{detail:selectedTrip.id}));if(!pending.current&&!saving.current)void loadTrip(selectedTrip.id,true);});},[user?.id,selectedTrip?.id]);
+  useEffect(()=>()=>{if(timer.current)window.clearTimeout(timer.current);},[]);
 
-  useEffect(() => () => { if (pushTimer.current) clearTimeout(pushTimer.current) }, [])
+  function selectTrip(id:string){if(id===selectedId||!trips.some((t)=>t.id===id))return;if(pending.current)void savePending();generation.current+=1;setSelectedId(id);setPayload(readCache(user!.id,id));setUsingCache(Boolean(readCache(user!.id,id)));void loadTrip(id);}
+  async function createTrip(name:string){const id=await repository.createTrip(name);await discover(id);return id;}
+  async function renameTrip(name:string){if(!selectedTrip)throw new Error("Поездка не выбрана");await repository.renameTrip(selectedTrip.id,name);await discover(selectedTrip.id);}
+  async function deleteTrip(confirmation:string){if(!selectedTrip)throw new Error("Поездка не выбрана");if(confirmation!==selectedTrip.name)throw new Error("Название поездки не совпадает");await repository.deleteTrip(selectedTrip.id);pending.current=null;await discover();}
+  async function createInvitation(email:string){if(!selectedTrip)throw new Error("Поездка не выбрана");const created=await repository.createInvitation(selectedTrip.id,email);setInvitations(await repository.listInvitations(selectedTrip.id));return created;}
+  async function revokeInvitation(id:string){await repository.revokeInvitation(id);if(selectedTrip)setInvitations(await repository.listInvitations(selectedTrip.id));}
+  async function acceptInvitation(token:string){const id=await repository.acceptInvitation(token);await discover(id);return id;}
 
-  function updateData(update: (current: TripData) => TripData) {
-    const current = payloadRef.current
-    if (!isOwner || !user || !current) return
-    const next = { ...current, data: update(structuredClone(current.data)) }
-    payloadRef.current = next
-    pendingPayload.current = next
-    cached.current = next
-    cachePayload(next)
-    setPayload(next)
-    setUsingCache(false)
-    if (!saveInFlight.current) {
-      setSyncState('dirty')
-      scheduleSave()
-    }
-  }
-
-  return <TripDataContext.Provider value={{ payload, data: payload?.data ?? null, loading: authLoading || loading, error, usingCache, isReadOnly: !isOwner, syncState, updateData, refresh: () => pullRemote(), retrySave: savePending }}>{children}</TripDataContext.Provider>
+  return <TripDataContext.Provider value={{payload,data:payload?.data??null,loading:authLoading||loading,error,usingCache,isReadOnly,syncState,trips,selectedTrip,members,invitations,updateData,refresh:()=>selectedTrip?loadTrip(selectedTrip.id):discover(),retrySave:savePending,selectTrip,createTrip,renameTrip,deleteTrip,createInvitation,revokeInvitation,acceptInvitation}}>{children}</TripDataContext.Provider>;
 }
-
-export function useTripData() {
-  const value = useContext(TripDataContext)
-  if (!value) throw new Error('useTripData must be used inside TripDataProvider')
-  return value
-}
+export function useTripData(){const value=useContext(TripDataContext);if(!value)throw new Error("useTripData must be used inside TripDataProvider");return value;}

@@ -1,5 +1,6 @@
 export type Photo = {
   id: string;
+  tripId: string;
   thumb: string;
   iso: string | null;
   lat: number | null;
@@ -14,10 +15,14 @@ function database(session: number) {
   if (session !== storeSession) return Promise.reject(new Error("Photo store session closed"));
   if (databasePromise) return databasePromise;
   databasePromise = new Promise<IDBDatabase>((resolve, reject) => {
-    const request = indexedDB.open("italy_photos_db", 1);
+    const request = indexedDB.open("italy_photos_db", 2);
     request.onupgradeneeded = () => {
       if (!request.result.objectStoreNames.contains("photos")) {
-        request.result.createObjectStore("photos", { keyPath: "id" });
+        const store = request.result.createObjectStore("photos", { keyPath: "id" });
+        store.createIndex("tripId", "tripId", { unique: false });
+      } else {
+        const store = request.transaction!.objectStore("photos");
+        if (!store.indexNames.contains("tripId")) store.createIndex("tripId", "tripId", { unique: false });
       }
     };
     request.onsuccess = () => {
@@ -52,12 +57,12 @@ export function closePhotoStore(session: number) {
   void openDatabase?.then((db) => db.close()).catch(() => undefined);
 }
 
-export async function all(session: number) {
+export async function all(session: number, tripId: string) {
   const db = await database(session);
   if (session !== storeSession) throw new Error("Photo store session closed");
   return new Promise<Photo[]>((resolve, reject) => {
     const request = db.transaction("photos").objectStore("photos").getAll();
-    request.onsuccess = () => resolve(request.result ?? []);
+    request.onsuccess = () => resolve((request.result ?? []).filter((photo) => photo.tripId === tripId || (tripId === "legacy" && !photo.tripId)));
     request.onerror = () => reject(request.error);
   });
 }

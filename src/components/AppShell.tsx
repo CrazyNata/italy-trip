@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 
-import { useAuth } from "../auth";
 import { useTripData } from "../trip/TripDataContext";
+import { TripManager } from "../trip/TripManager";
 import { Overview } from "../features/overview/Overview";
 import { Itinerary } from "../features/itinerary/Itinerary";
 import { Lodging } from "../features/lodging/Lodging";
@@ -22,8 +22,7 @@ const tabs = [
 ] as const;
 
 export function AppShell() {
-  const { isOwner, error: authError } = useAuth();
-  const { data, loading, error, usingCache, syncState, refresh, retrySave } =
+  const { data, loading, error, usingCache, syncState, refresh, retrySave, isReadOnly } =
     useTripData();
   const [selectedTab, setSelectedTab] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
@@ -163,21 +162,20 @@ export function AppShell() {
       </header>
 
       <main className="mx-auto max-w-[1120px] px-4 pb-20 pt-7 sm:px-6">
+        <TripManager />
         {(loading ||
-          authError ||
           error ||
-          !isOwner ||
+          isReadOnly ||
           usingCache ||
           syncState !== "clean") && (
           <div
-            className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${authError || error || syncState === "failed" ? "border-[#d8a08d] bg-[#fff2ed] text-[#7f3524]" : "border-[var(--line)] bg-[var(--soft)] text-[var(--muted)]"}`}
+            className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${error || syncState === "failed" ? "border-[#d8a08d] bg-[#fff2ed] text-[#7f3524]" : "border-[var(--line)] bg-[var(--soft)] text-[var(--muted)]"}`}
             role="status"
           >
             <span>
               {loading
                 ? "Загружаем актуальный план…"
-                : (authError ??
-                  error ??
+                : (error ??
                   (syncState === "dirty"
                     ? "Есть несохранённые изменения…"
                     : syncState === "saving"
