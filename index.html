@@ -461,7 +461,7 @@
       <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:16px;margin:0 0 24px">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:13px">
           <div><div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:600"><i class="fa-solid fa-person-walking" style="color:var(--ac,#b95c3f);font-size:18px;margin-right:7px"></i>Пеший маршрут</div><div style="font-size:12.5px;color:var(--muted,#8a7d6b);margin-top:3px">Проверьте точки и меняйте порядок стрелками или перетаскиванием маркеров.</div></div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap"><select value="{{ walkCity }}" onChange="{{ onWalkCity }}" style="min-width:165px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:8px 10px;font-size:13px;background:var(--soft,#fdfaf3);color:var(--ink,#3b3228)"><option value="">город…</option><sc-for list="{{ sightCities }}" as="c" hint-placeholder-count="4"><option value="{{ c }}">{{ c }}</option></sc-for></select><button onClick="{{ onGeocodeWalkSights }}" style="border:1px solid var(--line,#e7dcc7);background:var(--soft,#fdfaf3);color:var(--ink,#3b3228);border-radius:9px;padding:8px 11px;font-size:13px;font-weight:600;cursor:pointer"><i class="fa-solid fa-location-crosshairs" style="margin-right:5px"></i>{{ walkGeocodeLabel }}</button></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><select value="{{ walkCity }}" onChange="{{ onWalkCity }}" style="min-width:165px;border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:8px 10px;font-size:13px;background:var(--soft,#fdfaf3);color:var(--ink,#3b3228)"><option value="">город…</option><sc-for list="{{ sightCities }}" as="c" hint-placeholder-count="4"><option value="{{ c }}">{{ c }}</option></sc-for></select><select value="{{ walkDay }}" onChange="{{ onWalkDay }}" style="border:1px solid var(--line,#e7dcc7);border-radius:9px;padding:8px 10px;font-size:13px;background:var(--soft,#fdfaf3);color:var(--ink,#3b3228)"><option value="1">День 1: античный Рим</option><option value="2">День 2: центр Рима</option><option value="3">День 3: Ватикан и Боргезе</option></select><button onClick="{{ onGeocodeWalkSights }}" style="border:1px solid var(--line,#e7dcc7);background:var(--soft,#fdfaf3);color:var(--ink,#3b3228);border-radius:9px;padding:8px 11px;font-size:13px;font-weight:600;cursor:pointer"><i class="fa-solid fa-location-crosshairs" style="margin-right:5px"></i>{{ walkGeocodeLabel }}</button></div>
         </div>
         <sc-if value="{{ walkHasCity }}" hint-placeholder-val="{{ false }}"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px"><div style="display:flex;flex-direction:column;gap:7px;max-height:380px;overflow:auto"><sc-for list="{{ walkSights }}" as="st" hint-placeholder-count="3"><div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--line,#e7dcc7);border-radius:9px;background:var(--soft,#fdfaf3)"><span style="width:21px;height:21px;border-radius:50%;display:grid;place-items:center;background:var(--ac,#b95c3f);color:#fff;font-size:11px;font-weight:700">{{ st.n }}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:600">{{ st.name }}</span><button onClick="{{ onMoveWalkSight }}" data-id="{{ st.id }}" data-dir="-1" title="Раньше" style="border:none;background:none;color:var(--muted,#8a7d6b);cursor:pointer;padding:4px"><i class="fa-solid fa-chevron-up"></i></button><button onClick="{{ onMoveWalkSight }}" data-id="{{ st.id }}" data-dir="1" title="Позже" style="border:none;background:none;color:var(--muted,#8a7d6b);cursor:pointer;padding:4px"><i class="fa-solid fa-chevron-down"></i></button></div></sc-for><sc-if value="{{ walkNoPoints }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px;color:var(--muted,#8a7d6b);padding:8px 2px">У мест нет координат. Нажмите «Найти точки».</div></sc-if><sc-if value="{{ walkHasUnlocated }}" hint-placeholder-val="{{ false }}"><div style="font-size:12px;color:var(--muted,#8a7d6b)">Без точки: {{ walkUnlocatedCount }}</div></sc-if><div style="font-size:12px;color:var(--muted,#8a7d6b);padding:3px 2px">{{ walkRouteLabel }}</div></div><div id="walk-map-slot" style="height:380px;min-height:280px;border-radius:12px;overflow:hidden;background:var(--track,#efe4cf);position:relative"></div></div></sc-if>
         <sc-if value="{{ walkNoCity }}" hint-placeholder-val="{{ true }}"><div style="font-size:13px;color:var(--muted,#8a7d6b);padding:6px 0">Добавьте места с указанным городом, чтобы построить маршрут.</div></sc-if>
@@ -900,10 +900,13 @@ class Component extends DCLogic {
             });
           }
         } catch (e) {}
-        if ((data.romeSightsV || 0) < 2) {
+        if ((data.romeSightsV || 0) < 3) {
+          const defaults = this.romeSights();
+          const byId = new Map(defaults.map(s => [s.id, s]));
           const known = new Set((data.sights || []).map(s => s.name + '\u0000' + s.city));
-          data.sights = [...(data.sights || []), ...this.romeSights().filter(s => !known.has(s.name + '\u0000' + s.city))];
-          data.romeSightsV = 2;
+          data.sights = (data.sights || []).map(s => byId.has(s.id) ? { ...s, walkDay: byId.get(s.id).walkDay, walkOrder: byId.get(s.id).walkOrder } : s);
+          data.sights.push(...defaults.filter(s => !known.has(s.name + '\u0000' + s.city)));
+          data.romeSightsV = 3;
         }
         this.setState({ data });
       }
@@ -993,9 +996,10 @@ class Component extends DCLogic {
   walkingSights() {
     const cities = [...new Set(this.state.data.sights.map(s => s.city).filter(Boolean))];
     const city = cities.includes(this.state.walkCity) ? this.state.walkCity : (cities[0] || '');
+    const day = +this.state.walkDay || 1;
     return this.state.data.sights
       .map((s, index) => ({ ...s, _index: index }))
-      .filter(s => s.city === city && Array.isArray(s.lnglat) && s.lnglat.length === 2)
+      .filter(s => s.city === city && (!s.walkDay || s.walkDay === day) && Array.isArray(s.lnglat) && s.lnglat.length === 2)
       .sort((a, b) => (a.walkOrder ?? a._index) - (b.walkOrder ?? b._index))
       .slice(0, 25);
   }
@@ -1068,21 +1072,21 @@ class Component extends DCLogic {
   romeSights() {
     const city = 'Рим, Италия';
     return [
-      { id: 'rome_colosseum', name: 'Колизей', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 0, lnglat: [12.4922694, 41.8901694], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Colosseo_2020.jpg/330px-Colosseo_2020.jpg' },
-      { id: 'rome_forum', name: 'Римский форум', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 1, lnglat: [12.4852, 41.8922], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Foro_Romano_Musei_Capitolini_Roma.jpg/330px-Foro_Romano_Musei_Capitolini_Roma.jpg' },
-      { id: 'rome_trevi', name: 'Фонтан Треви', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 2, lnglat: [12.48305556, 41.90083333], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Trevi_Fountain_-_Roma.jpg/330px-Trevi_Fountain_-_Roma.jpg' },
-      { id: 'rome_spanish_steps', name: 'Испанская лестница', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 3, lnglat: [12.48278, 41.90611], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Scalinata_della_Trinit%C3%A0_dei_Monti.jpg/330px-Scalinata_della_Trinit%C3%A0_dei_Monti.jpg' },
-      { id: 'rome_pantheon', name: 'Пантеон', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 4, lnglat: [12.47694444, 41.89861111], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Pantheon_%28Rome%29_-_Right_side_and_front.jpg/330px-Pantheon_%28Rome%29_-_Right_side_and_front.jpg' },
-      { id: 'rome_navona', name: 'Пьяцца Навона', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 5, lnglat: [12.47316, 41.89871], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Paolo_Monti_-_Servizio_fotografico_%28Roma%2C_1966%29_-_BEIC_6329173.jpg/330px-Paolo_Monti_-_Servizio_fotografico_%28Roma%2C_1966%29_-_BEIC_6329173.jpg' },
-      { id: 'rome_sant_angelo', name: 'Замок Святого Ангела', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 6, lnglat: [12.466355, 41.903064], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Engelsburg_und_Engelsbr%C3%BCcke_abends.jpg/330px-Engelsburg_und_Engelsbr%C3%BCcke_abends.jpg' },
-      { id: 'rome_st_peter', name: 'Собор Святого Петра', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkOrder: 7, lnglat: [12.45333333, 41.90222222], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Basilica_di_San_Pietro_in_Vaticano_September_2015-1a.jpg/330px-Basilica_di_San_Pietro_in_Vaticano_September_2015-1a.jpg' },
-      { id: 'rome_vatican_museums', name: 'Музеи Ватикана', city, group: 'обязательные', subcategory: 'музеи', done: false, walkOrder: 8, lnglat: [12.4544, 41.9064], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Musei_vaticani_Coat_of_Arms.svg/330px-Musei_vaticani_Coat_of_Arms.svg.png' },
-      { id: 'rome_borghese_gallery', name: 'Галерея Боргезе', city, group: 'необязательные', subcategory: 'музеи', done: false, walkOrder: 9, lnglat: [12.4922, 41.9142], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Galleria_Borghese_-_logo_%28Italy%2C_2022-%29.svg/330px-Galleria_Borghese_-_logo_%28Italy%2C_2022-%29.svg.png' },
-      { id: 'rome_villa_borghese', name: 'Парк Вилла Боргезе', city, group: 'необязательные', subcategory: 'природа', done: false, walkOrder: 10, lnglat: [12.49222222, 41.91416667], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Ingresso_monumentale_di_Villa_Borghese_a_Roma_su_piazzale_Flaminio_2018-02.jpg/330px-Ingresso_monumentale_di_Villa_Borghese_a_Roma_su_piazzale_Flaminio_2018-02.jpg' },
-      { id: 'rome_campo_de_fiori', name: 'Кампо-деи-Фьори', city, group: 'необязательные', subcategory: 'еда', done: false, walkOrder: 11, lnglat: [12.472, 41.8957], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Campo_dei_Fiori.jpg/330px-Campo_dei_Fiori.jpg' },
-      { id: 'rome_capitoline_museums', name: 'Капитолийские музеи', city, group: 'необязательные', subcategory: 'музеи', done: false, walkOrder: 12, lnglat: [12.4828, 41.8931], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/0_Cordonata_-_Dioscuri_-_Palazzo_Senatorio.JPG/330px-0_Cordonata_-_Dioscuri_-_Palazzo_Senatorio.JPG' },
-      { id: 'rome_circus_maximus', name: 'Большой цирк', city, group: 'необязательные', subcategory: 'достопримечательности', done: false, walkOrder: 13, lnglat: [12.4857, 41.8859], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/CircusMaximusSO.jpg/330px-CircusMaximusSO.jpg' },
-      { id: 'rome_caracalla', name: 'Термы Каракаллы', city, group: 'необязательные', subcategory: 'достопримечательности', done: false, walkOrder: 14, lnglat: [12.49305556, 41.87944444], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Baths_of_Caracalla%2C_facing_Caldarium.jpg/330px-Baths_of_Caracalla%2C_facing_Caldarium.jpg' },
+      { id: 'rome_colosseum', name: 'Колизей', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkDay: 1, walkOrder: 2, lnglat: [12.4922694, 41.8901694], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/de/Colosseo_2020.jpg/330px-Colosseo_2020.jpg' },
+      { id: 'rome_forum', name: 'Римский форум', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkDay: 1, walkOrder: 3, lnglat: [12.4852, 41.8922], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Foro_Romano_Musei_Capitolini_Roma.jpg/330px-Foro_Romano_Musei_Capitolini_Roma.jpg' },
+      { id: 'rome_trevi', name: 'Фонтан Треви', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkDay: 2, walkOrder: 1, lnglat: [12.48305556, 41.90083333], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Trevi_Fountain_-_Roma.jpg/330px-Trevi_Fountain_-_Roma.jpg' },
+      { id: 'rome_spanish_steps', name: 'Испанская лестница', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkDay: 2, walkOrder: 0, lnglat: [12.48278, 41.90611], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Scalinata_della_Trinit%C3%A0_dei_Monti.jpg/330px-Scalinata_della_Trinit%C3%A0_dei_Monti.jpg' },
+      { id: 'rome_pantheon', name: 'Пантеон', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkDay: 2, walkOrder: 2, lnglat: [12.47694444, 41.89861111], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Pantheon_%28Rome%29_-_Right_side_and_front.jpg/330px-Pantheon_%28Rome%29_-_Right_side_and_front.jpg' },
+      { id: 'rome_navona', name: 'Пьяцца Навона', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkDay: 2, walkOrder: 3, lnglat: [12.47316, 41.89871], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/18/Paolo_Monti_-_Servizio_fotografico_%28Roma%2C_1966%29_-_BEIC_6329173.jpg/330px-Paolo_Monti_-_Servizio_fotografico_%28Roma%2C_1966%29_-_BEIC_6329173.jpg' },
+      { id: 'rome_sant_angelo', name: 'Замок Святого Ангела', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkDay: 2, walkOrder: 5, lnglat: [12.466355, 41.903064], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Engelsburg_und_Engelsbr%C3%BCcke_abends.jpg/330px-Engelsburg_und_Engelsbr%C3%BCcke_abends.jpg' },
+      { id: 'rome_st_peter', name: 'Собор Святого Петра', city, group: 'обязательные', subcategory: 'достопримечательности', done: false, walkDay: 3, walkOrder: 1, lnglat: [12.45333333, 41.90222222], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/Basilica_di_San_Pietro_in_Vaticano_September_2015-1a.jpg/330px-Basilica_di_San_Pietro_in_Vaticano_September_2015-1a.jpg' },
+      { id: 'rome_vatican_museums', name: 'Музеи Ватикана', city, group: 'обязательные', subcategory: 'музеи', done: false, walkDay: 3, walkOrder: 0, lnglat: [12.4544, 41.9064], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/Musei_vaticani_Coat_of_Arms.svg/330px-Musei_vaticani_Coat_of_Arms.svg.png' },
+      { id: 'rome_borghese_gallery', name: 'Галерея Боргезе', city, group: 'необязательные', subcategory: 'музеи', done: false, walkDay: 3, walkOrder: 3, lnglat: [12.4922, 41.9142], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Galleria_Borghese_-_logo_%28Italy%2C_2022-%29.svg/330px-Galleria_Borghese_-_logo_%28Italy%2C_2022-%29.svg.png' },
+      { id: 'rome_villa_borghese', name: 'Парк Вилла Боргезе', city, group: 'необязательные', subcategory: 'природа', done: false, walkDay: 3, walkOrder: 2, lnglat: [12.49222222, 41.91416667], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Ingresso_monumentale_di_Villa_Borghese_a_Roma_su_piazzale_Flaminio_2018-02.jpg/330px-Ingresso_monumentale_di_Villa_Borghese_a_Roma_su_piazzale_Flaminio_2018-02.jpg' },
+      { id: 'rome_campo_de_fiori', name: 'Кампо-деи-Фьори', city, group: 'необязательные', subcategory: 'еда', done: false, walkDay: 2, walkOrder: 4, lnglat: [12.472, 41.8957], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Campo_dei_Fiori.jpg/330px-Campo_dei_Fiori.jpg' },
+      { id: 'rome_capitoline_museums', name: 'Капитолийские музеи', city, group: 'необязательные', subcategory: 'музеи', done: false, walkDay: 1, walkOrder: 4, lnglat: [12.4828, 41.8931], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/0_Cordonata_-_Dioscuri_-_Palazzo_Senatorio.JPG/330px-0_Cordonata_-_Dioscuri_-_Palazzo_Senatorio.JPG' },
+      { id: 'rome_circus_maximus', name: 'Большой цирк', city, group: 'необязательные', subcategory: 'достопримечательности', done: false, walkDay: 1, walkOrder: 1, lnglat: [12.4857, 41.8859], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/CircusMaximusSO.jpg/330px-CircusMaximusSO.jpg' },
+      { id: 'rome_caracalla', name: 'Термы Каракаллы', city, group: 'необязательные', subcategory: 'достопримечательности', done: false, walkDay: 1, walkOrder: 0, lnglat: [12.49305556, 41.87944444], photo: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Baths_of_Caracalla%2C_facing_Caldarium.jpg/330px-Baths_of_Caracalla%2C_facing_Caldarium.jpg' },
     ];
   }
 
@@ -1133,7 +1137,7 @@ class Component extends DCLogic {
     ];
     return {
       trip: { start: '2026-09-25', end: '2026-10-12', people: 2, dogs: 2 },
-      days, lodging, sights, romeSightsV: 2, expenses, links,
+      days, lodging, sights, romeSightsV: 3, expenses, links,
       notes: 'Выезжаем из Праги 25.09, нас двое + 2 собаки.\nС Рима (27.09) нас 4 человека — присоединяются сестра мужа с супругом.\nСобаки: переноски, миски, ветпаспорта, чипы, поводки. Проверить pet-friendly жильё и кафе.\nДокументы: страховка, копии паспортов, зелёная карта на авто.\n',
     };
   }
@@ -1287,7 +1291,8 @@ class Component extends DCLogic {
     const sightsNoResults = sightFilterActive && sightGroups.length === 0;
     const sightsTotal = d.sights.length, sightsDone = d.sights.filter(s => s.done).length;
     const walkCity = sightCities.includes(this.state.walkCity) ? this.state.walkCity : (sightCities[0] || '');
-    const walkAll = d.sights.map((s, index) => ({ ...s, _index: index })).filter(s => s.city === walkCity).sort((a, b) => (a.walkOrder ?? a._index) - (b.walkOrder ?? b._index));
+    const walkDay = +this.state.walkDay || 1;
+    const walkAll = d.sights.map((s, index) => ({ ...s, _index: index })).filter(s => s.city === walkCity && (!s.walkDay || s.walkDay === walkDay)).sort((a, b) => (a.walkOrder ?? a._index) - (b.walkOrder ?? b._index));
     const walkWithCoords = walkAll.filter(s => Array.isArray(s.lnglat) && s.lnglat.length === 2);
     const walkLocated = walkWithCoords.slice(0, 25);
     const walkRoute = this.state.walkRoute;
@@ -1455,7 +1460,7 @@ class Component extends DCLogic {
       days,
       lodging,
       sightGroups, sightSubs, sightCities, sightFilterActive, sightsNoResults, sightHasAny: d.sights.length > 0,
-      walkCity, walkHasCity: !!walkCity, walkNoCity: !walkCity, walkSights: walkLocated.map((s, index) => ({ id: s.id, name: s.name, n: index + 1 })), walkNoPoints: walkLocated.length === 0,
+      walkCity, walkDay, walkHasCity: !!walkCity, walkNoCity: !walkCity, walkSights: walkLocated.map((s, index) => ({ id: s.id, name: s.name, n: index + 1 })), walkNoPoints: walkLocated.length === 0,
       walkHasUnlocated: walkAll.length > walkWithCoords.length, walkUnlocatedCount: walkAll.length - walkWithCoords.length, walkGeocodeLabel: this.state.walkGeocoding ? 'Ищу…' : 'Найти точки', walkRouteLabel,
       sfCity: sf.city, sfGroup: sf.group, sfSub: sf.sub,
       expenses, budgetTotal, perPerson, perDay,
@@ -1485,6 +1490,7 @@ class Component extends DCLogic {
       onSightFilter: (e) => { const k = e.currentTarget.dataset.k, v = e.currentTarget.value; this.setState(s => ({ sf: { ...(s.sf || { city: '', group: '', sub: '' }), [k]: v } })); },
       onSightFilterReset: () => this.setState({ sf: { city: '', group: '', sub: '' } }),
       onWalkCity: (e) => this.setState({ walkCity: e.currentTarget.value, walkRoute: null, walkRouteError: '' }),
+      onWalkDay: (e) => this.setState({ walkDay: +e.currentTarget.value, walkRoute: null, walkRouteError: '' }),
       onGeocodeWalkSights: () => this.geocodeWalkSights(),
       onMoveWalkSight: (e) => this.moveWalkSight(e.currentTarget.dataset.id, +e.currentTarget.dataset.dir),
       onToggleSightGroup: (e) => { const id = e.currentTarget.dataset.id; this.setData(dd => { const s = dd.sights.find(x => x.id === id); if (s) s.group = (s.group === 'обязательные' ? 'необязательные' : 'обязательные'); }); },
