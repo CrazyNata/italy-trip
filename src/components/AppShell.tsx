@@ -15,7 +15,7 @@ const tabs = [
   { path: "route", label: "Маршрут", icon: "fa-solid fa-route" },
   { path: "lodging", label: "Жильё", icon: "fa-solid fa-bed" },
   { path: "cancellation", label: "Отмена", icon: "fa-solid fa-calendar-xmark" },
-  { path: "places", label: "Места", icon: "fa-solid fa-location-dot" },
+  { path: "places", label: "Достопримечательности", icon: "fa-solid fa-location-dot" },
   { path: "restaurants", label: "Рестораны", icon: "fa-solid fa-utensils" },
   { path: "budget", label: "Бюджет", icon: "fa-solid fa-wallet" },
   { path: "photos", label: "Фото", icon: "fa-solid fa-images" },
