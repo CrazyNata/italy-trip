@@ -6,6 +6,7 @@ export type Photo = {
   lat: number | null;
   lng: number | null;
   place: string | null;
+  placeSynced?: boolean;
 };
 
 let databasePromise: Promise<IDBDatabase> | null = null;

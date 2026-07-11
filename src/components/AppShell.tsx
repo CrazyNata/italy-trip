@@ -22,7 +22,7 @@ const tabs = [
 ] as const;
 
 export function AppShell() {
-  const { data, loading, error, usingCache, syncState, refresh, retrySave, isReadOnly } =
+  const { data, loading, error, usingCache, syncState, refresh, retrySave, keepLocalChanges, useServerVersion, restoredChanges, isReadOnly } =
     useTripData();
   const [selectedTab, setSelectedTab] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
@@ -176,20 +176,29 @@ export function AppShell() {
               {loading
                 ? "Загружаем актуальный план…"
                 : (error ??
-                  (syncState === "dirty"
+                  (syncState === "conflict"
+                    ? "План изменился на сервере. Выберите, какую версию сохранить."
+                    : restoredChanges
+                      ? "Восстановлены несохранённые изменения из этого браузера."
+                      : syncState === "dirty"
                     ? "Есть несохранённые изменения…"
                     : syncState === "saving"
                       ? "Сохраняем изменения…"
                       : usingCache
                         ? "Показана локальная копия плана."
-                        : "Режим просмотра: редактировать план может только владелец."))}
+                         : "Режим просмотра: редактировать план может только владелец."))}
             </span>
-            {syncState === "failed" ? (
+            {syncState === "conflict" ? (
+              <span className="flex flex-wrap gap-2">
+                <button className="rounded-lg border border-current px-2.5 py-1 font-semibold" onClick={() => void keepLocalChanges()}>Сохранить мои изменения</button>
+                <button className="rounded-lg border border-current px-2.5 py-1 font-semibold" onClick={useServerVersion}>Использовать серверную версию</button>
+              </span>
+            ) : syncState === "failed" || restoredChanges ? (
               <button
                 className="rounded-lg border border-current px-2.5 py-1 font-semibold"
                 onClick={() => void retrySave()}
               >
-                Повторить сохранение
+                {restoredChanges ? "Сохранить восстановленные изменения" : "Повторить сохранение"}
               </button>
             ) : (
               error && (

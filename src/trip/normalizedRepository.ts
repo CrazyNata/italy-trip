@@ -214,8 +214,17 @@ export async function saveTrip(
     payload_version: TRIP_STATE_VERSION,
     expected_revision: revision,
   });
+  if (result.error?.code === "40001")
+    throw new TripRevisionConflictError(result.error.message);
   fail("Не удалось сохранить поездку", result.error);
   return asNumber(result.data);
+}
+
+export class TripRevisionConflictError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "TripRevisionConflictError";
+  }
 }
 
 export async function createTrip(name: string) {
@@ -391,6 +400,7 @@ export async function loadTripPhotos(tripId: string): Promise<StoredPhoto[]> {
         lat: row.latitude == null ? null : asNumber(row.latitude),
         lng: row.longitude == null ? null : asNumber(row.longitude),
         place: asText(row.place) || null,
+        placeSynced: true,
       };
     }),
   );

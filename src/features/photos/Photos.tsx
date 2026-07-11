@@ -92,6 +92,7 @@ export function Photos() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [busy, setBusy] = useState("");
   const [report, setReport] = useState("");
+  const [placeRetryPending, setPlaceRetryPending] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [remoteRevision, setRemoteRevision] = useState(0);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -114,6 +115,11 @@ export function Photos() {
     return () => window.removeEventListener("trip:photos-changed", refresh);
   }, [selectedTrip?.id]);
   useEffect(() => {
+    const retry = () => setRemoteRevision((value) => value + 1);
+    window.addEventListener("online", retry);
+    return () => window.removeEventListener("online", retry);
+  }, []);
+  useEffect(() => {
     const state = {
       active: true,
       session: openPhotoStore(),
@@ -130,11 +136,14 @@ export function Photos() {
             const remote = await loadTripPhotos(selectedTrip.id);
             const localById = new Map(stored.map((photo) => [photo.id, photo]));
         available = remote
-          .map((photo) => {
-            const local = localById.get(photo.id);
-            return local?.thumb.startsWith("data:")
-              ? { ...photo, thumb: local.thumb }
-              : photo;
+           .map((photo) => {
+             const local = localById.get(photo.id);
+             return {
+               ...photo,
+               thumb: local?.thumb.startsWith("data:") ? local.thumb : photo.thumb,
+               place: photo.place ?? local?.place ?? null,
+               placeSynced: Boolean(photo.place) || !local?.place,
+             };
           })
           .filter((photo) => photo.thumb);
             for (const photo of available) await put(state.session, photo);
@@ -146,19 +155,23 @@ export function Photos() {
         }
         if (!state.active) return;
         setPhotos(available);
-        const pending = available.filter(
-          (photo) => photo.lat != null && photo.lng != null && !photo.place,
+        const pending = available.filter((photo) =>
+          photo.lat != null && photo.lng != null && (!photo.place || (!isReadOnly && !photo.placeSynced)),
         );
         for (const photo of pending) {
           if (!state.active) break;
-          const place = await reverseGeocode(photo, state.controller.signal);
+          const place = photo.place ?? await reverseGeocode(photo, state.controller.signal);
           if (place) {
-            const resolved = { ...photo, place };
+            const resolved = { ...photo, place, placeSynced: !selectedTrip };
             try {
               if (!state.active) break;
               await put(state.session, resolved);
-              if (selectedTrip)
+              if (selectedTrip && !isReadOnly) {
                 await updateTripPhotoPlace(selectedTrip.id, resolved.id, place);
+                resolved.placeSynced = true;
+                await put(state.session, resolved);
+                setPlaceRetryPending(false);
+              }
               if (state.active)
                 setPhotos((current) =>
                   current.map((item) =>
@@ -166,7 +179,8 @@ export function Photos() {
                   ),
                 );
             } catch {
-              // The photo remains available even if enriching the persisted record fails.
+              setPlaceRetryPending(true);
+              if (state.active) setReport("Место фото определено локально, но ещё не синхронизировано. Повторим позже.");
             }
           }
         }
@@ -244,10 +258,11 @@ export function Photos() {
             lat: metadata.lat ?? null,
             lng: metadata.lng ?? null,
             place: null,
+            placeSynced: false,
           };
           if (photo.lat != null && photo.lng != null) {
             const place = await reverseGeocode(photo, state.controller.signal);
-            if (place) photo = { ...photo, place };
+            if (place) photo = { ...photo, place, placeSynced: false };
           }
           if (selectedTrip) {
             const remoteId = await uploadTripPhoto(selectedTrip.id, file, {
@@ -257,6 +272,7 @@ export function Photos() {
               place: photo.place,
             });
             photo = { ...photo, id: remoteId };
+            photo.placeSynced = true;
           }
           if (!state.active) return;
           await put(state.session, photo);
@@ -376,9 +392,14 @@ export function Photos() {
         </div>
       )}
       {report && (
-        <p className="photo-report" role="status">
-          {report}
-        </p>
+        <div className="photo-report flex flex-wrap items-center justify-between gap-2" role="status">
+          <span>{report}</span>
+          {placeRetryPending && (
+            <button className={button} onClick={() => setRemoteRevision((value) => value + 1)}>
+              Повторить синхронизацию мест
+            </button>
+          )}
+        </div>
       )}
       {!busy && !photos.length && (
         <div className="photo-empty">
