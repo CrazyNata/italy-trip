@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="./sync.js"></script>
-<script src="./support.js"></script>
+<script src="./sync.js?v=__BUILD__"></script>
+<script src="./support.js?v=__BUILD__"></script>
 </head>
 <body>
 <x-dc>
@@ -329,7 +329,7 @@
             </sc-if>
             <sc-if value="{{ lg.noPhotos }}" hint-placeholder-val="{{ true }}">
             <div class="slot-wrap" style="position:relative;height:230px">
-              <x-import component-from-global-scope="image-slot" from="./image-slot.js" id="{{ lg.slot }}" shape="rect" fit="cover" placeholder="фото жилья" hint-size="100%,230px"></x-import>
+              <x-import component-from-global-scope="image-slot" from="./image-slot.js?v=__BUILD__" id="{{ lg.slot }}" shape="rect" fit="cover" placeholder="фото жилья" hint-size="100%,230px"></x-import>
               <span style="position:absolute;top:12px;left:12px;{{ lg.badgeStyle }}">{{ lg.status }}</span>
             </div>
             </sc-if>
