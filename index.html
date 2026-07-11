@@ -50,7 +50,13 @@
 <div style="{{ rootStyle }}">
 
   <!-- ========== HEADER ========== -->
-  <header class="app-header" style="max-width:1120px;margin:0 auto;padding:38px 24px 0">
+  <header class="app-header" style="max-width:1120px;margin:0 auto;padding:52px 24px 0;position:relative">
+    <div style="position:absolute;top:14px;right:24px;display:flex;align-items:center;gap:7px">
+      <sc-for list="{{ themeSwatches }}" as="sw" hint-placeholder-count="3">
+        <button onClick="{{ onSetTheme }}" data-theme="{{ sw.key }}" title="{{ sw.key }}" style="{{ sw.style }}"></button>
+      </sc-for>
+      <button onClick="{{ onToggleDark }}" title="Светлая / тёмная тема" style="width:28px;height:28px;display:grid;place-items:center;padding:0;background:transparent;border:1px solid var(--line,#e7dcc7);border-radius:50%;color:var(--ink);cursor:pointer;font-size:14px"><i class="{{ darkIcon }}"></i></button>
+    </div>
     <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:20px">
       <div>
         <div style="display:flex;align-items:center;gap:10px;color:var(--ac,#b95c3f);font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:600">
@@ -60,12 +66,6 @@
         <p style="margin:14px 0 0;font-size:15px;color:var(--muted,#7a6d59);max-width:460px">25 сентября — 12 октября · выезжаем из Праги вдвоём с 2 собаками. В Риме встречаем родственников — и нас становится 4 человека и 2 собаки. Планируем маршрут, жильё, места и бюджет.</p>
       </div>
       <div style="display:flex;gap:12px;flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:8px;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:14px;padding:0 14px">
-          <sc-for list="{{ themeSwatches }}" as="sw" hint-placeholder-count="3">
-            <button onClick="{{ onSetTheme }}" data-theme="{{ sw.key }}" title="{{ sw.key }}" style="{{ sw.style }}"></button>
-          </sc-for>
-        </div>
-        <button onClick="{{ onToggleDark }}" title="Светлая / тёмная тема" style="display:grid;place-items:center;padding:0 16px;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:14px;color:var(--ink);cursor:pointer;font-size:17px"><i class="{{ darkIcon }}"></i></button>
         <div style="text-align:center;background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:14px;padding:14px 20px;min-width:96px">
           <div style="font-family:'Space Mono',ui-monospace,monospace;font-size:46px;font-weight:700;letter-spacing:-.02em;color:var(--ac,#b95c3f);line-height:1">{{ daysLeft }}</div>
           <div style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#8a7d6b);margin-top:4px">дней до выезда</div>
@@ -1449,7 +1449,7 @@ class Component extends DCLogic {
         { key: 'Терракота', color: '#2a7089' },
         { key: 'Охра', color: '#d99a4e' },
         { key: 'Олива', color: '#5f8a6a' },
-      ].map(t => ({ key: t.key, color: t.color, style: `width:26px;height:26px;border-radius:50%;cursor:pointer;background:${t.color};border:2px solid ${activeTheme === t.key ? 'var(--ink,#3b3228)' : 'transparent'};box-shadow:0 0 0 1px var(--line,#e7dcc7);padding:0` })),
+      ].map(t => ({ key: t.key, color: t.color, style: `width:20px;height:20px;border-radius:50%;cursor:pointer;background:${t.color};border:2px solid ${activeTheme === t.key ? 'var(--ink,#3b3228)' : 'transparent'};box-shadow:0 0 0 1px var(--line,#e7dcc7);padding:0` })),
       onSetTheme: (e) => { const t = e.currentTarget.dataset.theme; try { localStorage.setItem('italy_theme', t); } catch (err) {} this.setState({ theme: t }); },
       routeSummary: cities.join('  ·  '),
       weather, mapPins, mapOpenUrl,
