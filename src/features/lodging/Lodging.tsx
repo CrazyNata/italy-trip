@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { useTripData } from "../../trip/TripDataContext";
 import type { Lodging as LodgingRecord } from "../../types/trip";
-import { button, field, PanelTitle, subtleButton, uid } from "../shared";
+import { button, field, PanelTitle, subtleButton, uid, useDialogKeyboard, useTransientState } from "../shared";
 
 const statuses = ["хочу", "бронь", "оплачено"];
 const flag = (city: string) =>
@@ -69,15 +69,22 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
     index: number;
   } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
-  useEffect(() => {
-    if (!lightbox) return;
-    const key = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setLightbox(null);
-      if (event.key === "ArrowLeft") shiftLightbox(-1);
-      if (event.key === "ArrowRight") shiftLightbox(1);
-    };
-    window.addEventListener("keydown", key);
-    return () => window.removeEventListener("keydown", key);
+  const showCopied = useTransientState(setCopied);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  useDialogKeyboard({
+    open: !!lightbox,
+    onClose: () => setLightbox(null),
+    onPrevious: () => setLightbox((current) => {
+      if (!current) return null;
+      const count = data?.lodging.find((lodge) => lodge.id === current.id)?.photos?.length || 1;
+      return { ...current, index: (current.index - 1 + count) % count };
+    }),
+    onNext: () => setLightbox((current) => {
+      if (!current) return null;
+      const count = data?.lodging.find((lodge) => lodge.id === current.id)?.photos?.length || 1;
+      return { ...current, index: (current.index + 1) % count };
+    }),
+    initialFocus: closeButton,
   });
   if (!data) return null;
 
@@ -114,8 +121,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
     } catch {
       /* Opening the link remains available. */
     }
-    setCopied(lodge.id);
-    window.setTimeout(() => setCopied(null), 1600);
+    showCopied(lodge.id, null);
   };
 
   if (cancellation) {
@@ -191,7 +197,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
   return (
     <>
       <PanelTitle eyebrow="Где мы остановимся">Жильё</PanelTitle>
-      <div className="grid gap-5 rounded-2xl border border-[var(--line)] bg-[var(--track)] p-4 md:grid-cols-2">
+      <div className="lodging-grid grid gap-5 rounded-2xl border border-[var(--line)] bg-[var(--track)] p-4 md:grid-cols-2">
         {data.lodging.map((lodge) => {
           const index = (photo[lodge.id] || 0) % (lodge.photos?.length || 1);
           const photos = lodge.photos || [];
@@ -384,6 +390,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
             alt={active.name}
           />
           <button
+            ref={closeButton}
             className="absolute right-6 top-5 text-4xl text-white"
             title="Закрыть"
             onClick={() => setLightbox(null)}

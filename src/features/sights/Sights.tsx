@@ -3,7 +3,7 @@ import { useAuth } from "../../auth";
 import { supabase } from "../../lib/supabase/client";
 import { useTripData } from "../../trip/TripDataContext";
 import type { Sight } from "../../types/trip";
-import { button, field, PanelTitle, subtleButton, uid } from "../shared";
+import { button, field, PanelTitle, subtleButton, uid, useDialogKeyboard, useTransientState } from "../shared";
 
 const subs = [
   "достопримечательности",
@@ -205,6 +205,9 @@ export function Sights() {
   const [route, setRoute] = useState<RouteState>(null);
   const [routeError, setRouteError] = useState("");
   const [copied, setCopied] = useState(false);
+  const showCopied = useTransientState(setCopied);
+  const closeButton = useRef<HTMLButtonElement>(null);
+  useDialogKeyboard({ open: !!open, onClose: () => setOpen(null), initialFocus: closeButton });
   if (!data) return null;
   const cities = [
     ...new Set(data.sights.map((sight) => sight.city).filter(Boolean)),
@@ -381,7 +384,7 @@ export function Sights() {
   return (
     <>
       <PanelTitle eyebrow="Идеи для прогулок">Места</PanelTitle>
-      <div className="mb-5 flex flex-wrap gap-2 rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4">
+      <div className="sights-controls mb-5 flex flex-wrap gap-2 rounded-2xl border border-[var(--line)] bg-[var(--card)] p-4">
         <input
           className={`${field} w-36`}
           placeholder="город"
@@ -516,8 +519,7 @@ export function Sights() {
               try {
                 await navigator.clipboard.writeText(mapUrl);
               } catch {}
-              setCopied(true);
-              window.setTimeout(() => setCopied(false), 1600);
+              showCopied(true, false);
             }}
           >
             {copied ? "✓ Скопировано" : "⧉ Копировать маршрут"}
@@ -841,6 +843,7 @@ export function Sights() {
               />
             )}
             <button
+              ref={closeButton}
               className="absolute right-3 top-3 rounded-full bg-black/60 px-3 py-1 text-2xl text-white"
               title="Закрыть"
               onClick={() => setOpen(null)}

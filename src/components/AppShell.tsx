@@ -28,6 +28,7 @@ export function AppShell() {
   const [selectedTab, setSelectedTab] = useState(0);
   const [toast, setToast] = useState<string | null>(null);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const toastTimer = useRef<number | null>(null);
   useEffect(() => {
     const show = (event: Event) => {
       setToast(
@@ -35,13 +36,18 @@ export function AppShell() {
           ? event.detail
           : "Режим просмотра: изменения доступны только владельцу",
       );
-      window.setTimeout(() => setToast(null), 2200);
+      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+      toastTimer.current = window.setTimeout(() => {
+        setToast(null);
+        toastTimer.current = null;
+      }, 2200);
     };
     window.addEventListener("trip:readonly", show);
     window.addEventListener("trip:toast", show);
     return () => {
       window.removeEventListener("trip:readonly", show);
       window.removeEventListener("trip:toast", show);
+      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
     };
   }, []);
 
@@ -210,7 +216,7 @@ export function AppShell() {
         ))}
       </main>
       {toast && (
-        <div className="fixed bottom-6 left-1/2 z-[20000] -translate-x-1/2 rounded-full bg-[var(--ink)] px-5 py-3 text-sm font-bold text-[var(--card)] shadow-xl">
+        <div className="fixed bottom-6 left-1/2 z-[20000] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-full bg-[var(--ink)] px-5 py-3 text-center text-sm font-bold text-[var(--card)] shadow-xl" role="status">
           {toast}
         </div>
       )}

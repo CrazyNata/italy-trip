@@ -24,6 +24,7 @@ export interface TripDay {
   city: string;
   items: ItineraryItem[];
   draft: string;
+  draftTime?: string;
   dayMapUrl?: string;
 }
 
@@ -139,6 +140,7 @@ function isDay(value: unknown): value is TripDay {
     hasString(value, "weekday") &&
     hasString(value, "city") &&
     hasString(value, "draft") &&
+    hasOptionalString(value, "draftTime") &&
     hasOptionalString(value, "dayMapUrl") &&
     Array.isArray(value.items) &&
     value.items.every(isItem)
