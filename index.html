@@ -524,8 +524,16 @@
     <div style="animation:fadeUp .4s ease both">
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:20px">
         <div style="background:var(--ac,#b95c3f);color:#fff;border-radius:16px;padding:20px 22px">
-          <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.85">На семью</div>
+          <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;opacity:.85">Всего</div>
           <div style="font-family:'Playfair Display',serif;font-size:34px;font-weight:700;margin-top:6px">€{{ budgetTotal }}</div>
+        </div>
+        <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:20px 22px">
+          <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#8a7d6b)">На человека</div>
+          <div style="font-family:'Playfair Display',serif;font-size:34px;font-weight:700;margin-top:6px;color:var(--ol,#7c8450)">€{{ perPerson }}</div>
+        </div>
+        <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;padding:20px 22px">
+          <div style="font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted,#8a7d6b)">В день</div>
+          <div style="font-family:'Playfair Display',serif;font-size:34px;font-weight:700;margin-top:6px;color:var(--ac2,#cf9440)">€{{ perDay }}</div>
         </div>
       </div>
       <div style="background:var(--card,#fff);border:1px solid var(--line,#e7dcc7);border-radius:16px;overflow:hidden">
@@ -1304,6 +1312,8 @@ class Component extends DCLogic {
     const expenses = d.expenses.map(e => ({ id: e.id, label: e.label, category: e.category, amount: e.amount.toLocaleString('ru-RU'), dot: dotColors[e.category] || '#b95c3f' }));
     const budgetTotalNum = d.expenses.reduce((a, e) => a + (+e.amount || 0), 0);
     const budgetTotal = budgetTotalNum.toLocaleString('ru-RU');
+    const perPerson = Math.round(budgetTotalNum / (d.trip.people || 4)).toLocaleString('ru-RU');
+    const perDay = Math.round(budgetTotalNum / (nights || 1)).toLocaleString('ru-RU');
 
     // progress
     const routeItems = d.days.reduce((a, x) => a + x.items.length, 0);
@@ -1451,7 +1461,7 @@ class Component extends DCLogic {
       walkCity, walkDay, walkHasCity: !!walkCity, walkNoCity: !walkCity, walkSights: walkLocated.map((s, index) => ({ id: s.id, name: s.name, n: index + 1 })), walkNoPoints: walkLocated.length === 0,
       walkHasUnlocated: walkAll.length > walkWithCoords.length, walkUnlocatedCount: walkAll.length - walkWithCoords.length, walkGeocodeLabel: this.state.walkGeocoding ? 'Ищу…' : 'Найти точки', walkRouteLabel,
       sfCity: sf.city, sfGroup: sf.group, sfSub: sf.sub,
-      expenses, budgetTotal,
+      expenses, budgetTotal, perPerson, perDay,
       notes: d.notes, links: d.links,
       draft,
       // handlers
