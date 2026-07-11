@@ -13,15 +13,17 @@ export function RouteMap({cities}:{cities:string[]}) {
       try {
         m.accessToken=mapboxToken;
         const ps:[[number,number],...Array<[number,number]>]=[[14.44,50.08],...cities.map(c=>coords[c]).filter(Boolean),[14.44,50.08]] as typeof ps;
-        map=new m.Map({container:ref.current,style:'mapbox://styles/mapbox/outdoors-v12',center:ps[0],zoom:4,cooperativeGestures:true});
+        map=new m.Map({container:ref.current,style:'mapbox://styles/mapbox/outdoors-v12',center:ps[0],zoom:4,cooperativeGestures:true,attributionControl:false});
         map.on('error',()=>live&&setError("Не удалось загрузить карту. Проверьте токен и подключение."));
-        map.addControl(new m.NavigationControl({showCompass:false}));
-        ps.slice(0,-1).forEach((p,i)=>new m.Marker({color:i?'#2a7089':'#d99a4e'}).setLngLat(p).setPopup(new m.Popup().setText(i?cities[i-1]:'Прага')).addTo(map!));
-        map.once('load',()=>{try{map!.addSource('route',{type:'geojson',data:{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:ps}}});map!.addLayer({id:'route',type:'line',source:'route',paint:{'line-color':'#2a7089','line-width':4,'line-dasharray':[1,1.5]}});const b=new m.LngLatBounds();ps.forEach(p=>b.extend(p));map!.fitBounds(b,{padding:45,duration:0})}catch{if(live)setError("Не удалось отобразить маршрут.")}});
+        map.addControl(new m.NavigationControl({showCompass:false}),'top-left');
+        map.addControl(new m.AttributionControl({compact:true}));
+        const ac=(getComputedStyle(document.documentElement).getPropertyValue('--ac')||'#b95c3f').trim();
+        ps.slice(0,-1).forEach((p,i)=>{const el=document.createElement('div');el.style.cssText=i===0?'width:30px;height:30px;border-radius:50%;background:#2a7089;color:#fff;display:grid;place-items:center;font-size:13px;box-shadow:0 1px 6px rgba(0,0,0,.35);border:2px solid #fff':`width:28px;height:28px;border-radius:50%;background:${ac};color:#fff;display:grid;place-items:center;font-size:13px;font-weight:700;box-shadow:0 1px 6px rgba(0,0,0,.35);border:2px solid #fff`;el.innerHTML=i===0?'<i class="fa-solid fa-house"></i>':String(i);new m.Marker({element:el}).setLngLat(p).setPopup(new m.Popup({offset:18,closeButton:false}).setText(i?cities[i-1]:'Прага')).addTo(map!)});
+        map.once('load',()=>{try{map!.addSource('route',{type:'geojson',data:{type:'Feature',properties:{},geometry:{type:'LineString',coordinates:ps}}});map!.addLayer({id:'route',type:'line',source:'route',layout:{'line-cap':'round','line-join':'round'},paint:{'line-color':ac,'line-width':3,'line-opacity':.85,'line-dasharray':[1,1.6]}});const b=new m.LngLatBounds();ps.forEach(p=>b.extend(p));map!.fitBounds(b,{padding:50,duration:0})}catch{if(live)setError("Не удалось отобразить маршрут.")}});
       } catch { if(live)setError("Не удалось запустить карту в этом браузере."); map?.remove(); }
     }).catch(()=>{map?.remove();if(live)setError("Не удалось загрузить модуль карты.")});
     return()=>{live=false;map?.remove()}
   },[mapboxToken,cities.join('|')]);
   const message=error||(!loading&&!mapboxToken?"Токен карты недоступен.":!mapboxToken?"Карта загружается…":"");
-  return <div className="map-box relative h-[440px] overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--track)]"><div ref={ref} className="h-full"/>{message&&<div className="absolute inset-0 grid place-items-center bg-[var(--track)] p-6 text-center text-sm text-[var(--muted)]" role="status">{message}</div>}</div>
+  return <div className="map-box" style={{position:'relative',borderRadius:16,overflow:'hidden',border:'1px solid var(--line,#e7dcc7)',height:440,background:'var(--track,#efe4cf)'}}><div ref={ref} style={{position:'absolute',inset:0}}/>{message&&<div className="absolute inset-0 grid place-items-center bg-[var(--track)] p-6 text-center text-sm text-[var(--muted)]" role="status">{message}</div>}</div>
 }

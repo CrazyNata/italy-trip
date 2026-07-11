@@ -1,21 +1,21 @@
 import { useEffect, useRef, useState } from "react";
 import { useTripData } from "../../trip/TripDataContext";
-import { copyText, subtleButton, useDialogKeyboard, useTransientState } from "../shared";
+import { copyText, useDialogKeyboard, useTransientState } from "../shared";
 import { RouteMap } from "../maps/RouteMap";
 
 const slides = [
   ["salzburg", "Зальцбург", "🇦🇹 Первая остановка · 25 сентября", "Зальцбург на рассвете", "Крепость Хоэнзальцбург над бирюзовой Зальцах — с этого города начинается наше путешествие"],
   ["verona", "Верона", "🇮🇹 Вторая остановка · 26 сентября", "Верона — город Ромео и Джульетты", "Розовый мрамор Арена ди Верона и уютные улочки по пути на юг Италии"],
-  ["rome", "Рим", "🇮🇹 Третья остановка · 27 сентября", "Рим — Вечный город", "Здесь мы встречаем родственников — теперь нас четверо и две собаки: три дня Колизея, пиний и вечерних прогулок"],
+  ["rome", "Рим", "🇮🇹 Третья остановка · 27 сентября", "Рим — Вечный город", "Здесь мы встречаем родственников — теперь нас четверо и две собаки: три дня Колизея, пиний (римских сосен) и вечерних прогулок"],
   ["pisa", "Пиза", "🇮🇹 По пути · 30 сентября", "Пиза — короткая остановка", "Заезжаем к Пьяцца-деи-Мираколи и падающей башне по дороге из Рима в Фильине"],
-  ["figline", "Фильине-Вальдарно", "🇮🇹 Тоскана · 30 сентября", "Фильине-Вальдарно", "Тихий тосканский городок с аркадами — ночёвка среди холмов Валь-д’Арно"],
-  ["sanmarino", "Сан-Марино", "🇸🇲 По пути · 1 октября", "Сан-Марино", "Древнейшая республика на вершине Монте-Титано — башни и виды на холмы"],
+  ["figline", "Фильине-Вальдарно", "🇮🇹 Тоскана · 30 сентября", "Фильине-Вальдарно", "Тихий тосканский городок с аркадами на Пьяцца Марсилио Фичино — ночёвка среди холмов Валь-д’Арно"],
+  ["sanmarino", "Сан-Марино", "🇸🇲 По пути · 1 октября", "Сан-Марино", "Древнейшая республика на вершине Монте-Титано — башни и виды на холмы по дороге к Кьодже"],
   ["chioggia", "Кьоджа", "🇮🇹 Пятая остановка · 1 октября", "Кьоджа — маленькая Венеция", "Рыбацкий городок с каналами, лодками и мостами в лагуне рядом с Венецией"],
   ["milan", "Милан", "🇮🇹 Шестая остановка · 3 октября", "Милан — столица моды", "Величественный Дуомо и Галерея Виктора Эммануила II перед дорогой в Альпы"],
-  ["como", "Озеро Комо", "🇮🇹 Из Милана · радиальная поездка", "Озеро Комо", "Бирюзовая вода, виллы и разноцветные городки у подножия Альп"],
-  ["valdidentro", "Вальдидентро", "🇮🇹 Альпы · 6 октября", "Вальдидентро", "Альпийская долина с зелёными лугами и снежными вершинами"],
+  ["como", "Озеро Комо", "🇮🇹 Из Милана · радиальная поездка", "Озеро Комо", "Бирюзовая вода, виллы и разноцветные городки у подножия Альп — вылазка на день из Милана"],
+  ["valdidentro", "Вальдидентро", "🇮🇹 Альпы · 6 октября", "Вальдидентро", "Альпийская долина с зелёными лугами и снежными вершинами — тишина и горный воздух перед Мюнхеном"],
   ["stelvio", "Перевал Стельвио", "🇮🇹 Из Вальдидентро · радиальная поездка", "Перевал Стельвио", "Легендарный серпантин с 48 поворотами — один из самых высоких автоперевалов Альп"],
-  ["munich", "Мюнхен", "🇩🇪 Последняя остановка · 8 октября", "Мюнхен — перед домом", "Мариенплац и башни Фрауэнкирхе — последняя ночёвка перед возвращением"],
+  ["munich", "Мюнхен", "🇩🇪 Последняя остановка · 8 октября", "Мюнхен — перед домом", "Мариенплац и башни Фрауэнкирхе — последняя ночёвка перед возвращением в Прагу"],
   ["prague", "Прага", "🇨🇿 Дом · 12 октября", "Прага — домой", "Карлов мост и Пражский Град — возвращение домой, круг замкнулся"],
 ] as const;
 
@@ -25,15 +25,11 @@ const coords: Record<string, [number, number]> = {
 const cityPhotos: Record<string, string> = {
   "Прага, Чехия": "prague", "Зальцбург, Австрия": "salzburg", "Верона, Италия": "verona", "Рим, Италия": "rome", "Фильине-Вальдарно, Тоскана": "figline", "Кьоджа, Италия": "chioggia", "Милан, Италия": "milan", "Вальдидентро, Альпы": "valdidentro", "Мюнхен, Германия": "munich",
 };
-const weatherInfo = (code: number) => {
-  if (code === 0) return ["Ясно", "☀"];
-  if (code <= 2) return ["Малооблачно", "🌤"];
-  if (code === 3) return ["Пасмурно", "☁"];
-  if (code === 45 || code === 48) return ["Туман", "≋"];
-  if (code >= 95) return ["Гроза", "ϟ"];
-  if (code >= 71 && code <= 86) return ["Снег", "❄"];
-  if (code >= 51) return ["Дождь", "☂"];
-  return ["Нет данных", "☁"];
+const weatherInfo: Record<number, [string, string]> = {
+  0: ["Ясно", "fa-solid fa-sun"], 1: ["Малооблачно", "fa-solid fa-cloud-sun"], 2: ["Переменная облачность", "fa-solid fa-cloud-sun"], 3: ["Пасмурно", "fa-solid fa-cloud"],
+  45: ["Туман", "fa-solid fa-smog"], 48: ["Изморозь", "fa-solid fa-smog"], 51: ["Морось", "fa-solid fa-cloud-rain"], 53: ["Морось", "fa-solid fa-cloud-rain"], 55: ["Морось", "fa-solid fa-cloud-rain"],
+  61: ["Дождь", "fa-solid fa-cloud-showers-heavy"], 63: ["Дождь", "fa-solid fa-cloud-showers-heavy"], 65: ["Сильный дождь", "fa-solid fa-cloud-showers-heavy"], 66: ["Ледяной дождь", "fa-solid fa-cloud-showers-heavy"], 67: ["Ледяной дождь", "fa-solid fa-cloud-showers-heavy"],
+  71: ["Снег", "fa-solid fa-snowflake"], 73: ["Снег", "fa-solid fa-snowflake"], 75: ["Сильный снег", "fa-solid fa-snowflake"], 77: ["Снежная крупа", "fa-solid fa-snowflake"], 80: ["Ливень", "fa-solid fa-cloud-showers-heavy"], 81: ["Ливень", "fa-solid fa-cloud-showers-heavy"], 82: ["Сильный ливень", "fa-solid fa-cloud-showers-heavy"], 85: ["Снегопад", "fa-solid fa-snowflake"], 86: ["Снегопад", "fa-solid fa-snowflake"], 95: ["Гроза", "fa-solid fa-cloud-bolt"], 96: ["Гроза с градом", "fa-solid fa-cloud-bolt"], 99: ["Гроза с градом", "fa-solid fa-cloud-bolt"],
 };
 type Weather = { temp: number; code: number } | { error: true };
 
@@ -47,8 +43,8 @@ export function Overview() {
   const closeButton = useRef<HTMLButtonElement>(null);
   const shift = (amount: number) => setIndex((current) => (current + amount + slides.length) % slides.length);
   useDialogKeyboard({ open: lightbox, onClose: () => setLightbox(false), onPrevious: () => shift(-1), onNext: () => shift(1), initialFocus: closeButton });
-
   const weatherCities = data ? ["Прага, Чехия", ...new Set(data.lodging.map((lodge) => lodge.city))] : [];
+
   useEffect(() => {
     const controller = new AbortController();
     setWeather({});
@@ -69,44 +65,61 @@ export function Overview() {
   }, [weatherCities.join("|")]);
   if (!data) return null;
 
-  const total = data.days.reduce((sum, day) => sum + day.items.length, 0) + data.sights.length;
-  const done = data.days.reduce((sum, day) => sum + day.items.filter((item) => item.done).length, 0) + data.sights.filter((sight) => sight.done).length;
-  const progress = total ? Math.round(done / total * 100) : 0;
-  const cities = [...new Set(data.lodging.map((lodge) => lodge.city))];
-  const tripDays = Math.round((new Date(`${data.trip.end}T00:00:00`).getTime() - new Date(`${data.trip.start}T00:00:00`).getTime()) / 86400000);
-  const nights = Number.isFinite(tripDays) ? Math.max(0, tripDays) : 0;
   const routeUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent("U Vlachovky 8, Praha, Česko")}&destination=${encodeURIComponent("U Vlachovky 8, Praha, Česko")}&waypoints=${data.lodging.map((lodge) => encodeURIComponent(lodge.city)).join("%7C")}&travelmode=driving`;
-  return <>
-    <section className="hero relative min-h-[340px] overflow-hidden rounded-[18px] border border-[var(--line)]" aria-label="Города маршрута">
-      {slides.map((slide, slideIndex) => <button key={slide[0]} className={`absolute inset-0 size-full cursor-zoom-in text-left transition-opacity duration-[600ms] ${slideIndex === index ? "z-[2] opacity-100" : "z-[1] opacity-0"}`} onClick={() => setLightbox(true)} tabIndex={slideIndex === index ? 0 : -1} aria-label={`Открыть фото: ${slide[1]}`}>
-        <img className="size-full object-cover" src={`/images/hero-${slide[0]}.png`} alt={slide[1]} />
-        <span className="absolute inset-x-0 bottom-0 block bg-gradient-to-t from-black/80 p-6 pt-24 text-white">
-          <span className="inline-flex rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider backdrop-blur">{slide[2]}</span>
-          <strong className="mt-2 block font-display text-3xl">{slide[3]}</strong><span className="mt-1 block text-[13px] text-white/85">{slide[4]}</span>
-        </span>
-      </button>)}
-      <button className="carousel-arrow left-3" onClick={() => shift(-1)} title="Назад" aria-label="Предыдущий слайд">‹</button><button className="carousel-arrow right-3" onClick={() => shift(1)} title="Вперёд" aria-label="Следующий слайд">›</button>
-      <div className="absolute right-4 top-4 z-[5] flex gap-1.5">{slides.map((slide, i) => <button key={slide[0]} className={`size-2 rounded-full shadow ${i === index ? "bg-white" : "bg-white/50"}`} onClick={() => setIndex(i)} aria-label={`Слайд ${i + 1}`} />)}</div>
-    </section>
+  const headingStyle = { fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: 22, margin: "34px 0 4px" } as const;
+  const noteStyle = { margin: "0 0 16px", fontSize: 13, color: "var(--muted,#8a7d6b)" } as const;
+  return <div style={{ animation: "fadeUp .4s ease both" }}>
+    <div onClick={() => setLightbox(true)} style={{ position: "relative", borderRadius: 18, overflow: "hidden", minHeight: 340, border: "1px solid var(--line,#e7dcc7)", cursor: "zoom-in" }}>
+      {slides.map((slide, slideIndex) => <div key={slide[0]} style={{ position: "absolute", inset: 0, opacity: slideIndex === index ? 1 : 0, transition: "opacity .6s ease", zIndex: slideIndex === index ? 2 : 1 }}>
+        <img src={`/images/hero-${slide[0]}.png`} alt={slide[1]} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <div style={{ position: "absolute", left: 0, bottom: 0, right: 0, padding: 24, background: "linear-gradient(to top,rgba(45,36,26,.72),transparent)", pointerEvents: "none" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,.16)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 600, padding: "4px 11px", borderRadius: 999 }}>{slide[2]}</div>
+          <div style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontSize: 30, fontWeight: 600, marginTop: 8 }}>{slide[3]}</div>
+          <div style={{ color: "rgba(255,255,255,.85)", fontSize: 13, marginTop: 2 }}>{slide[4]}</div>
+        </div>
+      </div>)}
+      <img src="/images/hero-salzburg.png" alt="" aria-hidden="true" style={{ width: "100%", minHeight: 340, objectFit: "cover", display: "block", visibility: "hidden" }} />
+      <button onClick={(event) => { event.stopPropagation(); shift(-1); }} title="Назад" style={{ position: "absolute", top: "50%", left: 12, transform: "translateY(-50%)", width: 38, height: 38, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 15, display: "grid", placeItems: "center", zIndex: 5 }}><i className="fa-solid fa-chevron-left" /></button>
+      <button onClick={(event) => { event.stopPropagation(); shift(1); }} title="Вперёд" style={{ position: "absolute", top: "50%", right: 12, transform: "translateY(-50%)", width: 38, height: 38, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 15, display: "grid", placeItems: "center", zIndex: 5 }}><i className="fa-solid fa-chevron-right" /></button>
+      <div style={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 6, zIndex: 5 }}>{slides.map((slide, i) => <span key={slide[0]} style={{ width: 8, height: 8, borderRadius: "50%", background: i === index ? "#fff" : "rgba(255,255,255,.5)", boxShadow: "0 0 3px rgba(0,0,0,.5)" }} />)}</div>
+    </div>
 
-    <h2 className="section-heading">Погода сейчас</h2><p className="section-note">Текущая погода во всех городах маршрута — обновляется при загрузке страницы.</p>
-    <div className="weather-grid">{weatherCities.map((city) => { const current = weather[city]; const state = current && !("error" in current) ? weatherInfo(current.code) : null; return <article className="weather-card" key={city}>
-      {cityPhotos[city] && <img src={`/images/hero-${cityPhotos[city]}.png`} alt="" />}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-black/45" />
-      <div className="absolute inset-x-0 top-0 flex justify-between p-4 text-white"><strong className="font-mono text-3xl">{!current ? "…" : "error" in current ? "—" : `${Math.round(current.temp)}°`}</strong><span className="grid size-9 place-items-center rounded-xl bg-white/20 text-xl backdrop-blur">{state?.[1] || (current ? "!" : "…")}</span></div>
-      <div className="absolute inset-x-0 bottom-0 p-4 text-white"><strong className="block truncate">{city}</strong><span className="text-xs text-white/80">{state?.[0] || (current ? "Погода недоступна" : "загрузка…")} · сейчас</span></div>
-    </article>; })}</div>
+    <h2 style={headingStyle}>Погода сейчас</h2>
+    <p style={noteStyle}>Текущая погода во всех городах маршрута — обновляется при загрузке страницы.</p>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(190px,1fr))", gap: 14 }}>{weatherCities.map((city) => {
+      const current = weather[city];
+      const state = current && !("error" in current) ? (weatherInfo[current.code] || ["—", "fa-solid fa-cloud"]) : null;
+      return <div key={city} style={{ position: "relative", borderRadius: 16, overflow: "hidden", height: 150, border: "1px solid var(--line,#e7dcc7)", background: "var(--track,#f0e5d1)" }}>
+        {cityPhotos[city] && <img src={`/images/hero-${cityPhotos[city]}.png`} alt={city} loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(24,18,12,.82),rgba(24,18,12,.1) 52%,rgba(24,18,12,.42))", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "13px 15px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", pointerEvents: "none" }}>
+          <span style={{ fontFamily: "'Space Mono',ui-monospace,monospace", fontSize: 34, fontWeight: 700, color: "#fff", lineHeight: 1, textShadow: "0 1px 8px rgba(0,0,0,.6)" }}>{!current ? "…" : "error" in current ? "—" : `${Math.round(current.temp)}°`}</span>
+          <span style={{ width: 34, height: 34, flex: "none", borderRadius: 10, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", display: "grid", placeItems: "center" }}><i className={state?.[1] || "fa-solid fa-cloud"} style={{ color: "#fff", fontSize: 16 }} /></span>
+        </div>
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "13px 15px", pointerEvents: "none" }}>
+          <div title={city} style={{ fontWeight: 700, fontSize: 15, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 1px 6px rgba(0,0,0,.6)" }}>{city}</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,.82)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2, textShadow: "0 1px 5px rgba(0,0,0,.55)" }}>{state?.[0] || (current ? "Погода недоступна" : "загрузка…")} · сейчас</div>
+        </div>
+      </div>;
+    })}</div>
 
-    <section className="overview-summary">
-      <div><p className="eyebrow">Маршрут путешествия</p><h2 className="font-display text-3xl font-semibold">Прага → Италия → Прага</h2><p className="mt-2 text-sm text-[var(--muted)]">{cities.join(" · ")}</p></div>
-      <div className="progress-block"><div className="flex justify-between text-sm font-bold"><span>Готовность плана</span><span>{progress}%</span></div><div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--track)]"><div className="h-full rounded-full bg-[var(--ol)] transition-[width]" style={{ width: `${progress}%` }} /></div><p className="mt-2 text-xs text-[var(--muted)]">{done} из {total} пунктов выполнено</p></div>
-      <div className="trip-stats"><span><b>{cities.length}</b> городов</span><span><b>{nights}</b> ночёвок</span><span><b>{data.sights.filter((s) => s.done).length}/{data.sights.length}</b> мест</span><span><b>{data.trip.people}+{data.trip.dogs}</b> людей + собак</span></div>
-    </section>
-
-    <h2 className="section-heading">Карта маршрута</h2><p className="section-note">Нажмите на город, чтобы открыть его на Google Maps.</p>
-    <div className="route-stops">{data.lodging.map((lodge, i) => { const short = lodge.city.split(",")[0]; const day = data.days.find((item) => item.dayMapUrl?.trim() && item.city.includes(short)); const url = day?.dayMapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lodge.city)}`; return <a key={lodge.id} href={url} target="_blank" rel="noreferrer"><span>{i + 1}</span><span className="min-w-0 flex-1"><b className="block truncate">{lodge.city}</b><small>{lodge.dates}</small></span><i>↗</i></a>; })}</div>
-    <div className="relative"><RouteMap cities={data.lodging.map((lodge) => lodge.city)} /><div className="map-actions"><button className={subtleButton} onClick={() => void copyText(routeUrl).then(() => showCopied(true, false))}>{copied ? "✓ Скопировано" : "⧉ Скопировать ссылку"}</button><a className={subtleButton} href={routeUrl} target="_blank" rel="noreferrer">Открыть в Google Maps ↗</a></div></div>
+    <h2 style={headingStyle}>Карта маршрута</h2>
+    <p style={noteStyle}>Нажмите на город, чтобы открыть его на Google Maps.</p>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 10, marginBottom: 16 }}>{data.lodging.map((lodge, i) => {
+      const short = lodge.city.split(",")[0];
+      const day = data.days.find((item) => item.dayMapUrl?.trim() && item.city.includes(short));
+      const url = day?.dayMapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lodge.city)}`;
+      return <a key={lodge.id} href={url} target="_blank" rel="noopener" style={{ display: "flex", alignItems: "center", gap: 11, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 12, padding: "11px 14px", textDecoration: "none", color: "var(--ink)", cursor: "pointer" }}>
+        <span style={{ width: 24, height: 24, flex: "none", borderRadius: "50%", background: "var(--ac,#b95c3f)", color: "#fff", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 700 }}>{i + 1}</span>
+        <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontWeight: 600, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{lodge.city}</span><span style={{ display: "block", fontSize: 12, color: "var(--muted,#8a7d6b)" }}>{lodge.dates}</span></span>
+        <i className="fa-solid fa-arrow-up-right-from-square" style={{ color: "var(--muted,#8a7d6b)", fontSize: 11 }} />
+      </a>;
+    })}</div>
+    <div style={{ position: "relative" }}><RouteMap cities={data.lodging.map((lodge) => lodge.city)} /><div style={{ position: "absolute", right: 14, bottom: 14, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+      <button onClick={() => void copyText(routeUrl).then(() => showCopied(true, false))} title="Скопировать ссылку на карту" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", cursor: "pointer" }}><i className={copied ? "fa-solid fa-check" : "fa-solid fa-copy"} />{copied ? "Скопировано" : "Скопировать ссылку"}</button>
+      <a href={routeUrl} target="_blank" rel="noopener" title="Открыть маршрут в Google Maps" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", textDecoration: "none" }}><i className="fa-solid fa-arrow-up-right-from-square" />Открыть в Google Maps</a>
+    </div></div>
 
     {lightbox && <div className="lightbox" role="dialog" aria-modal="true" aria-label={slides[index][1]} onMouseDown={(event) => event.target === event.currentTarget && setLightbox(false)}><img src={`/images/hero-${slides[index][0]}.png`} alt={slides[index][1]} /><button ref={closeButton} className="lightbox-close" onClick={() => setLightbox(false)} aria-label="Закрыть">×</button><button className="lightbox-prev" onClick={() => shift(-1)} aria-label="Предыдущее фото">‹</button><button className="lightbox-next" onClick={() => shift(1)} aria-label="Следующее фото">›</button></div>}
-  </>;
+  </div>;
 }
