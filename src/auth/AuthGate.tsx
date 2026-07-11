@@ -3,13 +3,14 @@ import { useState, type FormEvent } from 'react'
 import { useAuth } from './AuthContext'
 
 export function AuthGate() {
-  const { signIn, signUp, rememberLogin } = useAuth()
+  const { signIn, signUp, rememberLogin, error: authError } = useAuth()
   const [mode, setMode] = useState<'login' | 'register'>('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [remember, setRemember] = useState(rememberLogin)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<{ text: string; ok: boolean } | null>(null)
+  const visibleMessage = message ?? (authError ? { text: authError, ok: false } : null)
 
   async function submit(event: FormEvent) {
     event.preventDefault()
@@ -36,7 +37,7 @@ export function AuthGate() {
         <input className="rounded-[11px] border border-[#e7dcc7] bg-[#fbf7ee] px-[13px] py-3 outline-none focus:border-[#b95c3f]" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} minLength={6} onChange={(event) => setPassword(event.target.value)} placeholder="Пароль" required type="password" value={password} />
         <label className="flex cursor-pointer select-none items-center gap-2 text-[13px] text-[#6f6252]"><input checked={remember} className="size-[15px] accent-[#b95c3f]" onChange={(event) => setRemember(event.target.checked)} type="checkbox" />Запомнить меня</label>
         <button className="mt-1 rounded-[11px] bg-[#b95c3f] p-3 font-semibold text-white disabled:cursor-default disabled:opacity-60" disabled={busy} type="submit">{busy ? 'Подождите…' : mode === 'login' ? 'Войти' : 'Зарегистрироваться'}</button>
-        <div aria-live="polite" className={`min-h-[18px] text-[13px] leading-snug ${message?.ok ? 'text-[#2f7d4f]' : 'text-[#b95c3f]'}`}>{message?.text}</div>
+        <div aria-live="polite" className={`min-h-[18px] text-[13px] leading-snug ${visibleMessage?.ok ? 'text-[#2f7d4f]' : 'text-[#b95c3f]'}`}>{visibleMessage?.text}</div>
       </form>
       <button className="w-full bg-transparent p-1.5 text-sm text-[#8a7d6b]" onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setMessage(null) }} type="button">{mode === 'login' ? 'Нет аккаунта? Зарегистрироваться' : 'Уже есть аккаунт? Войти'}</button>
     </div>
