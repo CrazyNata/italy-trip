@@ -26,6 +26,7 @@
   input:focus,textarea:focus,select:focus{outline:none}
   ::placeholder{color:#b3a690}
   img[src*="upload.wikimedia.org"]{cursor:zoom-in}
+  div[style*="min-height:145px"]{cursor:pointer}
   @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   .slot-wrap image-slot{width:100%;height:100%;display:block}
   /* --- Мобильная адаптация (все вкладки) --- */
@@ -931,8 +932,12 @@ class Component extends DCLogic {
     this._onThemeChange = (e) => { const theme = e.detail; if (!theme) return; try { localStorage.setItem('italy_theme', theme); } catch (_) {} this.setState({ theme }); };
     this._onDarkChange = () => this.setState(s => { const dark = !s.dark; try { localStorage.setItem('italy_dark', dark ? '1' : '0'); } catch (_) {} return { dark }; });
     this._onSightPhotoClick = (e) => {
-      const img = e.target;
-      if (!img || img.tagName !== 'IMG') return;
+      let img = e.target && e.target.tagName === 'IMG' ? e.target : null;
+      if (!img && e.target && e.target.closest) {
+        const card = e.target.closest('div[style*="min-height:145px"]');
+        img = card && card.querySelector('img');
+      }
+      if (!img) return;
       const sight = this.state.data.sights.find(s => s.photo && img.src === s.photo);
       if (sight) this.setState({ sightInfoId: sight.id });
     };
