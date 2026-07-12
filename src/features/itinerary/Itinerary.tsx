@@ -2,13 +2,12 @@ import { useState } from "react";
 import { useTripData } from "../../trip/TripDataContext";
 import { useConfirm } from "../../components/ConfirmDialog";
 import type { ItineraryItem, TripDay } from "../../types/trip";
-import { copyText, uid, useTransientState } from "../shared";
+import { copyText, useTransientState } from "../shared";
 
 const flag = (name: string) => /праг/i.test(name) ? "🇨🇿" : /зальцбург|австри/i.test(name) ? "🇦🇹" : /мюнхен|германи|фельдкирх/i.test(name) ? "🇩🇪" : "🇮🇹";
 export function Itinerary() {
   const { data, updateData, isReadOnly } = useTripData();
   const confirm = useConfirm();
-  const [drafts, setDrafts] = useState<Record<string, { title: string; time: string }>>({});
   const [copied, setCopied] = useState<string | null>(null);
   const showCopied = useTransientState(setCopied);
   if (!data) return null;
@@ -26,13 +25,8 @@ export function Itinerary() {
     if (url === null) return;
     itemId ? updateItem(dayId, itemId, { mapUrl: url.trim() }) : updateDay(dayId, (entry) => ({ ...entry, dayMapUrl: url.trim() }));
   };
-  const add = (dayId: string) => {
-    const draft = drafts[dayId]; if (!draft?.title.trim()) return;
-    updateDay(dayId, (day) => ({ ...day, items: [...day.items, { id: uid("i"), title: draft.title.trim(), time: draft.time.trim(), done: false }] }));
-    setDrafts((current) => ({ ...current, [dayId]: { title: "", time: "" } }));
-  };
   return <div className="route-board" style={{ animation: "fadeUp .4s ease both" }}>
-    {data.days.map((day) => { const done = day.items.filter((item) => item.done).length; const draft = drafts[day.id] || { title: "", time: "" }; const dayMapUrl = day.dayMapUrl?.trim(); return <div key={day.id} className="day-card">
+    {data.days.map((day) => { const done = day.items.filter((item) => item.done).length; const dayMapUrl = day.dayMapUrl?.trim(); return <div key={day.id} className="day-card">
       <div className="day-card-head">
         <div className="day-date"><b>{day.dayNum}</b><span>{day.month}</span></div>
         <div className="day-title">
@@ -60,11 +54,6 @@ export function Itinerary() {
           </div>
           <button className="remove-button" onClick={() => void removeItem(day.id, item)}>×</button>
         </div>)}
-        <div className="day-draft">
-          <input className="draft-title" value={draft.title} onChange={(event) => setDrafts((current) => ({ ...current, [day.id]: { ...draft, title: event.target.value } }))} onKeyDown={(event) => event.key === "Enter" && add(day.id)} placeholder="добавить пункт плана…" />
-          <input className="draft-time" value={draft.time} onChange={(event) => setDrafts((current) => ({ ...current, [day.id]: { ...draft, time: event.target.value } }))} onKeyDown={(event) => event.key === "Enter" && add(day.id)} placeholder="время" />
-          <button className="draft-add" onClick={() => add(day.id)}>Добавить</button>
-        </div>
       </div>
     </div>; })}
   </div>;

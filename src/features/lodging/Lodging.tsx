@@ -191,7 +191,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
     return (
       <div style={{ animation: "fadeUp .4s ease both" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "0 0 16px" }}>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--muted,#8a7d6b)", maxWidth: 560 }}>Сроки бесплатной отмены по каждому жилью. Дату можно менять здесь, я также проставляю её со скринов Букинга.</p>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--muted,#8a7d6b)", maxWidth: 560 }}>Сроки бесплатной отмены по каждому жилью.</p>
           <button onClick={() => setSort(sort === "asc" ? "desc" : "asc")} style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", color: "var(--ink)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
             <i className={sort === "desc" ? "fa-solid fa-arrow-down-wide-short" : "fa-solid fa-arrow-up-wide-short"}></i>Сначала {sort === "asc" ? "ближние" : "дальние"}
           </button>
@@ -215,15 +215,6 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
                 <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: 19, marginTop: 2 }}>{item.label}</div>
                 <div style={{ marginTop: 6 }}><span style={{ background: item.background, color: item.color, fontSize: 12, fontWeight: 700, padding: "5px 12px", borderRadius: 999, whiteSpace: "nowrap" }}>{item.status}</span></div>
               </div>
-              <input
-                type="date"
-                value={lodge.freeCancel || ""}
-                onClick={(event) => event.stopPropagation()}
-                onChange={(event) =>
-                  edit(lodge.id, "freeCancel", event.target.value)
-                }
-                style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "9px 11px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}
-              />
             </div>
           ))}
           </div>
