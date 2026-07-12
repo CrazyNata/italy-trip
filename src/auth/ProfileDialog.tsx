@@ -8,7 +8,10 @@ const MAX_AVATAR_BYTES = 10 * 1024 * 1024
 const MAX_AVATAR_DIMENSION = 12000
 const MAX_AVATAR_PIXELS = 40_000_000
 
-async function avatarDataUrl(file: File) {
+// Downscales the picked image to a small JPEG Blob. The result is uploaded to
+// Storage (not embedded in the user's metadata) so the auth JWT stays tiny —
+// a large data-URL avatar bloats the token and breaks Storage uploads.
+async function avatarBlob(file: File): Promise<Blob> {
   if (!/^image\/(jpeg|png|webp)$/i.test(file.type)) throw new Error('Выберите PNG, JPEG или WebP')
   if (file.size > MAX_AVATAR_BYTES) throw new Error('Фото должно быть меньше 10 МБ')
   const url = URL.createObjectURL(file)
@@ -19,7 +22,9 @@ async function avatarDataUrl(file: File) {
     const canvas = document.createElement('canvas')
     canvas.width = Math.round(image.naturalWidth * scale); canvas.height = Math.round(image.naturalHeight * scale)
     canvas.getContext('2d')?.drawImage(image, 0, 0, canvas.width, canvas.height)
-    return canvas.toDataURL('image/jpeg', 0.82)
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', 0.82))
+    if (!blob) throw new Error('Не удалось обработать изображение')
+    return blob
   } finally { URL.revokeObjectURL(url) }
 }
 
@@ -32,7 +37,7 @@ export function ProfileDialog({ onClose }: { onClose: () => void }) {
   async function upload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; event.target.value = ''
     if (!file) return
-    try { setStatus('Сохраняю фото…'); await updateAvatar(await avatarDataUrl(file)); setStatus('Фото сохранено') }
+    try { setStatus('Сохраняю фото…'); await updateAvatar(await avatarBlob(file)); setStatus('Фото сохранено') }
     catch (error) { setStatus(error instanceof Error ? error.message : 'Не удалось сохранить фото') }
   }
 

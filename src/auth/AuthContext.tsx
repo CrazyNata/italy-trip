@@ -16,7 +16,7 @@ interface AuthContextValue {
   signIn: (email: string, password: string, remember: boolean) => Promise<void>
   signUp: (email: string, password: string, remember: boolean) => Promise<boolean>
   signOut: () => Promise<void>
-  updateAvatar: (avatarUrl: string) => Promise<void>
+  updateAvatar: (avatar: Blob) => Promise<void>
   clearError: () => void
 }
 
@@ -109,6 +109,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // One-time heal for accounts whose avatar was stored as a base64 data URL in
+  // user_metadata: that bloats the JWT to tens of KB, and Storage's proxy then
+  // rejects every upload with a 400. Move it into Storage and keep a short URL.
+  useEffect(() => {
+    const avatar = user?.user_metadata?.avatar_url
+    if (!user || typeof avatar !== 'string' || !avatar.startsWith('data:')) return
+    const id = user.id
+    let cancelled = false
+    void (async () => {
+      try {
+        const blob = await (await fetch(avatar)).blob()
+        // Clearing the avatar updates the stored metadata, but the *current*
+        // access token keeps the old (huge) claim until the session is
+        // refreshed — so refresh to mint a small token before uploading.
+        await supabase.auth.updateUser({ data: { avatar_url: null } })
+        const refreshed = await supabase.auth.refreshSession()
+        if (cancelled) return
+        if (refreshed.data.user) setUser(refreshed.data.user)
+        const path = `avatars/${id}_${Date.now()}.jpg`
+        const { error: uploadError } = await supabase.storage
+          .from('place-photos')
+          .upload(path, blob, { upsert: true, contentType: blob.type || 'image/jpeg' })
+        if (cancelled || uploadError) return
+        const publicUrl = supabase.storage.from('place-photos').getPublicUrl(path).data.publicUrl
+        await supabase.auth.updateUser({ data: { avatar_url: publicUrl } })
+        const synced = await supabase.auth.refreshSession()
+        if (!cancelled && synced.data.user) setUser(synced.data.user)
+      } catch { /* Leave the avatar cleared; the user can set a new one. */ }
+    })()
+    return () => { cancelled = true }
+  }, [user?.id])
+
   function storeRemember(value: boolean) {
     setRememberLogin(value)
     try { localStorage.setItem(REMEMBER_KEY, value ? '1' : '0') } catch { /* Storage can be unavailable. */ }
@@ -137,8 +169,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function updateAvatar(avatarUrl: string) {
-    const { data, error: updateError } = await supabase.auth.updateUser({ data: { avatar_url: avatarUrl } })
+  // Uploads the avatar to Storage and keeps only its short public URL in the
+  // user's metadata, so the auth JWT (which embeds user_metadata) stays small.
+  async function putAvatar(blob: Blob) {
+    const id = userId.current ?? 'user'
+    const path = `avatars/${id}_${Date.now()}.jpg`
+    const { error: uploadError } = await supabase.storage
+      .from('place-photos')
+      .upload(path, blob, { upsert: true, contentType: blob.type || 'image/jpeg' })
+    if (uploadError) throw uploadError
+    return supabase.storage.from('place-photos').getPublicUrl(path).data.publicUrl
+  }
+
+  async function updateAvatar(avatar: Blob) {
+    const publicUrl = await putAvatar(avatar)
+    const { data, error: updateError } = await supabase.auth.updateUser({ data: { avatar_url: publicUrl } })
     if (updateError) throw updateError
     setUser(data.user)
   }
