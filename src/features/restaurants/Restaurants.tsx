@@ -349,13 +349,19 @@ export function Restaurants() {
                 style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 1px 3px rgba(59,50,40,.05)" }}
               >
                 {photos.length > 0 && (
-                  <div style={{ position: "relative", height: 190, overflow: "hidden" }}>
+                  <div style={{ position: "relative", height: 220, overflow: "hidden", background: "var(--track,#efe4cf)" }}>
+                    <img
+                      aria-hidden
+                      src={photos[index]}
+                      alt=""
+                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px)", transform: "scale(1.15)", opacity: .55 }}
+                    />
                     <img
                       loading="lazy"
                       src={photos[index]}
                       alt={item.name}
                       onClick={() => setLightbox({ id: item.id, index })}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", cursor: "zoom-in" }}
+                      style={{ position: "relative", width: "100%", height: "100%", objectFit: "contain", display: "block", cursor: "zoom-in" }}
                     />
                     {distance !== null && (
                       <span style={{ position: "absolute", top: 10, left: 10, background: "rgba(24,18,12,.62)", color: "#fff", fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: 999 }}>
