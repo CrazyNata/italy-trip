@@ -262,17 +262,24 @@ export function Restaurants() {
 
   return (
     <>
-      {/* Панель фильтров */}
+      {/* Панель фильтров — только когда есть что фильтровать */}
+      {list.length > 0 && (
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", marginRight: 2 }}>Город</span>
-          <button style={chip(!cityFilter)} onClick={() => setCityFilter("")}>все</button>
-          {cities.map((city) => (
-            <button key={city} style={chip(cityFilter === city)} onClick={() => setCityFilter(cityFilter === city ? "" : city)}>
-              {flag(city)} {city}
-            </button>
-          ))}
-        </div>
+        {cities.length > 1 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
+            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", marginRight: 2 }}>Город</span>
+            <select
+              value={cityFilter}
+              onChange={(event) => setCityFilter(event.target.value)}
+              style={{ border: `1px solid ${cityFilter ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: 10, padding: "8px 12px", fontSize: 13, fontWeight: 600, background: "var(--card,#fff)", color: cityFilter ? "var(--ac,#b95c3f)" : "var(--ink,#3b3228)", cursor: "pointer" }}
+            >
+              <option value="">Все города</option>
+              {cities.map((city) => (
+                <option key={city} value={city}>{flag(city)} {city}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
           <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", marginRight: 2 }}>Цена</span>
           <button style={chip(!priceFilter)} onClick={() => setPriceFilter("")}>все</button>
@@ -304,6 +311,7 @@ export function Restaurants() {
           <button style={chip(sortBy === "distance")} onClick={() => userLoc ? setSortBy("distance") : findLocation()} title={userLoc ? "" : "Нужно найти местоположение"}>по расстоянию</button>
         </div>
       </div>
+      )}
 
       <div
         className="lodging-grid"
