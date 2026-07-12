@@ -254,62 +254,70 @@ export function Restaurants() {
   const chip = (active: boolean): CSSProperties => ({
     border: `1px solid ${active ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`,
     background: active ? "var(--ac,#b95c3f)" : "var(--card,#fff)",
-    color: active ? "#fff" : "var(--muted,#8a7d6b)",
-    fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: 999, cursor: "pointer", whiteSpace: "nowrap",
+    color: active ? "#fff" : "var(--ink,#3b3228)",
+    fontSize: 12.5, fontWeight: 600, padding: "6px 12px", borderRadius: 999, cursor: "pointer", whiteSpace: "nowrap",
+    boxShadow: active ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none",
+    transition: "background .15s, box-shadow .15s, color .15s",
   });
+  const groupLabel: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ac,#b95c3f)", whiteSpace: "nowrap" };
 
   const active = lightbox && list.find((item) => item.id === lightbox.id);
 
   return (
     <>
-      {/* Панель фильтров — только когда есть что фильтровать */}
+      {/* Панель фильтров — только когда есть что фильтровать, всё в одну строку */}
       {list.length > 0 && (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 16 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 10, marginBottom: 16, padding: "12px 12px", borderRadius: 14, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", boxShadow: "0 1px 3px rgba(59,50,40,.06)" }}>
         {cities.length > 1 && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-            <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", marginRight: 2 }}>Город</span>
+          <>
+            <span style={groupLabel}>Город</span>
             <select
               value={cityFilter}
               onChange={(event) => setCityFilter(event.target.value)}
-              style={{ border: `1px solid ${cityFilter ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: 10, padding: "8px 12px", fontSize: 13, fontWeight: 600, background: "var(--card,#fff)", color: cityFilter ? "var(--ac,#b95c3f)" : "var(--ink,#3b3228)", cursor: "pointer" }}
+              style={{ border: `1px solid ${cityFilter ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: 999, padding: "7px 12px", fontSize: 12.5, fontWeight: 600, background: cityFilter ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: cityFilter ? "#fff" : "var(--ink,#3b3228)", cursor: "pointer", boxShadow: cityFilter ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
             >
-              <option value="">Все города</option>
+              <option value="" style={{ color: "var(--ink,#3b3228)" }}>Все города</option>
               {cities.map((city) => (
-                <option key={city} value={city}>{flag(city)} {city}</option>
+                <option key={city} value={city} style={{ color: "var(--ink,#3b3228)" }}>{flag(city)} {city}</option>
               ))}
             </select>
-          </div>
+          </>
         )}
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", marginRight: 2 }}>Цена</span>
-          <button style={chip(!priceFilter)} onClick={() => setPriceFilter("")}>все</button>
-          {priceLevels.map((level) => (
-            <button key={level} style={chip(priceFilter === level)} onClick={() => setPriceFilter(priceFilter === level ? "" : level)}>
-              {level}
-            </button>
-          ))}
-          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", margin: "0 2px 0 10px" }}>Оценка от</span>
-          <button style={chip(!minRating)} onClick={() => setMinRating(0)}>любая</button>
-          {[3, 4, 5].map((value) => (
-            <button key={value} style={chip(minRating === value)} onClick={() => setMinRating(minRating === value ? 0 : value)}>
-              {value}★
-            </button>
-          ))}
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, alignItems: "center" }}>
-          <button
-            onClick={findLocation}
-            disabled={locating}
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, border: `1px solid ${userLoc ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: userLoc ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: userLoc ? "#fff" : "var(--ink,#3b3228)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: locating ? "wait" : "pointer" }}
-          >
-            <i className={locating ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-location-crosshairs"} />
-            {userLoc ? "Местоположение найдено" : "Найти моё местоположение"}
+        <span style={groupLabel}>Цена</span>
+        {priceLevels.map((level) => (
+          <button key={level} style={chip(priceFilter === level)} onClick={() => setPriceFilter(priceFilter === level ? "" : level)}>
+            {level}
           </button>
-          <span style={{ fontSize: 12, fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", marginLeft: 6 }}>Сортировка</span>
-          <button style={chip(sortBy === "default")} onClick={() => setSortBy("default")}>по порядку</button>
-          <button style={chip(sortBy === "rating")} onClick={() => setSortBy("rating")}>по оценке</button>
-          <button style={chip(sortBy === "distance")} onClick={() => userLoc ? setSortBy("distance") : findLocation()} title={userLoc ? "" : "Нужно найти местоположение"}>по расстоянию</button>
-        </div>
+        ))}
+        <span style={groupLabel}>Оценка от</span>
+        {[3, 4, 5].map((value) => (
+          <button key={value} style={chip(minRating === value)} onClick={() => setMinRating(minRating === value ? 0 : value)}>
+            {value}★
+          </button>
+        ))}
+        <button
+          onClick={findLocation}
+          disabled={locating}
+          title={userLoc ? "Местоположение найдено — сортирую по близости" : "Найти моё местоположение и показать расстояние до ресторанов"}
+          style={{ display: "inline-flex", alignItems: "center", gap: 7, border: `1px solid ${userLoc ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: userLoc ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: userLoc ? "#fff" : "var(--ink,#3b3228)", borderRadius: 999, padding: "7px 13px", fontSize: 12.5, fontWeight: 600, cursor: locating ? "wait" : "pointer", whiteSpace: "nowrap", boxShadow: userLoc ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
+        >
+          <i className={locating ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-location-crosshairs"} />
+          {userLoc ? "Найдено" : "Местоположение"}
+        </button>
+        <span style={groupLabel}>Сорт.</span>
+        <select
+          value={sortBy}
+          onChange={(event) => {
+            const value = event.target.value as typeof sortBy;
+            setSortBy(value);
+            if (value === "distance" && !userLoc) findLocation();
+          }}
+          style={{ border: `1px solid ${sortBy !== "default" ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: 999, padding: "7px 12px", fontSize: 12.5, fontWeight: 600, background: sortBy !== "default" ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: sortBy !== "default" ? "#fff" : "var(--ink,#3b3228)", cursor: "pointer", boxShadow: sortBy !== "default" ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
+        >
+          <option value="default" style={{ color: "var(--ink,#3b3228)" }}>по порядку</option>
+          <option value="rating" style={{ color: "var(--ink,#3b3228)" }}>по оценке</option>
+          <option value="distance" style={{ color: "var(--ink,#3b3228)" }}>по расстоянию</option>
+        </select>
       </div>
       )}
 
