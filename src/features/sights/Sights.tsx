@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useAuth } from "../../auth";
 import { supabase } from "../../lib/supabase/client";
 import { useTripData } from "../../trip/TripDataContext";
 import type { Sight } from "../../types/trip";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { WARM_STYLE, warmConfig } from "../maps/mapTheme";
-import { uid, useDialogKeyboard, useTransientState } from "../shared";
+import { uid, useDialogKeyboard, useScrollLock, useTransientState } from "../shared";
 
 const subs = [
   "достопримечательности",
@@ -39,6 +40,56 @@ const toast = (message?: string) =>
     }),
   );
 const subOf = (sight: Sight) => sight.subcategory || "разное";
+
+// Place description dialog. Rendered through a portal into document.body — like
+// the shared Lightbox and confirm dialogs — so the tab's animated (transformed)
+// container can't trap the fixed backdrop and open it off-centre.
+function SightInfo({ sight, text, onClose }: { sight: Sight; text: string; onClose: () => void }) {
+  const closeButton = useRef<HTMLButtonElement>(null);
+  useScrollLock();
+  useDialogKeyboard({ open: true, onClose, initialFocus: closeButton });
+  return createPortal(
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(14,10,7,.68)", display: "grid", placeItems: "center", padding: 20 }}
+      role="dialog"
+      aria-modal="true"
+      onClick={(event) => event.currentTarget === event.target && onClose()}
+    >
+      <div style={{ width: "min(100%, 540px)", maxHeight: "min(760px, calc(100vh - 40px))", overflow: "auto", background: "var(--card,#fff)", borderRadius: 18, boxShadow: "0 18px 60px rgba(0,0,0,.35)", position: "relative" }}>
+        {sight.photo && (
+          <img style={{ width: "100%", height: 230, objectFit: "cover", display: "block" }} src={sight.photo} alt={sight.name} />
+        )}
+        <button
+          ref={closeButton}
+          style={{ position: "absolute", top: 12, right: 12, width: 34, height: 34, border: "none", borderRadius: "50%", background: "rgba(20,18,14,.62)", color: "#fff", cursor: "pointer", fontSize: 16 }}
+          title="Закрыть"
+          onClick={onClose}
+        >
+          <i className="fa-solid fa-xmark" />
+        </button>
+        <div style={{ padding: 22 }}>
+          <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "var(--ac,#2a7089)", fontWeight: 700 }}>
+            {subOf(sight)} · {sight.city}
+          </div>
+          <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 30, lineHeight: 1.05, fontWeight: 600, margin: "8px 0 12px" }}>
+            {sight.name}
+          </h2>
+          <p style={{ fontSize: 15, lineHeight: 1.55, color: "var(--muted,#5f7c7e)", margin: 0 }}>{text}</p>
+          <a
+            style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 18, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "9px 12px", color: "var(--ink,#3b3228)", fontSize: 13, fontWeight: 700, textDecoration: "none" }}
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${sight.name}, ${sight.city}`)}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            <i className="fa-solid fa-location-dot" style={{ color: "var(--ac,#2a7089)" }} />Открыть на карте
+          </a>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 let nextNominatimRequest = 0;
 
 type RouteState = {
@@ -221,9 +272,7 @@ export function Sights() {
   const [routeError, setRouteError] = useState("");
   const [copied, setCopied] = useState(false);
   const showCopied = useTransientState(setCopied);
-  const closeButton = useRef<HTMLButtonElement>(null);
   const closeInfo = () => { wikiRequest.current?.controller.abort(); wikiRequest.current = null; setOpen(null); };
-  useDialogKeyboard({ open: !!open, onClose: closeInfo, initialFocus: closeButton });
   useEffect(() => {
     mounted.current = true;
     geocodeController.current = new AbortController();
@@ -625,49 +674,11 @@ export function Sights() {
       )}</div>
 
       {selected && (
-        <div
-          style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(14,10,7,.68)", display: "grid", placeItems: "center", padding: 20 }}
-          role="dialog"
-          aria-modal="true"
-            onClick={(event) =>
-            event.currentTarget === event.target && closeInfo()
-          }
-        >
-          <div style={{ width: "min(100%, 540px)", maxHeight: "min(760px, calc(100vh - 40px))", overflow: "auto", background: "var(--card,#fff)", borderRadius: 18, boxShadow: "0 18px 60px rgba(0,0,0,.35)", position: "relative" }}>
-            {selected.photo && (
-              <img
-                style={{ width: "100%", height: 230, objectFit: "cover", display: "block" }}
-                src={selected.photo}
-                alt={selected.name}
-              />
-            )}
-            <button
-              ref={closeButton}
-              style={{ position: "absolute", top: 12, right: 12, width: 34, height: 34, border: "none", borderRadius: "50%", background: "rgba(20,18,14,.62)", color: "#fff", cursor: "pointer", fontSize: 16 }}
-              title="Закрыть"
-              onClick={closeInfo}
-            >
-              <i className="fa-solid fa-xmark" />
-            </button>
-            <div style={{ padding: 22 }}>
-              <div style={{ fontSize: 11, letterSpacing: ".13em", textTransform: "uppercase", color: "var(--ac,#2a7089)", fontWeight: 700 }}>
-                {subOf(selected)} · {selected.city}
-              </div>
-              <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 30, lineHeight: 1.05, fontWeight: 600, margin: "8px 0 12px" }}>
-                {selected.name}
-              </h2>
-              <p style={{ fontSize: 15, lineHeight: 1.55, color: "var(--muted,#5f7c7e)", margin: 0 }}>{selected.description || (wiki?.id === selected.id ? wiki.text : "Загружаем описание…")}</p>
-              <a
-                style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 18, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "9px 12px", color: "var(--ink,#3b3228)", fontSize: 13, fontWeight: 700, textDecoration: "none" }}
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selected.name}, ${selected.city}`)}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <i className="fa-solid fa-location-dot" style={{ color: "var(--ac,#2a7089)" }} />Открыть на карте
-              </a>
-            </div>
-          </div>
-        </div>
+        <SightInfo
+          sight={selected}
+          text={selected.description || (wiki?.id === selected.id ? wiki.text : "Загружаем описание…")}
+          onClose={closeInfo}
+        />
       )}
     </>
   );
