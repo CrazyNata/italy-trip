@@ -31,21 +31,41 @@ export function Itinerary() {
     updateDay(dayId, (day) => ({ ...day, items: [...day.items, { id: uid("i"), title: draft.title.trim(), time: draft.time.trim(), done: false }] }));
     setDrafts((current) => ({ ...current, [dayId]: { title: "", time: "" } }));
   };
-  return <div style={{ animation: "fadeUp .4s ease both", position: "relative", borderRadius: 20, padding: 20, background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", overflow: "hidden" }}>
-    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: .5, backgroundImage: "radial-gradient(var(--line,#d8c9ac) 1.1px, transparent 1.1px)", backgroundSize: "22px 22px" }} />
-    <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 16 }}>
-      {data.days.map((day) => { const done = day.items.filter((item) => item.done).length; const draft = drafts[day.id] || { title: "", time: "" }; const dayMapUrl = day.dayMapUrl?.trim(); return <div key={day.id} style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 16, overflow: "hidden", boxShadow: "0 1px 3px rgba(59,50,40,.05)" }}>
-        <div className="day-head" style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 20px", background: "var(--paper,#fbf2df)", borderBottom: "1px solid var(--track,#efe4cf)" }}>
-          <div style={{ textAlign: "center", minWidth: 52 }}><div style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 700, lineHeight: 1 }}>{day.dayNum}</div><div style={{ fontSize: 11, color: "var(--muted,#8a7d6b)", textTransform: "uppercase" }}>{day.month}</div></div>
-          <div style={{ flex: 1 }}><div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, fontSize: 16 }}><span style={{ fontSize: 17, lineHeight: 1 }}>{[...new Set(day.city.split("→").map(flag))].join(" ")}</span><span>{day.city}</span></div><div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)" }}>{day.weekday}</div></div>
-          <div style={{ fontSize: 12, color: "var(--ol,#7c8450)", fontWeight: 600 }}>{day.items.length ? `${done}/${day.items.length}` : ""}</div>
-          {dayMapUrl ? <><a href={dayMapUrl} target="_blank" rel="noopener" title="Открыть маршрут дня на Google Maps" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--ac,#b95c3f)", color: "#fff", borderRadius: 9, padding: "7px 12px", fontSize: 13, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap" }}><i className="fa-solid fa-route" />маршрут</a><button onClick={() => void copyText(dayMapUrl).then(() => showCopied(day.id, null))} title="Скопировать ссылку на маршрут" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--muted,#8a7d6b)", fontSize: 14, padding: 6 }}><i className={copied === day.id ? "fa-solid fa-check" : "fa-solid fa-copy"} /></button><button onClick={() => setMap(day.id)} title="Изменить ссылку" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--muted,#c4b5a0)", fontSize: 13, padding: 6 }}><i className="fa-solid fa-pencil" /></button></> : <button onClick={() => setMap(day.id)} title="Добавить ссылку на маршрут дня" style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", color: "var(--muted,#8a7d6b)", borderRadius: 9, padding: "7px 11px", fontSize: 12, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}><i className="fa-solid fa-route" />+ карта</button>}
+  return <div className="route-board" style={{ animation: "fadeUp .4s ease both" }}>
+    {data.days.map((day) => { const done = day.items.filter((item) => item.done).length; const draft = drafts[day.id] || { title: "", time: "" }; const dayMapUrl = day.dayMapUrl?.trim(); return <div key={day.id} className="day-card">
+      <div className="day-card-head">
+        <div className="day-date"><b>{day.dayNum}</b><span>{day.month}</span></div>
+        <div className="day-title">
+          <div><span className="day-flags">{[...new Set(day.city.split("→").map(flag))].join(" ")}</span><span>{day.city}</span></div>
+          <div className="day-weekday">{day.weekday}</div>
         </div>
-        <div style={{ padding: "8px 12px 14px" }}>
-          {day.items.map((item) => <div key={item.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "9px 8px", borderRadius: 10 }}><button onClick={() => updateItem(day.id, item.id, { done: !item.done })} style={{ width: 22, height: 22, flex: "none", border: `1.5px solid ${item.done ? "var(--ol,#7c8450)" : "var(--line,#e7dcc7)"}`, borderRadius: 7, background: item.done ? "var(--ol,#7c8450)" : "transparent", color: "#fff", cursor: "pointer", fontSize: 13, lineHeight: 1, padding: 0 }}>{item.done ? "✓" : ""}</button><span style={{ flex: 1, fontSize: 15, ...(item.done ? { color: "#a2937c", textDecoration: "line-through" } : {}) }}>{item.title}</span><span style={{ fontSize: 17, fontWeight: 700, color: "var(--ink,#3b3228)", fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap", minWidth: 110, textAlign: "right" }}>{item.time || ""}</span>{item.mapUrl?.trim() && <a href={item.mapUrl.trim()} target="_blank" title="Открыть на карте" style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--ac,#b95c3f)", fontSize: 13, fontWeight: 600, padding: "4px 6px", textDecoration: "none", whiteSpace: "nowrap" }}><i className="fa-solid fa-location-dot" />карта</a>}<button onClick={() => void removeItem(day.id, item)} style={{ border: "none", background: "none", color: "#c4b5a0", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "4px 8px" }}>×</button></div>)}
-          <div style={{ display: "flex", gap: 8, padding: "8px 8px 2px", flexWrap: "wrap" }}><input value={draft.title} onChange={(event) => setDrafts((current) => ({ ...current, [day.id]: { ...draft, title: event.target.value } }))} onKeyDown={(event) => event.key === "Enter" && add(day.id)} placeholder="добавить пункт плана…" style={{ flex: 1, minWidth: 200, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)" }} /><input value={draft.time} onChange={(event) => setDrafts((current) => ({ ...current, [day.id]: { ...draft, time: event.target.value } }))} onKeyDown={(event) => event.key === "Enter" && add(day.id)} placeholder="время" style={{ width: 110, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)", textAlign: "right" }} /><button onClick={() => add(day.id)} style={{ border: "none", background: "var(--ac,#b95c3f)", color: "#fff", borderRadius: 9, padding: "0 16px", fontWeight: 600, fontSize: 14, cursor: "pointer" }}>Добавить</button></div>
+        <div className="day-count">{day.items.length ? `${done}/${day.items.length}` : ""}</div>
+        <div className="day-map-controls">
+          {dayMapUrl ? <>
+            <a className="day-route-link" href={dayMapUrl} target="_blank" rel="noopener" title="Открыть маршрут дня на Google Maps"><i className="fa-solid fa-route" />маршрут</a>
+            <button className="icon-button" onClick={() => void copyText(dayMapUrl).then(() => showCopied(day.id, null))} title="Скопировать ссылку на маршрут"><i className={copied === day.id ? "fa-solid fa-check" : "fa-solid fa-copy"} /></button>
+            <button className="icon-button" onClick={() => setMap(day.id)} title="Изменить ссылку"><i className="fa-solid fa-pencil" /></button>
+          </> : <button className="day-route-add" onClick={() => setMap(day.id)} title="Добавить ссылку на маршрут дня"><i className="fa-solid fa-route" />+ карта</button>}
         </div>
-      </div>; })}
-    </div>
+      </div>
+      <div className="day-items">
+        {day.items.map((item) => <div key={item.id} className="itinerary-row">
+          <button className={`check${item.done ? " checked" : ""}`} onClick={() => updateItem(day.id, item.id, { done: !item.done })}>{item.done ? "✓" : ""}</button>
+          <div className="item-main">
+            <span className={`item-title${item.done ? " done" : ""}`}>{item.title}</span>
+            <div className="item-meta">
+              {item.time ? <span className="item-time">{item.time}</span> : null}
+              {item.mapUrl?.trim() && <span className="item-map"><a href={item.mapUrl.trim()} target="_blank" rel="noopener" title="Открыть на карте"><i className="fa-solid fa-location-dot" />карта</a></span>}
+            </div>
+          </div>
+          <button className="remove-button" onClick={() => void removeItem(day.id, item)}>×</button>
+        </div>)}
+        <div className="day-draft">
+          <input className="draft-title" value={draft.title} onChange={(event) => setDrafts((current) => ({ ...current, [day.id]: { ...draft, title: event.target.value } }))} onKeyDown={(event) => event.key === "Enter" && add(day.id)} placeholder="добавить пункт плана…" />
+          <input className="draft-time" value={draft.time} onChange={(event) => setDrafts((current) => ({ ...current, [day.id]: { ...draft, time: event.target.value } }))} onKeyDown={(event) => event.key === "Enter" && add(day.id)} placeholder="время" />
+          <button className="draft-add" onClick={() => add(day.id)}>Добавить</button>
+        </div>
+      </div>
+    </div>; })}
   </div>;
 }
