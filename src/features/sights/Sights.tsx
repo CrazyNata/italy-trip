@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import type { Map as MapboxMap, Marker as MapboxMarker } from "mapbox-gl";
 import { useAuth } from "../../auth";
 import { supabase } from "../../lib/supabase/client";
 import { useTripData } from "../../trip/TripDataContext";
@@ -101,16 +102,20 @@ type RouteState = {
 function WalkingMap({
   sights,
   readOnly,
+  focus,
   onMove,
   onRoute,
 }: {
   sights: Sight[];
   readOnly: boolean;
+  focus?: { id: string; nonce: number } | null;
   onMove: (id: string, lnglat: [number, number]) => void;
   onRoute: (route: RouteState, error: string) => void;
 }) {
   const { mapboxToken } = useAuth();
   const element = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<MapboxMap | undefined>(undefined);
+  const markersRef = useRef<Record<string, MapboxMarker>>({});
   const [mapError, setMapError] = useState("");
   useEffect(() => {
     if (!element.current || !mapboxToken) return;
@@ -119,6 +124,7 @@ function WalkingMap({
     const markers: import("mapbox-gl").Marker[] = [];
     const controller = new AbortController();
     setMapError("");
+    markersRef.current = {};
     void import("mapbox-gl").then(({ default: mapbox }) => {
       if (!live || !element.current) return;
       try {
@@ -133,6 +139,7 @@ function WalkingMap({
         attributionControl: false,
         });
       } catch { setMapError("Не удалось запустить карту в этом браузере."); return; }
+      mapRef.current = map;
       map.on("error", () => live && setMapError("Не удалось загрузить карту. Проверьте токен и подключение."));
       map.addControl(
         new mapbox.NavigationControl({ showCompass: false }),
@@ -160,6 +167,7 @@ function WalkingMap({
           onMove(sight.id, [point.lng, point.lat]);
         });
         markers.push(marker);
+        markersRef.current[sight.id] = marker;
       });
       map.on("load", async () => {
         if (sights.length) {
@@ -228,12 +236,32 @@ function WalkingMap({
       controller.abort();
       markers.forEach((marker) => marker.remove());
       map?.remove();
+      mapRef.current = undefined;
+      markersRef.current = {};
     };
   }, [
     mapboxToken,
     readOnly,
     sights.map((sight) => `${sight.id}:${sight.lnglat?.join(",")}`).join("|"),
   ]);
+
+  // Fly to a sight's marker and open its label when its list item is clicked.
+  useEffect(() => {
+    if (!focus) return;
+    const map = mapRef.current;
+    const marker = markersRef.current[focus.id];
+    if (!map || !marker) return;
+    const go = () => {
+      map.flyTo({ center: marker.getLngLat(), zoom: 15, duration: 1000, essential: true });
+      Object.values(markersRef.current).forEach((other) => {
+        const popup = other.getPopup();
+        if (popup && popup.isOpen()) other.togglePopup();
+      });
+      const popup = marker.getPopup();
+      if (popup && !popup.isOpen()) marker.togglePopup();
+    };
+    if (map.loaded()) go(); else map.once("load", go);
+  }, [focus?.id, focus?.nonce]);
   return (
     <div ref={element} style={{ height: 380, minHeight: 280, borderRadius: 12, overflow: "hidden", background: "var(--track,#efe4cf)", position: "relative" }}>
       {(mapError || !mapboxToken) && (
@@ -267,6 +295,7 @@ export function Sights() {
   const mounted = useRef(true);
   const [walkCity, setWalkCity] = useState("");
   const [walkDay, setWalkDay] = useState(1);
+  const [walkFocus, setWalkFocus] = useState<{ id: string; nonce: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
   const [route, setRoute] = useState<RouteState>(null);
   const [routeError, setRouteError] = useState("");
@@ -523,22 +552,22 @@ export function Sights() {
 
       <section style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 16, padding: 16, margin: "0 0 24px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap", marginBottom: 13 }}>
-          <div><div style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 600 }}><i className="fa-solid fa-person-walking" style={{ color: "var(--ac,#b95c3f)", fontSize: 18, marginRight: 7 }} />Пеший маршрут</div><div style={{ fontSize: 12.5, color: "var(--muted,#8a7d6b)", marginTop: 3 }}>Проверьте точки и меняйте порядок стрелками или перетаскиванием маркеров.</div></div>
+          <div><div style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 600 }}><i className="fa-solid fa-person-walking" style={{ color: "var(--ac,#b95c3f)", fontSize: 18, marginRight: 7 }} />Пеший маршрут</div><div style={{ fontSize: 12.5, color: "var(--muted,#8a7d6b)", marginTop: 3 }}>Нажмите на пункт списка, чтобы показать его на карте. Порядок меняйте стрелками или перетаскиванием маркеров.</div></div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <select value={activeCity} onChange={(e) => { setWalkCity(e.target.value); setRoute(null); setRouteError(""); }} style={{ minWidth: 165, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}><option value="">город…</option>{cities.map((city) => <option key={city}>{city}</option>)}</select>
-            <select value={walkDay} onChange={(e) => { setWalkDay(+e.target.value); setRoute(null); setRouteError(""); }} style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}>{[1, 2, 3].map((day) => <option value={day} key={day}>{days[day]}</option>)}</select>
+            <select value={activeCity} onChange={(e) => { setWalkCity(e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ minWidth: 165, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}><option value="">город…</option>{cities.map((city) => <option key={city}>{city}</option>)}</select>
+            <select value={walkDay} onChange={(e) => { setWalkDay(+e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}>{[1, 2, 3].map((day) => <option value={day} key={day}>{days[day]}</option>)}</select>
             <button onClick={() => void geocodeMissing()} style={{ border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: 9, padding: "8px 11px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className="fa-solid fa-location-crosshairs" style={{ marginRight: 5 }} />{geocoding ? "Ищу…" : "Найти точки"}</button>
           </div>
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", margin: "-4px 0 12px" }}><button onClick={async () => { if (!mapUrl) return void toast("Добавьте минимум две точки для маршрута"); try { await navigator.clipboard.writeText(mapUrl); } catch {} showCopied(true, false); }} style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", color: "var(--ink,#3b3228)", borderRadius: 9, padding: "8px 11px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}><i className={copied ? "fa-solid fa-check" : "fa-regular fa-copy"} />{copied ? "Скопировано" : "Копировать маршрут"}</button></div>
         {activeCity ? <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))", gap: 14 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 7, maxHeight: 380, overflow: "auto" }}>
-            {walkAll.map((sight, index) => <div key={sight.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, background: "var(--soft,#fdfaf3)" }}><span style={{ width: 21, height: 21, borderRadius: "50%", display: "grid", placeItems: "center", background: "var(--ac,#b95c3f)", color: "#fff", fontSize: 11, fontWeight: 700 }}>{index + 1}</span><span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, fontWeight: 600 }}>{sight.name}</span><button onClick={() => move(sight.id, -1)} title="Раньше" style={{ border: "none", background: "none", color: "var(--muted,#8a7d6b)", cursor: "pointer", padding: 4 }}><i className="fa-solid fa-chevron-up" /></button><button onClick={() => move(sight.id, 1)} title="Позже" style={{ border: "none", background: "none", color: "var(--muted,#8a7d6b)", cursor: "pointer", padding: 4 }}><i className="fa-solid fa-chevron-down" /></button></div>)}
+            {walkAll.map((sight, index) => { const active = walkFocus?.id === sight.id; return <div key={sight.id} style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 10px", border: `1px solid ${active ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: 9, background: active ? "var(--card,#fff)" : "var(--soft,#fdfaf3)", transition: "border-color .2s, background .2s" }}><div onClick={() => sight.lnglat ? setWalkFocus({ id: sight.id, nonce: Date.now() }) : toast("У места нет точки — нажмите «Найти точки»")} title={sight.lnglat ? "Показать на карте" : "У места нет точки на карте"} style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0, cursor: "pointer" }}><span style={{ width: 21, height: 21, flex: "none", borderRadius: "50%", display: "grid", placeItems: "center", background: "var(--ac,#b95c3f)", color: "#fff", fontSize: 11, fontWeight: 700 }}>{index + 1}</span><span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: 13, fontWeight: 600, color: sight.lnglat ? undefined : "var(--muted,#8a7d6b)" }}>{sight.name}</span></div><button onClick={() => move(sight.id, -1)} title="Раньше" style={{ border: "none", background: "none", color: "var(--muted,#8a7d6b)", cursor: "pointer", padding: 4 }}><i className="fa-solid fa-chevron-up" /></button><button onClick={() => move(sight.id, 1)} title="Позже" style={{ border: "none", background: "none", color: "var(--muted,#8a7d6b)", cursor: "pointer", padding: 4 }}><i className="fa-solid fa-chevron-down" /></button></div>; })}
             {!located.length && <div style={{ fontSize: 13, color: "var(--muted,#8a7d6b)", padding: "8px 2px" }}>У мест нет координат. Нажмите «Найти точки».</div>}
             {walkAll.some((sight) => !sight.lnglat) && <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)" }}>Без точки: {walkAll.filter((sight) => !sight.lnglat).length}</div>}
             <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)", padding: "3px 2px" }}>{routeError || (route ? `Пешком: ${(route.distance / 1000).toFixed(1).replace(".", ",")} км · ${Math.round(route.duration / 60)} мин.` : located.length > 1 ? "Строим пеший маршрут…" : "Добавьте минимум две точки для маршрута.")}</div>
           </div>
-          <WalkingMap sights={located} readOnly={isReadOnly} onMove={(id, lnglat) => mutate(id, { lnglat })} onRoute={(next, error) => { setRoute(next); setRouteError(error); }} />
+          <WalkingMap sights={located} readOnly={isReadOnly} focus={walkFocus} onMove={(id, lnglat) => mutate(id, { lnglat })} onRoute={(next, error) => { setRoute(next); setRouteError(error); }} />
         </div> : <div style={{ fontSize: 13, color: "var(--muted,#8a7d6b)", padding: "6px 0" }}>Добавьте места с указанным городом, чтобы построить маршрут.</div>}
         {walkAll.length > 0 && <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "17px 0 -12px", fontSize: 12, color: "var(--muted,#5f7c7e)" }}><i className="fa-solid fa-circle-info" style={{ color: "var(--ac,#2a7089)" }} />Нажмите на карточку достопримечательности, чтобы прочитать её историю.</div>}
         {walkAll.length > 0 && <div style={{ margin: "20px -16px -16px", padding: "18px 16px 16px", background: "var(--soft,#f1f7f6)", borderTop: "1px solid var(--line,#e7dcc7)" }}><div style={{ display: "flex", alignItems: "baseline", gap: 9, margin: "0 0 13px" }}><h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 600, margin: 0 }}>{days[walkDay]}</h2><span style={{ fontSize: 12, color: "var(--muted,#8a7d6b)" }}>{walkAll.length} мест</span></div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 10 }}>{walkAll.map((sight, index) => <div key={sight.id} onClick={() => void openInfo(sight)} title="Открыть описание места" style={{ position: "relative", minHeight: 145, borderRadius: 11, overflow: "hidden", background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", cursor: "pointer" }}>{sight.photo && <img src={sight.photo} alt={sight.name} loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: .78 }} />}<div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg,rgba(20,35,36,.78),transparent 72%)" }} /><span style={{ position: "absolute", top: 9, left: 9, width: 23, height: 23, borderRadius: "50%", background: "var(--ac,#2a7089)", color: "#fff", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700 }}>{index + 1}</span><div style={{ position: "absolute", left: 11, right: 11, bottom: 10, color: "#fff", textShadow: "0 1px 5px rgba(0,0,0,.42)" }}><div style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, fontWeight: 600, lineHeight: 1.05 }}>{sight.name}</div><div style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", opacity: .82, marginTop: 4 }}>{subOf(sight)}</div></div></div>)}</div></div>}
