@@ -8,14 +8,17 @@ import { uid, useTransientState } from "../shared";
 
 const statuses = ["хочу", "бронь", "были"];
 const priceLevels = ["€", "€€", "€€€", "€€€€"];
-const flag = (city: string) =>
-  /зальцбург|австри/i.test(city)
-    ? "🇦🇹"
-    : /мюнхен|германи/i.test(city)
-      ? "🇩🇪"
-      : /праг/i.test(city)
-        ? "🇨🇿"
-        : "🇮🇹";
+// Флаг по названию города. Пустой/дефолтный город → нейтральная булавка,
+// чтобы не выглядело, будто флаг «залип» на Италии. Всё нераспознанное
+// считаем Италией — это основная страна поездки.
+const flag = (city: string) => {
+  const value = city.trim().toLowerCase();
+  if (!value || value === "город" || value === "новый город") return "📍";
+  if (/австри|зальцбург|вена|инсбрук|грац/.test(value)) return "🇦🇹";
+  if (/германи|мюнхен|берлин|нюрнберг|гармиш/.test(value)) return "🇩🇪";
+  if (/чехи|чеш|праг|брно/.test(value)) return "🇨🇿";
+  return "🇮🇹";
+};
 const readonly = () => window.dispatchEvent(new CustomEvent("trip:readonly"));
 const toast = (message: string) =>
   window.dispatchEvent(new CustomEvent("trip:toast", { detail: message }));
@@ -213,7 +216,7 @@ export function Restaurants() {
         ...current,
         restaurants: [
           ...(current.restaurants ?? []),
-          { id: uid("r"), name: "Новый ресторан", city: "Город", status: "хочу", note: "", link: "" },
+          { id: uid("r"), name: "Новый ресторан", city: "", status: "хочу", note: "", link: "" },
         ],
       })),
     );
@@ -385,12 +388,14 @@ export function Restaurants() {
                 )}
                 <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
                   <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--ac,#b95c3f)", fontWeight: 600 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 15, lineHeight: 1 }}>{flag(item.city)}</span>
                       <input
                         value={item.city}
                         onChange={(event) => edit(item.id, { city: event.target.value })}
-                        style={{ border: "none", background: "none", color: "var(--ac,#b95c3f)", fontWeight: 600, letterSpacing: ".12em", textTransform: "uppercase", fontSize: 12, width: "100%", padding: 0 }}
+                        placeholder="Впишите город"
+                        title="Город, где находится ресторан"
+                        style={{ flex: 1, minWidth: 0, border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", borderRadius: 8, color: "var(--ac,#b95c3f)", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", fontSize: 11.5, padding: "5px 9px" }}
                       />
                     </div>
                     <input
