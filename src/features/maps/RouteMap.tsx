@@ -5,7 +5,7 @@ import { WARM_STYLE, warmConfig } from './mapTheme'
 const coords:Record<string,[number,number]>={'Зальцбург, Австрия':[13.04,47.8],'Верона, Италия':[10.99,45.44],'Рим, Италия':[12.5,41.9],'Фильине-Вальдарно, Тоскана':[11.47,43.62],'Кьоджа, Италия':[12.28,45.22],'Милан, Италия':[9.19,45.46],'Вальдидентро, Альпы':[10.28,46.48],'Мюнхен, Германия':[11.6,48.15]}
 export function RouteMap({cities,focus}:{cities:string[];focus?:{city:string;nonce:number}|null}) {
   const ref=useRef<HTMLDivElement>(null), {mapboxToken,loading}=useAuth();
-  const mapRef=useRef<MapboxMap>();
+  const mapRef=useRef<MapboxMap|undefined>(undefined);
   const markersRef=useRef<Record<string,MapboxMarker>>({});
   const [error,setError]=useState("");
   useEffect(()=>{
