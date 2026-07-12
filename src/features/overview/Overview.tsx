@@ -33,12 +33,101 @@ const weatherInfo: Record<number, [string, string]> = {
   71: ["Снег", "fa-solid fa-snowflake"], 73: ["Снег", "fa-solid fa-snowflake"], 75: ["Сильный снег", "fa-solid fa-snowflake"], 77: ["Снежная крупа", "fa-solid fa-snowflake"], 80: ["Ливень", "fa-solid fa-cloud-showers-heavy"], 81: ["Ливень", "fa-solid fa-cloud-showers-heavy"], 82: ["Сильный ливень", "fa-solid fa-cloud-showers-heavy"], 85: ["Снегопад", "fa-solid fa-snowflake"], 86: ["Снегопад", "fa-solid fa-snowflake"], 95: ["Гроза", "fa-solid fa-cloud-bolt"], 96: ["Гроза с градом", "fa-solid fa-cloud-bolt"], 99: ["Гроза с градом", "fa-solid fa-cloud-bolt"],
 };
 type Weather = { temp: number; code: number } | { error: true };
+type ThenWeather = { temp: number; code: number; iso: string; approx: boolean } | { error: true };
 const imageUrl = (name: string) => `${import.meta.env.BASE_URL}images/${name}`;
+
+const WEATHER_MODE_KEY = "italy_weather_mode";
+const pad2 = (value: number) => String(value).padStart(2, "0");
+const shiftIso = (iso: string, delta: number) => {
+  const date = new Date(`${iso}T12:00:00`);
+  date.setDate(date.getDate() + delta);
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+};
+const formatDay = (iso: string) =>
+  new Date(`${iso}T12:00:00`).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
+
+type DailyWeather = { daily?: { time?: string[]; temperature_2m_max?: number[]; weather_code?: number[] } };
+type VisitPlan = { city: string; point: [number, number]; iso: string };
+const HIST_YEAR_BACK = 1;
+const histIsoOf = (iso: string) => `${new Date(`${iso}T12:00:00`).getFullYear() - HIST_YEAR_BACK}-${iso.slice(5)}`;
+
+async function fetchJson(url: string, signal: AbortSignal): Promise<unknown> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const response = await fetch(url, { signal });
+      if (!response.ok) throw new Error();
+      return await response.json();
+    } catch (error) {
+      if ((error as Error).name === "AbortError" || attempt >= 1) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 700));
+    }
+  }
+}
+const asArray = (json: unknown): DailyWeather[] => (Array.isArray(json) ? json as DailyWeather[] : [json as DailyWeather]);
+
+// Averages the daily max temp and takes the most common weather code across all
+// returned days within `halfWindow` days of `centerIso`.
+function summarize(daily: DailyWeather["daily"], centerIso: string, halfWindow: number, iso: string, approx: boolean): ThenWeather {
+  const times = daily?.time ?? [];
+  const temps = daily?.temperature_2m_max ?? [];
+  const codes = daily?.weather_code ?? [];
+  const center = new Date(`${centerIso}T12:00:00`).getTime();
+  const picked: Array<{ temp: number; code: number }> = [];
+  times.forEach((time, i) => {
+    if (Math.abs(new Date(`${time}T12:00:00`).getTime() - center) > halfWindow * 86400000 + 1000) return;
+    if (typeof temps[i] === "number" && typeof codes[i] === "number") picked.push({ temp: temps[i]!, code: codes[i]! });
+  });
+  if (!picked.length) return { error: true };
+  const temp = picked.reduce((sum, item) => sum + item.temp, 0) / picked.length;
+  const frequency = new Map<number, number>();
+  let mode = picked[0].code;
+  for (const { code } of picked) {
+    frequency.set(code, (frequency.get(code) ?? 0) + 1);
+    if ((frequency.get(code) ?? 0) > (frequency.get(mode) ?? 0)) mode = code;
+  }
+  return { temp, code: mode, iso, approx };
+}
+
+// Loads the visit-date weather for every city in as few requests as possible —
+// one archive call for far dates, one forecast call for near ones — because
+// Open-Meteo drops requests from a large simultaneous burst.
+async function loadThenAll(plans: VisitPlan[], signal: AbortSignal): Promise<Record<string, ThenWeather>> {
+  const result: Record<string, ThenWeather> = {};
+  const todayStart = new Date().setHours(0, 0, 0, 0);
+  const near: VisitPlan[] = [];
+  const far: VisitPlan[] = [];
+  for (const plan of plans) {
+    const daysAhead = Math.round((new Date(`${plan.iso}T12:00:00`).getTime() - todayStart) / 86400000);
+    (daysAhead >= 0 && daysAhead <= 15 ? near : far).push(plan);
+  }
+  const runBatch = async (group: VisitPlan[], base: string, spanIsos: string[], center: (plan: VisitPlan) => string, halfWindow: number, approx: boolean) => {
+    const sorted = [...spanIsos].sort();
+    const url = `${base}?latitude=${group.map((plan) => plan.point[0]).join(",")}&longitude=${group.map((plan) => plan.point[1]).join(",")}&start_date=${shiftIso(sorted[0], -halfWindow)}&end_date=${shiftIso(sorted[sorted.length - 1], halfWindow)}&daily=weather_code,temperature_2m_max&timezone=auto`;
+    try {
+      const parts = asArray(await fetchJson(url, signal));
+      group.forEach((plan, i) => { result[plan.city] = summarize(parts[i]?.daily, center(plan), halfWindow, plan.iso, approx); });
+    } catch (error) {
+      if ((error as Error).name === "AbortError") throw error;
+      group.forEach((plan) => { result[plan.city] = { error: true }; });
+    }
+  };
+  if (near.length) await runBatch(near, "https://api.open-meteo.com/v1/forecast", near.map((plan) => plan.iso), (plan) => plan.iso, 0, false);
+  if (far.length) await runBatch(far, "https://archive-api.open-meteo.com/v1/archive", far.map((plan) => histIsoOf(plan.iso)), (plan) => histIsoOf(plan.iso), 3, true);
+  return result;
+}
 
 export function Overview() {
   const { data } = useTripData();
   const [index, setIndex] = useState(0);
   const [weather, setWeather] = useState<Record<string, Weather>>({});
+  const [thenWeather, setThenWeather] = useState<Record<string, ThenWeather>>({});
+  const [mode, setMode] = useState<"now" | "then">(() => {
+    try { return localStorage.getItem(WEATHER_MODE_KEY) === "then" ? "then" : "now"; } catch { return "now"; }
+  });
+  const changeMode = (next: "now" | "then") => {
+    setMode(next);
+    try { localStorage.setItem(WEATHER_MODE_KEY, next); } catch { /* Preference stays in memory. */ }
+  };
   const [lightbox, setLightbox] = useState(false);
   const [copied, setCopied] = useState(false);
   const [focus, setFocus] = useState<{ city: string; nonce: number } | null>(null);
@@ -50,6 +139,10 @@ export function Overview() {
   };
   const shift = (amount: number) => setIndex((current) => (current + amount + slides.length) % slides.length);
   const weatherCities = data ? ["Прага, Чехия", ...new Set(data.lodging.map((lodge) => lodge.city))] : [];
+  const plannedIso = (city: string) => {
+    const short = city.split(",")[0].split("→")[0].trim();
+    return data?.days.find((day) => day.city.includes(short))?.iso ?? null;
+  };
 
   useEffect(() => {
     const controller = new AbortController();
@@ -69,6 +162,32 @@ export function Overview() {
     });
     return () => controller.abort();
   }, [weatherCities.join("|")]);
+
+  useEffect(() => {
+    if (mode !== "then") return;
+    const controller = new AbortController();
+    const plans: VisitPlan[] = [];
+    weatherCities.forEach((city) => {
+      if (thenWeather[city] && !("error" in thenWeather[city])) return;
+      const point = coords[city];
+      const iso = plannedIso(city);
+      if (!point || !iso) return setThenWeather((current) => ({ ...current, [city]: { error: true } }));
+      plans.push({ city, point, iso });
+    });
+    if (plans.length) {
+      void loadThenAll(plans, controller.signal)
+        .then((batch) => setThenWeather((current) => ({ ...current, ...batch })))
+        .catch((error) => {
+          if ((error as Error).name !== "AbortError") setThenWeather((current) => {
+            const next = { ...current };
+            for (const plan of plans) next[plan.city] = { error: true };
+            return next;
+          });
+        });
+    }
+    return () => controller.abort();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, weatherCities.join("|")]);
   if (!data) return null;
 
   const routeUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent("U Vlachovky 8, Praha, Česko")}&destination=${encodeURIComponent("U Vlachovky 8, Praha, Česko")}&waypoints=${data.lodging.map((lodge) => encodeURIComponent(lodge.city)).join("%7C")}&travelmode=driving`;
@@ -90,11 +209,27 @@ export function Overview() {
       <div style={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 6, zIndex: 5 }}>{slides.map((slide, i) => <span key={slide[0]} style={{ width: 8, height: 8, borderRadius: "50%", background: i === index ? "#fff" : "rgba(255,255,255,.5)", boxShadow: "0 0 3px rgba(0,0,0,.5)" }} />)}</div>
     </div>
 
-    <h2 style={headingStyle}>Погода сейчас</h2>
-    <p style={noteStyle}>Текущая погода во всех городах маршрута — обновляется при загрузке страницы.</p>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", margin: "34px 0 4px" }}>
+      <h2 style={{ ...headingStyle, margin: 0 }}>Погода</h2>
+      <div style={{ display: "inline-flex", background: "var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 999, padding: 3 }}>
+        {(["now", "then"] as const).map((value) => (
+          <button key={value} onClick={() => changeMode(value)} style={{ border: "none", borderRadius: 999, padding: "6px 15px", fontSize: 13, fontWeight: 600, cursor: "pointer", background: mode === value ? "var(--ac,#b95c3f)" : "transparent", color: mode === value ? "#fff" : "var(--muted,#8a7d6b)" }}>
+            {value === "now" ? "Сейчас" : "В поездке"}
+          </button>
+        ))}
+      </div>
+    </div>
+    <p style={noteStyle}>{mode === "now" ? "Текущая погода во всех городах маршрута — обновляется при загрузке страницы." : "Погода на даты визита. Для дальних дат показываем типичную по прошлым годам — точный прогноз появится ближе к поездке."}</p>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(190px,1fr))", gap: 14 }}>{weatherCities.map((city) => {
-      const current = weather[city];
+      const current = mode === "then" ? thenWeather[city] : weather[city];
       const state = current && !("error" in current) ? (weatherInfo[current.code] || ["—", "fa-solid fa-cloud"]) : null;
+      let subtitle: string;
+      if (mode === "then") {
+        const then = thenWeather[city];
+        subtitle = then && !("error" in then) ? `${state?.[0]} · ${formatDay(then.iso)}${then.approx ? " · обычно" : ""}` : then ? "нет данных на дату" : "загрузка…";
+      } else {
+        subtitle = `${state?.[0] || (current ? "Погода недоступна" : "загрузка…")} · сейчас`;
+      }
       return <div key={city} style={{ position: "relative", borderRadius: 16, overflow: "hidden", height: 150, border: "1px solid var(--line,#e7dcc7)", background: "var(--track,#f0e5d1)" }}>
         {cityPhotos[city] && <img src={imageUrl(`hero-${cityPhotos[city]}.png`)} alt={city} loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(24,18,12,.82),rgba(24,18,12,.1) 52%,rgba(24,18,12,.42))", pointerEvents: "none" }} />
@@ -104,7 +239,7 @@ export function Overview() {
         </div>
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "13px 15px", pointerEvents: "none" }}>
           <div title={city} style={{ fontWeight: 700, fontSize: 15, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 1px 6px rgba(0,0,0,.6)" }}>{city}</div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,.82)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2, textShadow: "0 1px 5px rgba(0,0,0,.55)" }}>{state?.[0] || (current ? "Погода недоступна" : "загрузка…")} · сейчас</div>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,.82)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginTop: 2, textShadow: "0 1px 5px rgba(0,0,0,.55)" }}>{subtitle}</div>
         </div>
       </div>;
     })}</div>
