@@ -73,6 +73,14 @@ export interface Restaurant {
   status: string;
   note?: string;
   link?: string;
+  /** Уровень цены: "€", "€€", "€€€", "€€€€". */
+  price?: string;
+  /** Личная оценка 1–5 (0 или undefined — не оценён). */
+  rating?: number;
+  /** Публичные URL загруженных фото. */
+  photos?: string[];
+  /** Координаты [долгота, широта] для расчёта расстояния. */
+  lnglat?: [number, number];
 }
 
 export interface TripData {
@@ -208,11 +216,26 @@ function isExpense(value: unknown): value is Expense {
 }
 
 function isRestaurant(value: unknown): value is Restaurant {
+  const coordinates = value && isRecord(value) ? value.lnglat : undefined;
   return (
     isRecord(value) &&
     ["id", "name", "city", "status"].every((key) => hasString(value, key)) &&
     hasOptionalString(value, "note") &&
-    hasOptionalString(value, "link")
+    hasOptionalString(value, "link") &&
+    hasOptionalString(value, "price") &&
+    hasOptionalFiniteNumber(value, "rating") &&
+    hasOptionalStringArray(value, "photos") &&
+    (coordinates === undefined ||
+      (Array.isArray(coordinates) &&
+        coordinates.length === 2 &&
+        typeof coordinates[0] === "number" &&
+        Number.isFinite(coordinates[0]) &&
+        coordinates[0] >= -180 &&
+        coordinates[0] <= 180 &&
+        typeof coordinates[1] === "number" &&
+        Number.isFinite(coordinates[1]) &&
+        coordinates[1] >= -90 &&
+        coordinates[1] <= 90))
   );
 }
 
