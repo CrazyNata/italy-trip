@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useTripData } from "../../trip/TripDataContext";
 import { copyText, useTransientState } from "../shared";
 import { Lightbox } from "../../components/Lightbox";
@@ -41,7 +41,13 @@ export function Overview() {
   const [weather, setWeather] = useState<Record<string, Weather>>({});
   const [lightbox, setLightbox] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [focus, setFocus] = useState<{ city: string; nonce: number } | null>(null);
+  const mapWrapRef = useRef<HTMLDivElement>(null);
   const showCopied = useTransientState(setCopied);
+  const focusOn = (city: string) => {
+    setFocus({ city, nonce: Date.now() });
+    mapWrapRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
   const shift = (amount: number) => setIndex((current) => (current + amount + slides.length) % slides.length);
   const weatherCities = data ? ["Прага, Чехия", ...new Set(data.lodging.map((lodge) => lodge.city))] : [];
 
@@ -104,18 +110,19 @@ export function Overview() {
     })}</div>
 
     <h2 style={headingStyle}>Карта маршрута</h2>
-    <p style={noteStyle}>Нажмите на город, чтобы открыть его на Google Maps.</p>
+    <p style={noteStyle}>Нажмите на город, чтобы навести на него карту. Иконкой <i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: 10 }} /> — открыть в Google Maps.</p>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(230px,1fr))", gap: 10, marginBottom: 16 }}>{data.lodging.map((lodge, i) => {
       const short = lodge.city.split(",")[0];
       const day = data.days.find((item) => item.dayMapUrl?.trim() && item.city.includes(short));
       const url = day?.dayMapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lodge.city)}`;
-      return <a key={lodge.id} href={url} target="_blank" rel="noopener" style={{ display: "flex", alignItems: "center", gap: 11, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 12, padding: "11px 14px", textDecoration: "none", color: "var(--ink)", cursor: "pointer" }}>
+      const isActive = focus?.city === lodge.city;
+      return <div key={lodge.id} role="button" tabIndex={0} onClick={() => focusOn(lodge.city)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); focusOn(lodge.city); } }} title="Навести карту на город" style={{ display: "flex", alignItems: "center", gap: 11, background: isActive ? "var(--soft,#fdfaf3)" : "var(--card,#fff)", border: `1px solid ${isActive ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: 12, padding: "11px 14px", color: "var(--ink)", cursor: "pointer", transition: "border-color .2s, background .2s" }}>
         <span style={{ width: 24, height: 24, flex: "none", borderRadius: "50%", background: "var(--ac,#b95c3f)", color: "#fff", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 700 }}>{i + 1}</span>
         <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontWeight: 600, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{lodge.city}</span><span style={{ display: "block", fontSize: 12, color: "var(--muted,#8a7d6b)" }}>{lodge.dates}</span></span>
-        <i className="fa-solid fa-arrow-up-right-from-square" style={{ color: "var(--muted,#8a7d6b)", fontSize: 11 }} />
-      </a>;
+        <a href={url} target="_blank" rel="noopener" onClick={(event) => event.stopPropagation()} title="Открыть в Google Maps" style={{ flex: "none", color: "var(--muted,#8a7d6b)", padding: "4px 6px", borderRadius: 8, display: "grid", placeItems: "center" }}><i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: 12 }} /></a>
+      </div>;
     })}</div>
-    <div style={{ position: "relative" }}><RouteMap cities={data.lodging.map((lodge) => lodge.city)} /><div style={{ position: "absolute", right: 14, bottom: 14, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+    <div ref={mapWrapRef} style={{ position: "relative", scrollMarginTop: 16 }}><RouteMap cities={data.lodging.map((lodge) => lodge.city)} focus={focus} /><div style={{ position: "absolute", right: 14, bottom: 14, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
       <button onClick={() => void copyText(routeUrl).then(() => showCopied(true, false))} title="Скопировать ссылку на карту" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", cursor: "pointer" }}><i className={copied ? "fa-solid fa-check" : "fa-solid fa-copy"} />{copied ? "Скопировано" : "Скопировать ссылку"}</button>
       <a href={routeUrl} target="_blank" rel="noopener" title="Открыть маршрут в Google Maps" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", textDecoration: "none" }}><i className="fa-solid fa-arrow-up-right-from-square" />Открыть в Google Maps</a>
     </div></div>
