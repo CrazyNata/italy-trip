@@ -348,8 +348,9 @@ export function Restaurants() {
                 key={item.id}
                 style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 1px 3px rgba(59,50,40,.05)" }}
               >
-                {photos.length > 0 && (
-                  <div style={{ position: "relative", height: 220, overflow: "hidden", background: "var(--track,#efe4cf)" }}>
+                <div style={{ position: "relative", height: 220, overflow: "hidden", background: "var(--track,#efe4cf)" }}>
+                  {photos.length > 0 ? (
+                    <>
                     <img
                       aria-hidden
                       src={photos[index]}
@@ -390,8 +391,15 @@ export function Restaurants() {
                         </div>
                       </>
                     )}
-                  </div>
-                )}
+                    </>
+                  ) : (
+                    <label title="Добавить фото" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", alignContent: "center", gap: 8, color: "var(--muted,#8a7d6b)", cursor: "pointer" }}>
+                      <i className="fa-solid fa-camera" style={{ fontSize: 28, color: "var(--ac,#b95c3f)" }} />
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>Добавить фото</span>
+                      <input hidden type="file" accept="image/*" multiple onChange={(event) => { void uploadPhotos(item, event.target.files); event.target.value = ""; }} />
+                    </label>
+                  )}
+                </div>
                 <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
