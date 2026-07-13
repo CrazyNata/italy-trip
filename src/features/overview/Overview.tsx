@@ -32,8 +32,8 @@ const weatherInfo: Record<number, [string, string]> = {
   61: ["Дождь", "fa-solid fa-cloud-showers-heavy"], 63: ["Дождь", "fa-solid fa-cloud-showers-heavy"], 65: ["Сильный дождь", "fa-solid fa-cloud-showers-heavy"], 66: ["Ледяной дождь", "fa-solid fa-cloud-showers-heavy"], 67: ["Ледяной дождь", "fa-solid fa-cloud-showers-heavy"],
   71: ["Снег", "fa-solid fa-snowflake"], 73: ["Снег", "fa-solid fa-snowflake"], 75: ["Сильный снег", "fa-solid fa-snowflake"], 77: ["Снежная крупа", "fa-solid fa-snowflake"], 80: ["Ливень", "fa-solid fa-cloud-showers-heavy"], 81: ["Ливень", "fa-solid fa-cloud-showers-heavy"], 82: ["Сильный ливень", "fa-solid fa-cloud-showers-heavy"], 85: ["Снегопад", "fa-solid fa-snowflake"], 86: ["Снегопад", "fa-solid fa-snowflake"], 95: ["Гроза", "fa-solid fa-cloud-bolt"], 96: ["Гроза с градом", "fa-solid fa-cloud-bolt"], 99: ["Гроза с градом", "fa-solid fa-cloud-bolt"],
 };
-type Weather = { temp: number; code: number } | { error: true };
-type ThenWeather = { temp: number; code: number; iso: string; approx: boolean } | { error: true };
+type Weather = { high: number; low: number; code: number } | { error: true };
+type ThenWeather = { high: number; low: number; code: number; iso: string; approx: boolean } | { error: true };
 const imageUrl = (name: string) => `${import.meta.env.BASE_URL}images/${name}`;
 
 const WEATHER_MODE_KEY = "italy_weather_mode";
@@ -46,7 +46,7 @@ const shiftIso = (iso: string, delta: number) => {
 const formatDay = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 
-type DailyWeather = { daily?: { time?: string[]; temperature_2m_max?: number[]; weather_code?: number[] } };
+type DailyWeather = { daily?: { time?: string[]; temperature_2m_max?: number[]; temperature_2m_min?: number[]; weather_code?: number[] } };
 type VisitPlan = { city: string; point: [number, number]; iso: string };
 const HIST_YEAR_BACK = 1;
 const histIsoOf = (iso: string) => `${new Date(`${iso}T12:00:00`).getFullYear() - HIST_YEAR_BACK}-${iso.slice(5)}`;
@@ -65,27 +65,29 @@ async function fetchJson(url: string, signal: AbortSignal): Promise<unknown> {
 }
 const asArray = (json: unknown): DailyWeather[] => (Array.isArray(json) ? json as DailyWeather[] : [json as DailyWeather]);
 
-// Averages the daily max temp and takes the most common weather code across all
-// returned days within `halfWindow` days of `centerIso`.
+// Averages the daily highs/lows and takes the most common weather code across
+// all returned days within `halfWindow` days of `centerIso`.
 function summarize(daily: DailyWeather["daily"], centerIso: string, halfWindow: number, iso: string, approx: boolean): ThenWeather {
   const times = daily?.time ?? [];
-  const temps = daily?.temperature_2m_max ?? [];
+  const highs = daily?.temperature_2m_max ?? [];
+  const lows = daily?.temperature_2m_min ?? [];
   const codes = daily?.weather_code ?? [];
   const center = new Date(`${centerIso}T12:00:00`).getTime();
-  const picked: Array<{ temp: number; code: number }> = [];
+  const picked: Array<{ high: number; low: number; code: number }> = [];
   times.forEach((time, i) => {
     if (Math.abs(new Date(`${time}T12:00:00`).getTime() - center) > halfWindow * 86400000 + 1000) return;
-    if (typeof temps[i] === "number" && typeof codes[i] === "number") picked.push({ temp: temps[i]!, code: codes[i]! });
+    if (typeof highs[i] === "number" && typeof lows[i] === "number" && typeof codes[i] === "number") picked.push({ high: highs[i]!, low: lows[i]!, code: codes[i]! });
   });
   if (!picked.length) return { error: true };
-  const temp = picked.reduce((sum, item) => sum + item.temp, 0) / picked.length;
+  const high = picked.reduce((sum, item) => sum + item.high, 0) / picked.length;
+  const low = picked.reduce((sum, item) => sum + item.low, 0) / picked.length;
   const frequency = new Map<number, number>();
   let mode = picked[0].code;
   for (const { code } of picked) {
     frequency.set(code, (frequency.get(code) ?? 0) + 1);
     if ((frequency.get(code) ?? 0) > (frequency.get(mode) ?? 0)) mode = code;
   }
-  return { temp, code: mode, iso, approx };
+  return { high, low, code: mode, iso, approx };
 }
 
 // Loads the visit-date weather for every city in as few requests as possible —
@@ -102,7 +104,7 @@ async function loadThenAll(plans: VisitPlan[], signal: AbortSignal): Promise<Rec
   }
   const runBatch = async (group: VisitPlan[], base: string, spanIsos: string[], center: (plan: VisitPlan) => string, halfWindow: number, approx: boolean) => {
     const sorted = [...spanIsos].sort();
-    const url = `${base}?latitude=${group.map((plan) => plan.point[0]).join(",")}&longitude=${group.map((plan) => plan.point[1]).join(",")}&start_date=${shiftIso(sorted[0], -halfWindow)}&end_date=${shiftIso(sorted[sorted.length - 1], halfWindow)}&daily=weather_code,temperature_2m_max&timezone=auto`;
+    const url = `${base}?latitude=${group.map((plan) => plan.point[0]).join(",")}&longitude=${group.map((plan) => plan.point[1]).join(",")}&start_date=${shiftIso(sorted[0], -halfWindow)}&end_date=${shiftIso(sorted[sorted.length - 1], halfWindow)}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`;
     try {
       const parts = asArray(await fetchJson(url, signal));
       group.forEach((plan, i) => { result[plan.city] = summarize(parts[i]?.daily, center(plan), halfWindow, plan.iso, approx); });
@@ -151,11 +153,13 @@ export function Overview() {
       const point = coords[city];
       if (!point) return setWeather((current) => ({ ...current, [city]: { error: true } }));
       try {
-        const response = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${point[0]}&longitude=${point[1]}&current=temperature_2m,weather_code&timezone=auto`, { signal: controller.signal });
-        if (!response.ok) throw new Error();
-        const json = await response.json() as { current?: { temperature_2m?: number; weather_code?: number } };
-        if (typeof json.current?.temperature_2m !== "number" || typeof json.current.weather_code !== "number") throw new Error();
-        setWeather((current) => ({ ...current, [city]: { temp: json.current!.temperature_2m!, code: json.current!.weather_code! } }));
+        const json = await fetchJson(`https://api.open-meteo.com/v1/forecast?latitude=${point[0]}&longitude=${point[1]}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto&forecast_days=1`, controller.signal) as DailyWeather;
+        const daily = json.daily;
+        const high = daily?.temperature_2m_max?.[0];
+        const low = daily?.temperature_2m_min?.[0];
+        const code = daily?.weather_code?.[0];
+        if (typeof high !== "number" || typeof low !== "number" || typeof code !== "number") throw new Error();
+        setWeather((current) => ({ ...current, [city]: { high, low, code } }));
       } catch (error) {
         if ((error as Error).name !== "AbortError") setWeather((current) => ({ ...current, [city]: { error: true } }));
       }
@@ -228,13 +232,13 @@ export function Overview() {
         const then = thenWeather[city];
         subtitle = then && !("error" in then) ? `${state?.[0]} · ${formatDay(then.iso)}${then.approx ? " · обычно" : ""}` : then ? "нет данных на дату" : "загрузка…";
       } else {
-        subtitle = `${state?.[0] || (current ? "Погода недоступна" : "загрузка…")} · сейчас`;
+        subtitle = `${state?.[0] || (current ? "Погода недоступна" : "загрузка…")} · сегодня`;
       }
       return <div key={city} style={{ position: "relative", borderRadius: 16, overflow: "hidden", height: 150, border: "1px solid var(--line,#e7dcc7)", background: "var(--track,#f0e5d1)" }}>
         {cityPhotos[city] && <img src={imageUrl(`hero-${cityPhotos[city]}.png`)} alt={city} loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(24,18,12,.82),rgba(24,18,12,.1) 52%,rgba(24,18,12,.42))", pointerEvents: "none" }} />
         <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "13px 15px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", pointerEvents: "none" }}>
-          <span style={{ fontFamily: "'Space Mono',ui-monospace,monospace", fontSize: 34, fontWeight: 700, color: "#fff", lineHeight: 1, textShadow: "0 1px 8px rgba(0,0,0,.6)" }}>{!current ? "…" : "error" in current ? "—" : `${Math.round(current.temp)}°`}</span>
+          <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", lineHeight: 1.35, textShadow: "0 1px 8px rgba(0,0,0,.6)" }}>{!current ? "…" : "error" in current ? "—" : `Днём ${Math.round(current.high)}° · Ночью ${Math.round(current.low)}°`}</span>
           <span style={{ width: 34, height: 34, flex: "none", borderRadius: 10, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", display: "grid", placeItems: "center" }}><i className={state?.[1] || "fa-solid fa-cloud"} style={{ color: "#fff", fontSize: 16 }} /></span>
         </div>
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "13px 15px", pointerEvents: "none" }}>
