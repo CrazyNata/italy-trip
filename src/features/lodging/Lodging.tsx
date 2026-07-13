@@ -299,7 +299,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
                     alt="фото жилья"
                     onClick={() => setLightbox({ id: lodge.id, index })}
                   />
-                  <span style={{ position: "absolute", top: 12, left: 12, background: statusColor, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: "var(--r-pill)", letterSpacing: ".04em" }}>{lodge.status}</span>
+                  <span style={{ position: "absolute", top: 12, left: 12, background: statusColor, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: "var(--r-2)", letterSpacing: ".04em" }}>{lodge.status}</span>
                   {photos.length > 1 && (
                     <>
                       <button
@@ -330,7 +330,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
               ) : (
                 <div className="slot-wrap" style={{ position: "relative", height: 230 }}>
                   <div style={{ width: "100%", height: 230, display: "grid", placeItems: "center", background: "var(--track,#efe4cf)", color: "var(--muted,#8a7d6b)", fontSize: 13 }}>фото жилья</div>
-                  <span style={{ position: "absolute", top: 12, left: 12, background: statusColor, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: "var(--r-pill)", letterSpacing: ".04em" }}>{lodge.status}</span>
+                  <span style={{ position: "absolute", top: 12, left: 12, background: statusColor, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: "var(--r-2)", letterSpacing: ".04em" }}>{lodge.status}</span>
                 </div>
               )}
               <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
@@ -350,7 +350,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
                     <button
                       key={status}
                       onClick={() => edit(lodge.id, "status", status)}
-                      style={{ border: `1px solid ${lodge.status === status ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: lodge.status === status ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: lodge.status === status ? "#fff" : "var(--muted,#8a7d6b)", fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: "var(--r-pill)", cursor: "pointer" }}
+                      style={{ border: `1px solid ${lodge.status === status ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: lodge.status === status ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: lodge.status === status ? "#fff" : "var(--muted,#8a7d6b)", fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: "var(--r-2)", cursor: "pointer" }}
                     >
                       {status}
                     </button>

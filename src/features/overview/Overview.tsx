@@ -202,7 +202,7 @@ export function Overview() {
       {slides.map((slide, slideIndex) => <div key={slide[0]} style={{ position: "absolute", inset: 0, opacity: slideIndex === index ? 1 : 0, transition: "opacity .6s ease", zIndex: slideIndex === index ? 2 : 1 }}>
         <img src={imageUrl(`hero-${slide[0]}.png`)} alt={slide[1]} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         <div style={{ position: "absolute", left: 0, bottom: 0, right: 0, padding: 24, background: "linear-gradient(to top,rgba(45,36,26,.72),transparent)", pointerEvents: "none" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,.16)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 600, padding: "4px 11px", borderRadius: "var(--r-pill)" }}>{slide[2]}</div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,.16)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 600, padding: "4px 11px", borderRadius: "var(--r-2)" }}>{slide[2]}</div>
           <div style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontSize: 30, fontWeight: 600, marginTop: 8 }}>{slide[3]}</div>
           <div style={{ color: "rgba(255,255,255,.85)", fontSize: 13, marginTop: 2 }}>{slide[4]}</div>
         </div>
@@ -215,9 +215,9 @@ export function Overview() {
 
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", margin: "34px 0 4px" }}>
       <h2 style={{ ...headingStyle, margin: 0 }}>Погода</h2>
-      <div style={{ display: "inline-flex", background: "var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-pill)", padding: 3 }}>
+      <div style={{ display: "inline-flex", background: "var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: 3 }}>
         {(["now", "then"] as const).map((value) => (
-          <button key={value} onClick={() => changeMode(value)} style={{ border: "none", borderRadius: "var(--r-pill)", padding: "6px 15px", fontSize: 13, fontWeight: 600, cursor: "pointer", background: mode === value ? "var(--ac,#b95c3f)" : "transparent", color: mode === value ? "#fff" : "var(--muted,#8a7d6b)" }}>
+          <button key={value} onClick={() => changeMode(value)} style={{ border: "none", borderRadius: "var(--r-2)", padding: "6px 15px", fontSize: 13, fontWeight: 600, cursor: "pointer", background: mode === value ? "var(--ac,#b95c3f)" : "transparent", color: mode === value ? "#fff" : "var(--muted,#8a7d6b)" }}>
             {value === "now" ? "Сейчас" : "В поездке"}
           </button>
         ))}

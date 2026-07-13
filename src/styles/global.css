@@ -33,7 +33,6 @@
   --r-3: 14px;   /* filter bars, inner panels */
   --r-4: 16px;   /* cards, media blocks */
   --r-5: 20px;   /* large containers, dialogs */
-  --r-pill: 999px;
 }
 
 * {

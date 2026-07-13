@@ -264,7 +264,7 @@ export function Restaurants() {
     border: `1px solid ${active ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`,
     background: active ? "var(--ac,#b95c3f)" : "var(--card,#fff)",
     color: active ? "#fff" : "var(--ink,#3b3228)",
-    fontSize: 12.5, fontWeight: 600, padding: "6px 12px", borderRadius: "var(--r-pill)", cursor: "pointer", whiteSpace: "nowrap",
+    fontSize: 12.5, fontWeight: 600, padding: "6px 12px", borderRadius: "var(--r-2)", cursor: "pointer", whiteSpace: "nowrap",
     boxShadow: active ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none",
     transition: "background .15s, box-shadow .15s, color .15s",
   });
@@ -283,7 +283,7 @@ export function Restaurants() {
             <select
               value={cityFilter}
               onChange={(event) => setCityFilter(event.target.value)}
-              style={{ border: `1px solid ${cityFilter ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: "var(--r-pill)", padding: "7px 12px", fontSize: 12.5, fontWeight: 600, background: cityFilter ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: cityFilter ? "#fff" : "var(--ink,#3b3228)", cursor: "pointer", boxShadow: cityFilter ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
+              style={{ border: `1px solid ${cityFilter ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: "var(--r-2)", padding: "7px 12px", fontSize: 12.5, fontWeight: 600, background: cityFilter ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: cityFilter ? "#fff" : "var(--ink,#3b3228)", cursor: "pointer", boxShadow: cityFilter ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
             >
               <option value="" style={{ color: "var(--ink,#3b3228)" }}>Все города</option>
               {cities.map((city) => (
@@ -318,7 +318,7 @@ export function Restaurants() {
           onClick={findLocation}
           disabled={locating}
           title={userLoc ? "Местоположение найдено — сортирую по близости" : "Найти моё местоположение и показать расстояние до ресторанов"}
-          style={{ display: "inline-flex", alignItems: "center", gap: 7, border: `1px solid ${userLoc ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: userLoc ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: userLoc ? "#fff" : "var(--ink,#3b3228)", borderRadius: "var(--r-pill)", padding: "7px 13px", fontSize: 12.5, fontWeight: 600, cursor: locating ? "wait" : "pointer", whiteSpace: "nowrap", boxShadow: userLoc ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 7, border: `1px solid ${userLoc ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: userLoc ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: userLoc ? "#fff" : "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "7px 13px", fontSize: 12.5, fontWeight: 600, cursor: locating ? "wait" : "pointer", whiteSpace: "nowrap", boxShadow: userLoc ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
         >
           <i className={locating ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-location-crosshairs"} />
           {userLoc ? "Найдено" : "Местоположение"}
@@ -331,7 +331,7 @@ export function Restaurants() {
             setSortBy(value);
             if (value === "distance" && !userLoc) findLocation();
           }}
-          style={{ border: `1px solid ${sortBy !== "default" ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: "var(--r-pill)", padding: "7px 12px", fontSize: 12.5, fontWeight: 600, background: sortBy !== "default" ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: sortBy !== "default" ? "#fff" : "var(--ink,#3b3228)", cursor: "pointer", boxShadow: sortBy !== "default" ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
+          style={{ border: `1px solid ${sortBy !== "default" ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: "var(--r-2)", padding: "7px 12px", fontSize: 12.5, fontWeight: 600, background: sortBy !== "default" ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: sortBy !== "default" ? "#fff" : "var(--ink,#3b3228)", cursor: "pointer", boxShadow: sortBy !== "default" ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
         >
           <option value="default" style={{ color: "var(--ink,#3b3228)" }}>по порядку</option>
           <option value="rating" style={{ color: "var(--ink,#3b3228)" }}>по оценке</option>
@@ -381,7 +381,7 @@ export function Restaurants() {
                       style={{ position: "relative", width: "100%", height: "100%", objectFit: "contain", display: "block", cursor: "zoom-in" }}
                     />
                     {distance !== null && (
-                      <span style={{ position: "absolute", top: 10, left: 10, background: "rgba(24,18,12,.62)", color: "#fff", fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: "var(--r-pill)" }}>
+                      <span style={{ position: "absolute", top: 10, left: 10, background: "rgba(24,18,12,.62)", color: "#fff", fontSize: 12, fontWeight: 700, padding: "4px 10px", borderRadius: "var(--r-2)" }}>
                         <i className="fa-solid fa-location-arrow" style={{ fontSize: 10, marginRight: 5 }} />{formatDistance(distance)}
                       </span>
                     )}
@@ -439,7 +439,7 @@ export function Restaurants() {
                         target="_blank"
                         rel="noreferrer"
                         title="Рейтинг Google"
-                        style={{ alignSelf: "flex-start", marginTop: 6, display: "inline-flex", alignItems: "center", gap: 7, textDecoration: "none", border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", borderRadius: "var(--r-pill)", padding: "3px 11px 3px 10px" }}
+                        style={{ alignSelf: "flex-start", marginTop: 6, display: "inline-flex", alignItems: "center", gap: 7, textDecoration: "none", border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", borderRadius: "var(--r-2)", padding: "3px 11px 3px 10px" }}
                       >
                         <span style={{ fontFamily: "Arial, sans-serif", fontWeight: 800, fontSize: 12.5, letterSpacing: "-.02em" }}>
                           <span style={{ color: "#4285F4" }}>G</span>
@@ -502,7 +502,7 @@ export function Restaurants() {
                       <button
                         key={status}
                         onClick={() => edit(item.id, { status })}
-                        style={{ border: `1px solid ${item.status === status ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: item.status === status ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: item.status === status ? "#fff" : "var(--muted,#8a7d6b)", fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: "var(--r-pill)", cursor: "pointer" }}
+                        style={{ border: `1px solid ${item.status === status ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: item.status === status ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: item.status === status ? "#fff" : "var(--muted,#8a7d6b)", fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: "var(--r-2)", cursor: "pointer" }}
                       >
                         {status}
                       </button>
