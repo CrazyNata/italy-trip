@@ -77,6 +77,8 @@ export interface Restaurant {
   price?: string;
   /** Личная оценка 1–5 (0 или undefined — не оценён). */
   rating?: number;
+  /** Район/квартал для отдельного фильтра (например, «Пиньето» — рядом с домом). */
+  area?: string;
   /** Публичные URL загруженных фото. */
   photos?: string[];
   /** Координаты [долгота, широта] для расчёта расстояния. */
@@ -224,6 +226,7 @@ function isRestaurant(value: unknown): value is Restaurant {
     hasOptionalString(value, "link") &&
     hasOptionalString(value, "price") &&
     hasOptionalFiniteNumber(value, "rating") &&
+    hasOptionalString(value, "area") &&
     hasOptionalStringArray(value, "photos") &&
     (coordinates === undefined ||
       (Array.isArray(coordinates) &&

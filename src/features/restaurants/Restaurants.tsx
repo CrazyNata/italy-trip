@@ -98,6 +98,7 @@ export function Restaurants() {
   const [cityFilter, setCityFilter] = useState("");
   const [priceFilter, setPriceFilter] = useState("");
   const [minRating, setMinRating] = useState(0);
+  const [areaFilter, setAreaFilter] = useState("");
   const [sortBy, setSortBy] = useState<"default" | "rating" | "distance">("default");
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
@@ -107,10 +108,15 @@ export function Restaurants() {
     () => [...new Set(list.map((item) => item.city).filter(Boolean))],
     [list],
   );
+  const areas = useMemo(
+    () => [...new Set(list.map((item) => item.area).filter((area): area is string => !!area))],
+    [list],
+  );
 
   const visible = useMemo(() => {
     const filtered = list
       .filter((item) => !cityFilter || item.city === cityFilter)
+      .filter((item) => !areaFilter || item.area === areaFilter)
       .filter((item) => !priceFilter || item.price === priceFilter)
       .filter((item) => !minRating || (item.rating ?? 0) >= minRating)
       .map((item) => ({
@@ -122,7 +128,7 @@ export function Restaurants() {
     if (sortBy === "distance")
       filtered.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
     return filtered;
-  }, [list, cityFilter, priceFilter, minRating, sortBy, userLoc]);
+  }, [list, cityFilter, areaFilter, priceFilter, minRating, sortBy, userLoc]);
 
   if (!data) return null;
 
@@ -284,6 +290,16 @@ export function Restaurants() {
                 <option key={city} value={city} style={{ color: "var(--ink,#3b3228)" }}>{flag(city)} {city}</option>
               ))}
             </select>
+          </>
+        )}
+        {areas.length > 0 && (
+          <>
+            <span style={groupLabel}>Район</span>
+            {areas.map((area) => (
+              <button key={area} style={chip(areaFilter === area)} onClick={() => setAreaFilter(areaFilter === area ? "" : area)}>
+                <i className="fa-solid fa-house" style={{ fontSize: 11, marginRight: 6 }} />{area}
+              </button>
+            ))}
           </>
         )}
         <span style={groupLabel}>Цена</span>
