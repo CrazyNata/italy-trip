@@ -4,7 +4,7 @@ import { supabase } from "../../lib/supabase/client";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { Lightbox } from "../../components/Lightbox";
 import type { Restaurant } from "../../types/trip";
-import { uid, useTransientState } from "../shared";
+import { uid } from "../shared";
 
 const statuses = ["хочу", "бронь", "были"];
 const priceLevels = ["€", "€€", "€€€", "€€€€"];
@@ -33,29 +33,6 @@ const storagePath = (url: string) => {
       : "";
   } catch { return ""; }
 };
-
-// Достаёт координаты из ссылки на Google Maps в разных её форматах.
-// Возвращает [долгота, широта] или null, если ссылка без координат
-// (например, короткая maps.app.goo.gl — её не распарсить на клиенте).
-function parseLatLng(url?: string): [number, number] | null {
-  if (!url) return null;
-  const patterns = [
-    /@(-?\d+\.\d+),(-?\d+\.\d+)/,
-    /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
-    /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
-    /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
-    /\/(-?\d+\.\d+),(-?\d+\.\d+)/,
-  ];
-  for (const re of patterns) {
-    const match = url.match(re);
-    if (match) {
-      const lat = parseFloat(match[1]);
-      const lng = parseFloat(match[2]);
-      if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return [lng, lat];
-    }
-  }
-  return null;
-}
 
 // Расстояние по прямой между двумя точками [долгота, широта], км.
 function distanceKm(a: [number, number], b: [number, number]) {
@@ -91,8 +68,6 @@ function Stars({ value, onSet }: { value: number; onSet: (rating: number) => voi
 export function Restaurants() {
   const { data, updateData, isReadOnly } = useTripData();
   const confirm = useConfirm();
-  const [copied, setCopied] = useState<string | null>(null);
-  const showCopied = useTransientState(setCopied);
   const [photoIndex, setPhotoIndex] = useState<Record<string, number>>({});
   const [lightbox, setLightbox] = useState<{ id: string; index: number } | null>(null);
   const [cityFilter, setCityFilter] = useState("");
@@ -142,11 +117,6 @@ export function Restaurants() {
         ),
       })),
     );
-  const editLink = (id: string, link: string) => {
-    const coords = parseLatLng(link);
-    edit(id, coords ? { link, lnglat: coords } : { link });
-  };
-
   const findLocation = () => {
     if (!navigator.geolocation) return toast("Геолокация недоступна в этом браузере");
     setLocating(true);
@@ -226,15 +196,6 @@ export function Restaurants() {
         ],
       })),
     );
-  const copy = async (item: Restaurant) => {
-    if (!item.link) return window.alert("Для этого ресторана ссылка ещё не добавлена.");
-    try {
-      await navigator.clipboard.writeText(item.link);
-    } catch {
-      /* Opening the link remains available. */
-    }
-    showCopied(item.id, null);
-  };
   const remove = async (item: Restaurant) => {
     if (isReadOnly) return readonly();
     if (
@@ -489,17 +450,6 @@ export function Restaurants() {
                     onChange={(event) => edit(item.id, { note: event.target.value })}
                     style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 11px", fontSize: 13, background: "var(--soft,#fdfaf3)" }}
                   />
-                  <input
-                    placeholder="ссылка (карта Google / сайт)…"
-                    value={item.link || ""}
-                    onChange={(event) => editLink(item.id, event.target.value)}
-                    style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 11px", fontSize: 13, background: "var(--soft,#fdfaf3)" }}
-                  />
-                  {distance === null && userLoc && (
-                    <span style={{ fontSize: 11, color: "var(--muted,#8a7d6b)" }}>
-                      Расстояние появится, если в ссылке есть координаты Google Maps.
-                    </span>
-                  )}
                   {distance !== null && photos.length === 0 && (
                     <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ac,#b95c3f)" }}>
                       <i className="fa-solid fa-location-arrow" style={{ fontSize: 10, marginRight: 5 }} />до ресторана {formatDistance(distance)}
@@ -516,23 +466,7 @@ export function Restaurants() {
                       </button>
                     ))}
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: "auto" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-                      {item.link ? (
-                        <a href={item.link} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                          Открыть →
-                        </a>
-                      ) : (
-                        <span style={{ fontSize: 13, color: "var(--muted,#8a7d6b)" }}>ссылки нет</span>
-                      )}
-                      <button
-                        title="Скопировать ссылку"
-                        onClick={() => void copy(item)}
-                        style={{ border: "none", background: "none", cursor: "pointer", color: "var(--muted,#8a7d6b)", fontSize: 13, padding: "2px 4px", flex: "none" }}
-                      >
-                        <i className={copied === item.id ? "fa-solid fa-check" : "fa-solid fa-copy"} />
-                      </button>
-                    </div>
+                  <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginTop: "auto" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 2, flex: "none" }}>
                       <label title="Добавить фото" style={{ cursor: "pointer", color: "var(--muted,#8a7d6b)", fontSize: 14, padding: "4px 6px", display: "grid", placeItems: "center" }}>
                         <i className="fa-solid fa-camera" />
