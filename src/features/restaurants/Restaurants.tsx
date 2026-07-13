@@ -433,6 +433,31 @@ export function Restaurants() {
                       onChange={(event) => edit(item.id, { name: event.target.value })}
                       style={{ fontFamily: "'Playfair Display',serif", fontSize: 23, fontWeight: 600, border: "none", background: "none", width: "100%", padding: "2px 0", color: "var(--ink,#3b3228)" }}
                     />
+                    {item.googleRating != null && (
+                      <a
+                        href={item.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.name}, ${item.city}`)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Рейтинг Google"
+                        style={{ alignSelf: "flex-start", marginTop: 6, display: "inline-flex", alignItems: "center", gap: 7, textDecoration: "none", border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", borderRadius: 999, padding: "3px 11px 3px 10px" }}
+                      >
+                        <span style={{ fontFamily: "Arial, sans-serif", fontWeight: 800, fontSize: 12.5, letterSpacing: "-.02em" }}>
+                          <span style={{ color: "#4285F4" }}>G</span>
+                          <span style={{ color: "#DB4437" }}>o</span>
+                          <span style={{ color: "#F4B400" }}>o</span>
+                          <span style={{ color: "#4285F4" }}>g</span>
+                          <span style={{ color: "#0F9D58" }}>l</span>
+                          <span style={{ color: "#DB4437" }}>e</span>
+                        </span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: "var(--ink,#3b3228)" }}>{item.googleRating.toFixed(1).replace(".", ",")}</span>
+                        <i className="fa-solid fa-star" style={{ fontSize: 11, color: "#e0a740" }} />
+                        {item.googleReviews != null && (
+                          <span style={{ fontSize: 11.5, color: "var(--muted,#8a7d6b)" }}>
+                            {item.googleReviews >= 1000 ? `${(item.googleReviews / 1000).toFixed(item.googleReviews >= 10000 ? 0 : 1).replace(".", ",")} тыс.` : item.googleReviews}
+                          </span>
+                        )}
+                      </a>
+                    )}
                   </div>
 
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>

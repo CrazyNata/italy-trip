@@ -77,6 +77,10 @@ export interface Restaurant {
   price?: string;
   /** Личная оценка 1–5 (0 или undefined — не оценён). */
   rating?: number;
+  /** Рейтинг Google (например, 4.3). Заполняется вручную. */
+  googleRating?: number;
+  /** Число отзывов в Google. */
+  googleReviews?: number;
   /** Район/квартал для отдельного фильтра (например, «Пиньето» — рядом с домом). */
   area?: string;
   /** Публичные URL загруженных фото. */
@@ -226,6 +230,8 @@ function isRestaurant(value: unknown): value is Restaurant {
     hasOptionalString(value, "link") &&
     hasOptionalString(value, "price") &&
     hasOptionalFiniteNumber(value, "rating") &&
+    hasOptionalFiniteNumber(value, "googleRating") &&
+    hasOptionalFiniteNumber(value, "googleReviews") &&
     hasOptionalString(value, "area") &&
     hasOptionalStringArray(value, "photos") &&
     (coordinates === undefined ||
