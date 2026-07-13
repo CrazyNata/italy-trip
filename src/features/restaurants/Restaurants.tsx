@@ -99,6 +99,7 @@ export function Restaurants() {
   const [priceFilter, setPriceFilter] = useState("");
   const [minRating, setMinRating] = useState(0);
   const [areaFilter, setAreaFilter] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"default" | "rating" | "distance">("default");
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
@@ -217,15 +218,17 @@ export function Restaurants() {
   };
 
   const add = () =>
-    guard(() =>
+    guard(() => {
+      const id = uid("r");
+      setEditingId(id);
       updateData((current) => ({
         ...current,
         restaurants: [
           ...(current.restaurants ?? []),
-          { id: uid("r"), name: "Новый ресторан", city: "", status: "хочу", note: "", link: "" },
+          { id, name: "Новый ресторан", city: "", status: "хочу", note: "", link: "" },
         ],
-      })),
-    );
+      }));
+    });
   const copy = async (item: Restaurant) => {
     if (!item.link) return window.alert("Для этого ресторана ссылка ещё не добавлена.");
     try {
@@ -393,6 +396,7 @@ export function Restaurants() {
                         <i className="fa-solid fa-location-arrow" style={{ fontSize: 10, marginRight: 5 }} />{formatDistance(distance)}
                       </span>
                     )}
+                    {editingId === item.id && (
                     <button
                       title="Удалить это фото"
                       onClick={() => void removePhoto(item, index)}
@@ -400,6 +404,7 @@ export function Restaurants() {
                     >
                       <i className="fa-solid fa-trash" />
                     </button>
+                    )}
                     {photos.length > 1 && (
                       <>
                         <button title="Назад" onClick={() => shift(item, -1)} style={{ position: "absolute", top: "50%", left: 10, transform: "translateY(-50%)", width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 13, display: "grid", placeItems: "center" }}>
@@ -425,6 +430,8 @@ export function Restaurants() {
                   )}
                 </div>
                 <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+                  {editingId === item.id ? (
+                  <>
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 15, lineHeight: 1 }}>{flag(item.city)}</span>
@@ -550,8 +557,55 @@ export function Restaurants() {
                       >
                         удалить
                       </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        title="Готово"
+                        style={{ border: "1px solid var(--ac,#b95c3f)", background: "var(--ac,#b95c3f)", color: "#fff", cursor: "pointer", fontSize: 12, fontWeight: 700, borderRadius: "var(--r-2)", padding: "5px 12px", marginLeft: 4 }}
+                      >
+                        Готово
+                      </button>
                     </div>
                   </div>
+                  </>
+                  ) : (
+                  <>
+                    <div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
+                        <span style={{ fontSize: 14, lineHeight: 1 }}>{flag(item.city)}</span>
+                        <span style={{ color: "var(--ac,#b95c3f)", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", fontSize: 11 }}>{item.city || "Без города"}</span>
+                      </div>
+                      <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 600, margin: "6px 0 0", color: "var(--ink,#3b3228)" }}>{item.name}</h3>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      {item.googleRating != null && (
+                        <a href={item.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.name}, ${item.city}`)}`} target="_blank" rel="noreferrer" title="Рейтинг Google" style={{ display: "inline-flex", alignItems: "center", gap: 6, textDecoration: "none" }}>
+                          <span style={{ fontFamily: "Arial, sans-serif", fontWeight: 800, fontSize: 12, letterSpacing: "-.02em" }}><span style={{ color: "#4285F4" }}>G</span><span style={{ color: "#DB4437" }}>o</span><span style={{ color: "#F4B400" }}>o</span><span style={{ color: "#4285F4" }}>g</span><span style={{ color: "#0F9D58" }}>l</span><span style={{ color: "#DB4437" }}>e</span></span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: "var(--ink,#3b3228)" }}>{item.googleRating.toFixed(1).replace(".", ",")}</span>
+                          <i className="fa-solid fa-star" style={{ fontSize: 11, color: "#e0a740" }} />
+                        </a>
+                      )}
+                      {item.price && <span style={{ fontSize: 13, fontWeight: 700, color: "var(--muted,#8a7d6b)" }}>{item.price}</span>}
+                      {(item.rating ?? 0) > 0 && (
+                        <span style={{ display: "inline-flex", gap: 1 }} title="Моя оценка">
+                          {[1, 2, 3, 4, 5].map((s) => <i key={s} className={s <= (item.rating ?? 0) ? "fa-solid fa-star" : "fa-regular fa-star"} style={{ fontSize: 11, color: s <= (item.rating ?? 0) ? "#e0a740" : "#d3c4a8" }} />)}
+                        </span>
+                      )}
+                    </div>
+                    {item.note && <p style={{ margin: 0, fontSize: 13.5, color: "var(--muted,#5f7c7e)", lineHeight: 1.4 }}>{item.note}</p>}
+                    {distance !== null && (
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ac,#b95c3f)" }}><i className="fa-solid fa-location-arrow" style={{ fontSize: 10, marginRight: 5 }} />{formatDistance(distance)}</span>
+                    )}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: "auto", paddingTop: 2 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                        {item.link && <a href={item.link} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600 }}>Открыть →</a>}
+                        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", background: "var(--soft,#f1f7f6)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "2px 9px" }}>{item.status}</span>
+                      </div>
+                      <button onClick={() => setEditingId(item.id)} title="Редактировать карточку" style={{ border: "none", background: "none", cursor: "pointer", color: "var(--muted,#8a7d6b)", fontSize: 12.5, fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 5, flex: "none" }}>
+                        <i className="fa-solid fa-pen" style={{ fontSize: 10.5 }} />Изменить
+                      </button>
+                    </div>
+                  </>
+                  )}
                 </div>
               </article>
             );
