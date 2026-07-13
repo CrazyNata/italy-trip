@@ -269,6 +269,13 @@ export function Restaurants() {
     transition: "background .15s, box-shadow .15s, color .15s",
   });
   const groupLabel: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ac,#b95c3f)", whiteSpace: "nowrap" };
+  const selectStyle = (active: boolean): CSSProperties => ({
+    border: `1px solid ${active ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`,
+    borderRadius: "var(--r-2)", padding: "7px 12px", fontSize: 12.5, fontWeight: 600,
+    background: active ? "var(--ac,#b95c3f)" : "var(--card,#fff)",
+    color: active ? "#fff" : "var(--ink,#3b3228)", cursor: "pointer",
+    boxShadow: active ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none",
+  });
 
   const active = lightbox && list.find((item) => item.id === lightbox.id);
 
@@ -283,7 +290,7 @@ export function Restaurants() {
             <select
               value={cityFilter}
               onChange={(event) => setCityFilter(event.target.value)}
-              style={{ border: `1px solid ${cityFilter ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: "var(--r-2)", padding: "7px 12px", fontSize: 12.5, fontWeight: 600, background: cityFilter ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: cityFilter ? "#fff" : "var(--ink,#3b3228)", cursor: "pointer", boxShadow: cityFilter ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
+              style={{ ...selectStyle(!!cityFilter), maxWidth: 150 }}
             >
               <option value="" style={{ color: "var(--ink,#3b3228)" }}>Все города</option>
               {cities.map((city) => (
@@ -302,26 +309,26 @@ export function Restaurants() {
             ))}
           </>
         )}
-        <span style={groupLabel}>Цена</span>
-        {priceLevels.map((level) => (
-          <button key={level} style={chip(priceFilter === level)} onClick={() => setPriceFilter(priceFilter === level ? "" : level)}>
-            {level}
-          </button>
-        ))}
-        <span style={groupLabel}>Оценка от</span>
-        {[3, 4, 5].map((value) => (
-          <button key={value} style={chip(minRating === value)} onClick={() => setMinRating(minRating === value ? 0 : value)}>
-            {value}★
-          </button>
-        ))}
+        <select title="Цена" value={priceFilter} onChange={(event) => setPriceFilter(event.target.value)} style={selectStyle(!!priceFilter)}>
+          <option value="" style={{ color: "var(--ink,#3b3228)" }}>Цена</option>
+          {priceLevels.map((level) => (
+            <option key={level} value={level} style={{ color: "var(--ink,#3b3228)" }}>{level}</option>
+          ))}
+        </select>
+        <select title="Оценка" value={minRating} onChange={(event) => setMinRating(Number(event.target.value))} style={selectStyle(minRating > 0)}>
+          <option value={0} style={{ color: "var(--ink,#3b3228)" }}>Оценка</option>
+          {[3, 4, 5].map((value) => (
+            <option key={value} value={value} style={{ color: "var(--ink,#3b3228)" }}>от {value}★</option>
+          ))}
+        </select>
         <button
           onClick={findLocation}
           disabled={locating}
           title={userLoc ? "Местоположение найдено — сортирую по близости" : "Найти моё местоположение и показать расстояние до ресторанов"}
-          style={{ display: "inline-flex", alignItems: "center", gap: 7, border: `1px solid ${userLoc ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: userLoc ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: userLoc ? "#fff" : "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "7px 13px", fontSize: 12.5, fontWeight: 600, cursor: locating ? "wait" : "pointer", whiteSpace: "nowrap", boxShadow: userLoc ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
+          aria-label={userLoc ? "Местоположение найдено" : "Определить местоположение"}
+          style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", border: `1px solid ${userLoc ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: userLoc ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: userLoc ? "#fff" : "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "7px 11px", fontSize: 13, cursor: locating ? "wait" : "pointer", boxShadow: userLoc ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
         >
-          <i className={locating ? "fa-solid fa-spinner fa-spin" : "fa-solid fa-location-crosshairs"} />
-          {userLoc ? "Найдено" : "Местоположение"}
+          <i className={locating ? "fa-solid fa-spinner fa-spin" : userLoc ? "fa-solid fa-location-dot" : "fa-solid fa-location-crosshairs"} />
         </button>
         <span style={groupLabel}>Сорт.</span>
         <select
@@ -331,7 +338,7 @@ export function Restaurants() {
             setSortBy(value);
             if (value === "distance" && !userLoc) findLocation();
           }}
-          style={{ border: `1px solid ${sortBy !== "default" ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: "var(--r-2)", padding: "7px 12px", fontSize: 12.5, fontWeight: 600, background: sortBy !== "default" ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: sortBy !== "default" ? "#fff" : "var(--ink,#3b3228)", cursor: "pointer", boxShadow: sortBy !== "default" ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none" }}
+          style={selectStyle(sortBy !== "default")}
         >
           <option value="default" style={{ color: "var(--ink,#3b3228)" }}>по порядку</option>
           <option value="rating" style={{ color: "var(--ink,#3b3228)" }}>по оценке</option>
