@@ -5,6 +5,7 @@ import { useConfirm } from "../../components/ConfirmDialog";
 import { Lightbox } from "../../components/Lightbox";
 import type { Restaurant } from "../../types/trip";
 import { uid } from "../shared";
+import { RestaurantEditorModal } from "./RestaurantEditorModal";
 
 const statuses = ["хочу", "бронь", "были"];
 const priceLevels = ["€", "€€", "€€€", "€€€€"];
@@ -34,6 +35,13 @@ const storagePath = (url: string) => {
   } catch { return ""; }
 };
 
+type EditorState = {
+  draft: Restaurant;
+  originalPhotos: string[];
+  uploadedPhotos: string[];
+  isNew: boolean;
+};
+
 // Расстояние по прямой между двумя точками [долгота, широта], км.
 function distanceKm(a: [number, number], b: [number, number]) {
   const R = 6371;
@@ -60,6 +68,7 @@ export function Restaurants() {
   const [sortBy, setSortBy] = useState<"default" | "rating" | "distance">("default");
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
+  const [editor, setEditor] = useState<EditorState | null>(null);
 
   const list = useMemo(() => data?.restaurants ?? [], [data]);
   const cities = useMemo(
@@ -91,14 +100,22 @@ export function Restaurants() {
   if (!data) return null;
 
   const guard = (action: () => void) => (isReadOnly ? readonly() : action());
-  const edit = (id: string, patch: Partial<Restaurant>) =>
+  const deleteStorageUrls = async (urls: string[], failureMessage: string) => {
+    const paths = [...new Set(urls.map(storagePath).filter(Boolean))];
+    if (!paths.length) return true;
+    const { error } = await supabase.storage.from("place-photos").remove(paths);
+    if (!error) return true;
+    toast(failureMessage);
+    return false;
+  };
+  const openEditor = (item: Restaurant) =>
     guard(() =>
-      updateData((current) => ({
-        ...current,
-        restaurants: (current.restaurants ?? []).map((item) =>
-          item.id === id ? { ...item, ...patch } : item,
-        ),
-      })),
+      setEditor({
+        draft: { ...item, photos: [...(item.photos ?? [])] },
+        originalPhotos: [...(item.photos ?? [])],
+        uploadedPhotos: [],
+        isNew: false,
+      }),
     );
   const findLocation = () => {
     if (!navigator.geolocation) return toast("Геолокация недоступна в этом браузере");
@@ -126,14 +143,15 @@ export function Restaurants() {
         (item.photos?.length || 1),
     }));
 
-  const uploadPhotos = async (item: Restaurant, files?: FileList | null) => {
+  const uploadEditorPhotos = async (files?: FileList | null) => {
     if (!files || !files.length) return;
     if (isReadOnly) return readonly();
+    if (!editor) return;
     toast("Загружаю фото…");
     const urls: string[] = [];
     for (const file of Array.from(files)) {
       const extension = (file.name.split(".").pop() || "jpg").replace(/[^a-z0-9]/gi, "") || "jpg";
-      const path = `${item.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${extension}`;
+      const path = `${editor.draft.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${extension}`;
       const result = await supabase.storage
         .from("place-photos")
         .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
@@ -141,68 +159,67 @@ export function Restaurants() {
       urls.push(supabase.storage.from("place-photos").getPublicUrl(path).data.publicUrl);
     }
     if (!urls.length) return;
-    updateData((current) => ({
+    setEditor((current) => current ? {
       ...current,
-      restaurants: (current.restaurants ?? []).map((entry) =>
-        entry.id === item.id ? { ...entry, photos: [...(entry.photos || []), ...urls] } : entry,
-      ),
-    }));
+      draft: { ...current.draft, photos: [...(current.draft.photos ?? []), ...urls] },
+      uploadedPhotos: [...current.uploadedPhotos, ...urls],
+    } : current);
     toast(urls.length > 1 ? "Фото сохранены" : "Фото сохранено");
   };
 
-  const removePhoto = async (item: Restaurant, index: number) => {
+  const removeEditorPhoto = async (index: number) => {
     if (isReadOnly) return readonly();
-    const url = item.photos?.[index];
+    const url = editor?.draft.photos?.[index];
     if (!url) return;
-    if (!(await confirm({ title: "Удалить фото?", message: <>Это фото ресторана «{item.name}» будет удалено безвозвратно.</> }))) return;
-    const path = storagePath(url);
-    if (path) {
-      const { error } = await supabase.storage.from("place-photos").remove([path]);
-      if (error) return toast("Не удалось удалить фото из хранилища");
+    if (!(await confirm({ title: "Удалить фото?", message: <>Это фото ресторана «{editor?.draft.name}» будет удалено безвозвратно.</> }))) return;
+    if (editor?.uploadedPhotos.includes(url)) {
+      if (!(await deleteStorageUrls([url], "Не удалось удалить фото из хранилища"))) return;
     }
-    setPhotoIndex((current) => ({ ...current, [item.id]: 0 }));
-    updateData((current) => ({
+    setEditor((current) => current ? {
       ...current,
-      restaurants: (current.restaurants ?? []).map((entry) =>
-        entry.id === item.id ? { ...entry, photos: (entry.photos || []).filter((_, i) => i !== index) } : entry,
-      ),
-    }));
+      draft: { ...current.draft, photos: (current.draft.photos ?? []).filter((_, photoIndex) => photoIndex !== index) },
+      uploadedPhotos: current.uploadedPhotos.filter((photo) => photo !== url),
+    } : current);
   };
 
-  const add = () =>
-    guard(() =>
-      updateData((current) => ({
-        ...current,
-        restaurants: [
-          ...(current.restaurants ?? []),
-          { id: uid("r"), name: "Новый ресторан", city: "", status: "хочу", note: "", link: "" },
-        ],
-      })),
-    );
-  const remove = async (item: Restaurant) => {
+  const closeEditor = async () => {
+    if (!editor) return;
+    if (!(await deleteStorageUrls(editor.uploadedPhotos, "Не удалось удалить фото из хранилища"))) return;
+    setEditor(null);
+  };
+  const saveEditor = async () => {
     if (isReadOnly) return readonly();
-    if (
-      !(await confirm({
-        title: "Удалить ресторан?",
-        message: (
-          <>
-            «{item.name}» ({item.city}) будет удалён безвозвратно вместе со всеми загруженными фото. Это
-            действие нельзя отменить.
-          </>
-        ),
-      }))
-    )
-      return;
-    const paths = [...new Set((item.photos || []).map(storagePath).filter(Boolean))];
-    if (paths.length) {
-      const { error } = await supabase.storage.from("place-photos").remove(paths);
-      if (error) return toast("Не удалось удалить фото ресторана из хранилища");
-    }
+    if (!editor) return;
+    const removedPhotos = editor.originalPhotos.filter((url) => !editor.draft.photos?.includes(url));
+    if (!(await deleteStorageUrls(removedPhotos, "Не удалось удалить фото из хранилища"))) return;
     updateData((current) => ({
       ...current,
-      restaurants: (current.restaurants ?? []).filter((entry) => entry.id !== item.id),
+      restaurants: editor.isNew
+        ? [...(current.restaurants ?? []), editor.draft]
+        : (current.restaurants ?? []).map((item) => item.id === editor.draft.id ? editor.draft : item),
     }));
+    setEditor(null);
   };
+  const deleteEditorRestaurant = async () => {
+    if (isReadOnly) return readonly();
+    if (!editor || editor.isNew) return;
+    if (!(await confirm({
+      title: "Удалить ресторан?",
+      message: <>{`«${editor.draft.name}» (${editor.draft.city}) будет удалён безвозвратно вместе со всеми загруженными фото. Это действие нельзя отменить.`}</>,
+    }))) return;
+    const photos = [...new Set([...editor.originalPhotos, ...editor.uploadedPhotos])];
+    if (!(await deleteStorageUrls(photos, "Не удалось удалить фото ресторана из хранилища"))) return;
+    updateData((current) => ({
+      ...current,
+      restaurants: (current.restaurants ?? []).filter((item) => item.id !== editor.draft.id),
+    }));
+    setEditor(null);
+  };
+  const add = () =>
+    guard(() => {
+      const draft: Restaurant = { id: uid("r"), name: "Новый ресторан", city: "", status: "хочу", note: "", link: "" };
+      setEditor({ draft, originalPhotos: [], uploadedPhotos: [], isNew: true });
+    });
 
   const chip = (active: boolean): CSSProperties => ({
     border: `1px solid ${active ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`,
@@ -337,13 +354,6 @@ export function Restaurants() {
                         <i className="fa-solid fa-location-arrow" style={{ fontSize: 10, marginRight: 5 }} />{formatDistance(distance)}
                       </span>
                     )}
-                    <button
-                      title="Удалить это фото"
-                      onClick={() => void removePhoto(item, index)}
-                      style={{ position: "absolute", top: 10, right: 10, width: 30, height: 30, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 13, display: "grid", placeItems: "center" }}
-                    >
-                      <i className="fa-solid fa-trash" />
-                    </button>
                     {photos.length > 1 && (
                       <>
                         <button title="Назад" onClick={() => shift(item, -1)} style={{ position: "absolute", top: "50%", left: 10, transform: "translateY(-50%)", width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 13, display: "grid", placeItems: "center" }}>
@@ -365,11 +375,10 @@ export function Restaurants() {
                     </div>
                     </>
                   ) : (
-                    <label title="Добавить фото" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", alignContent: "center", gap: 8, color: "var(--muted,#8a7d6b)", cursor: "pointer" }}>
+                    <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", alignContent: "center", gap: 8, color: "var(--muted,#8a7d6b)" }}>
                       <i className="fa-solid fa-camera" style={{ fontSize: 28, color: "var(--ac,#b95c3f)" }} />
-                      <span style={{ fontSize: 13, fontWeight: 700 }}>Добавить фото</span>
-                      <input hidden type="file" accept="image/*" multiple onChange={(event) => { void uploadPhotos(item, event.target.files); event.target.value = ""; }} />
-                    </label>
+                      <span style={{ fontSize: 13, fontWeight: 700 }}>Нет фото</span>
+                    </div>
                   )}
                 </div>
                 <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
@@ -399,80 +408,60 @@ export function Restaurants() {
                         )}
                       </a>
                     ) : <span />}
-                    <div style={{ display: "flex", gap: 4 }} title="Уровень цен">
-                      {priceLevels.map((level) => (
-                        <button
-                          key={level}
-                          onClick={() => edit(item.id, { price: item.price === level ? "" : level })}
-                          style={{ border: `1px solid ${item.price === level ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: item.price === level ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: item.price === level ? "#fff" : "#c4b5a0", fontSize: 12, fontWeight: 700, padding: "4px 8px", borderRadius: "var(--r-1)", cursor: "pointer", minWidth: 30 }}
-                        >
-                          {level}
-                        </button>
-                      ))}
-                    </div>
+                    {item.price ? <span className="restaurant-card-price" title="Уровень цен">{item.price}</span> : <span />}
                   </div>
 
-                  <input
-                    value={item.name}
-                    onChange={(event) => edit(item.id, { name: event.target.value })}
-                    placeholder="Название ресторана"
-                    style={{ fontFamily: "'Playfair Display',serif", fontSize: 23, fontWeight: 600, border: "none", background: "none", width: "100%", padding: "2px 0", color: "var(--ink,#3b3228)" }}
-                  />
+                  <h3 className="restaurant-card-title">{item.name}</h3>
 
-                  <input
-                    placeholder="кухня / что заказать…"
-                    value={item.note || ""}
-                    onChange={(event) => edit(item.id, { note: event.target.value })}
-                    style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 11px", fontSize: 13, background: "var(--soft,#fdfaf3)" }}
-                  />
+                  {item.note && <p className="restaurant-card-note">{item.note}</p>}
                   {distance !== null && photos.length === 0 && (
                     <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ac,#b95c3f)" }}>
                       <i className="fa-solid fa-location-arrow" style={{ fontSize: 10, marginRight: 5 }} />до ресторана {formatDistance(distance)}
                     </span>
                   )}
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {statuses.map((status) => (
-                      <button
-                        key={status}
-                        onClick={() => edit(item.id, { status })}
-                        style={{ border: `1px solid ${item.status === status ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: item.status === status ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: item.status === status ? "#fff" : "var(--muted,#8a7d6b)", fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: "var(--r-2)", cursor: "pointer" }}
-                      >
-                        {status}
-                      </button>
-                    ))}
-                  </div>
+                  <span className="restaurant-card-status">{item.status}</span>
                   <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginTop: "auto" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 2, flex: "none" }}>
-                      <label title="Добавить фото" style={{ cursor: "pointer", color: "var(--muted,#8a7d6b)", fontSize: 14, padding: "4px 6px", display: "grid", placeItems: "center" }}>
-                        <i className="fa-solid fa-camera" />
-                        <input
-                          hidden
-                          type="file"
-                          accept="image/*"
-                          multiple
-                          onChange={(event) => { void uploadPhotos(item, event.target.files); event.target.value = ""; }}
-                        />
-                      </label>
+                    {!isReadOnly && (
                       <button
-                        onClick={() => void remove(item)}
-                        style={{ border: "none", background: "none", color: "#c4b5a0", cursor: "pointer", fontSize: 13 }}
+                        type="button"
+                        className="restaurant-card-edit"
+                        onClick={() => openEditor(item)}
+                        aria-label={`Редактировать ресторан ${item.name}`}
+                        title="Редактировать ресторан"
                       >
-                        удалить
+                        <i className="fa-solid fa-pen" aria-hidden />
                       </button>
-                    </div>
+                    )}
                   </div>
                 </div>
               </article>
             );
           })}
-          <button
-            onClick={add}
-            style={{ border: "2px dashed #d8c9ac", background: "none", borderRadius: "var(--r-4)", minHeight: 180, color: "#a2937c", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "grid", placeItems: "center" }}
-          >
-            + добавить ресторан
-          </button>
+          {!isReadOnly && (
+            <button
+              onClick={add}
+              style={{ border: "2px dashed #d8c9ac", background: "none", borderRadius: "var(--r-4)", minHeight: 180, color: "#a2937c", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "grid", placeItems: "center" }}
+            >
+              + добавить ресторан
+            </button>
+          )}
         </div>
       </div>
+
+      {editor && !isReadOnly && (
+        <RestaurantEditorModal
+          draft={editor.draft}
+          isNew={editor.isNew}
+          statuses={statuses}
+          priceLevels={priceLevels}
+          onChange={(patch) => setEditor((current) => current ? { ...current, draft: { ...current.draft, ...patch } } : current)}
+          onUpload={(files) => void uploadEditorPhotos(files)}
+          onRemovePhoto={(index) => void removeEditorPhoto(index)}
+          onSave={() => void saveEditor()}
+          onCancel={() => void closeEditor()}
+          onDelete={() => void deleteEditorRestaurant()}
+        />
+      )}
 
       {active?.photos && lightbox && (
         <Lightbox
