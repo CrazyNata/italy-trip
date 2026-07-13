@@ -45,10 +45,11 @@ const subOf = (sight: Sight) => sight.subcategory || "разное";
 // Place description dialog. Rendered through a portal into document.body — like
 // the shared Lightbox and confirm dialogs — so the tab's animated (transformed)
 // container can't trap the fixed backdrop and open it off-centre.
-function SightInfo({ sight, text, onClose }: { sight: Sight; text: string; onClose: () => void }) {
+function SightInfo({ sight, text, photo, onClose }: { sight: Sight; text: string; photo?: string; onClose: () => void }) {
   const closeButton = useRef<HTMLButtonElement>(null);
   useScrollLock();
   useDialogKeyboard({ open: true, onClose, initialFocus: closeButton });
+  const image = sight.photo || photo;
   return createPortal(
     <div
       style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(14,10,7,.68)", display: "grid", placeItems: "center", padding: 20 }}
@@ -57,8 +58,8 @@ function SightInfo({ sight, text, onClose }: { sight: Sight; text: string; onClo
       onClick={(event) => event.currentTarget === event.target && onClose()}
     >
       <div style={{ width: "min(100%, 540px)", maxHeight: "min(760px, calc(100vh - 40px))", overflow: "auto", background: "var(--card,#fff)", borderRadius: 18, boxShadow: "0 18px 60px rgba(0,0,0,.35)", position: "relative" }}>
-        {sight.photo && (
-          <img style={{ width: "100%", height: 230, objectFit: "cover", display: "block" }} src={sight.photo} alt={sight.name} />
+        {image && (
+          <img style={{ width: "100%", height: 230, objectFit: "cover", display: "block" }} src={image} alt={sight.name} />
         )}
         <button
           ref={closeButton}
@@ -92,6 +93,26 @@ function SightInfo({ sight, text, onClose }: { sight: Sight; text: string; onClo
 }
 
 let nextNominatimRequest = 0;
+
+// Pull a header image for a place from the Russian Wikipedia REST summary.
+// Prefers the full-size original over the small thumbnail so card and dialog
+// imagery stays crisp. Returns undefined when the article has no picture.
+async function fetchWikiImage(name: string, signal: AbortSignal): Promise<string | undefined> {
+  try {
+    const response = await fetch(
+      `https://ru.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`,
+      { signal },
+    );
+    if (!response.ok) return undefined;
+    const json = (await response.json()) as {
+      originalimage?: { source?: string };
+      thumbnail?: { source?: string };
+    };
+    return json.originalimage?.source || json.thumbnail?.source;
+  } catch {
+    return undefined;
+  }
+}
 
 type RouteState = {
   signature: string;
@@ -297,6 +318,7 @@ export function Sights() {
   const [walkDay, setWalkDay] = useState(1);
   const [walkFocus, setWalkFocus] = useState<{ id: string; nonce: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
+  const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const [route, setRoute] = useState<RouteState>(null);
   const [routeError, setRouteError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -415,6 +437,35 @@ export function Sights() {
         : "Точки не найдены. Проверьте названия мест.",
     );
   }
+  async function fetchPhotosMissing() {
+    if (isReadOnly) return void toast();
+    const missing = walkAll.filter((sight) => !sight.photo);
+    if (!missing.length)
+      return void toast("У всех мест этого города уже есть фото");
+    setFetchingPhotos(true);
+    let found = 0;
+    for (const sight of missing) {
+      const photo = await fetchWikiImage(sight.name, geocodeController.current.signal);
+      if (!mounted.current) return;
+      if (photo) {
+        found += 1;
+        updateData((current) => ({
+          ...current,
+          sights: current.sights.map((item) =>
+            item.id === sight.id && !item.photo ? { ...item, photo } : item,
+          ),
+        }));
+      }
+      await new Promise((resolve) => window.setTimeout(resolve, 250));
+      if (!mounted.current) return;
+    }
+    setFetchingPhotos(false);
+    toast(
+      found
+        ? `Найдены фото: ${found} из ${missing.length}`
+        : "Фото не найдены. Проверьте названия мест.",
+    );
+  }
   async function openInfo(sight: Sight) {
     wikiRequest.current?.controller.abort();
     const controller = new AbortController();
@@ -429,14 +480,27 @@ export function Sights() {
       if (!response.ok) throw new Error();
       const json = (await response.json()) as {
         extract?: string;
+        originalimage?: { source?: string };
         thumbnail?: { source?: string };
       };
       if (wikiRequest.current?.id !== sight.id) return;
+      const photo = json.originalimage?.source || json.thumbnail?.source;
       setWiki({
         id: sight.id,
         text: json.extract || "Описание пока не найдено.",
-        photo: json.thumbnail?.source,
+        photo,
       });
+      // Remember the Wikipedia photo on the place itself so cards and the route
+      // gallery aren't blank. Only fills an empty slot — never overwrites a photo
+      // the user uploaded, and skipped for read-only viewers.
+      if (photo && !sight.photo && !isReadOnly) {
+        updateData((current) => ({
+          ...current,
+          sights: current.sights.map((item) =>
+            item.id === sight.id && !item.photo ? { ...item, photo } : item,
+          ),
+        }));
+      }
     } catch (error) {
       if ((error as Error).name === "AbortError" || wikiRequest.current?.id !== sight.id) return;
       setWiki({
@@ -565,6 +629,7 @@ export function Sights() {
             <select value={activeCity} onChange={(e) => { setWalkCity(e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ minWidth: 165, border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}><option value="">город…</option>{cities.map((city) => <option key={city}>{city}</option>)}</select>
             <select value={walkDay} onChange={(e) => { setWalkDay(+e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}>{[1, 2, 3].map((day) => <option value={day} key={day}>{days[day]}</option>)}</select>
             <button onClick={() => void geocodeMissing()} style={{ border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: 9, padding: "8px 11px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className="fa-solid fa-location-crosshairs" style={{ marginRight: 5 }} />{geocoding ? "Ищу…" : "Найти точки"}</button>
+            <button onClick={() => void fetchPhotosMissing()} style={{ border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: 9, padding: "8px 11px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className="fa-solid fa-image" style={{ marginRight: 5 }} />{fetchingPhotos ? "Ищу…" : "Найти фото"}</button>
           </div>
         </div>
         <div style={{ display: "flex", justifyContent: "flex-end", margin: "-4px 0 12px" }}><button onClick={async () => { if (!mapUrl) return void toast("Добавьте минимум две точки для маршрута"); try { await navigator.clipboard.writeText(mapUrl); } catch {} showCopied(true, false); }} style={{ display: "inline-flex", alignItems: "center", gap: 7, border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", color: "var(--ink,#3b3228)", borderRadius: 9, padding: "8px 11px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}><i className={copied ? "fa-solid fa-check" : "fa-regular fa-copy"} />{copied ? "Скопировано" : "Копировать маршрут"}</button></div>
@@ -714,6 +779,7 @@ export function Sights() {
         <SightInfo
           sight={selected}
           text={selected.description || (wiki?.id === selected.id ? wiki.text : "Загружаем описание…")}
+          photo={wiki?.id === selected.id ? wiki.photo : undefined}
           onClose={closeInfo}
         />
       )}
