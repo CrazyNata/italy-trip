@@ -65,7 +65,7 @@ export function Restaurants() {
   const [priceFilter, setPriceFilter] = useState("");
   const [minRating, setMinRating] = useState(0);
   const [areaFilter, setAreaFilter] = useState("");
-  const [sortBy, setSortBy] = useState<"default" | "rating" | "distance">("default");
+  const [sortBy, setSortBy] = useState<"default" | "rating" | "price" | "distance">("default");
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
   const [editor, setEditor] = useState<EditorState | null>(null);
@@ -92,6 +92,12 @@ export function Restaurants() {
       }));
     if (sortBy === "rating")
       filtered.sort((a, b) => (b.item.googleRating ?? 0) - (a.item.googleRating ?? 0));
+    if (sortBy === "price")
+      filtered.sort((a, b) => {
+        const priceA = priceLevels.indexOf(a.item.price ?? "");
+        const priceB = priceLevels.indexOf(b.item.price ?? "");
+        return (priceA < 0 ? Infinity : priceA) - (priceB < 0 ? Infinity : priceB);
+      });
     if (sortBy === "distance")
       filtered.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
     return filtered;
@@ -301,6 +307,7 @@ export function Restaurants() {
         >
           <option value="default" style={{ color: "var(--ink,#3b3228)" }}>по порядку</option>
           <option value="rating" style={{ color: "var(--ink,#3b3228)" }}>по оценке</option>
+          <option value="price" style={{ color: "var(--ink,#3b3228)" }}>по стоимости</option>
           <option value="distance" style={{ color: "var(--ink,#3b3228)" }}>по расстоянию</option>
         </select>
       </div>
