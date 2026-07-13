@@ -212,10 +212,10 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
       else if (item.tone === "soon" || item.tone === "today") counts.soon++;
       else if (item.tone === "past") counts.past++;
     }
-    const summary: Array<{ label: string; value: number; icon: string; color: string; background: string }> = [
-      { label: "бесплатно ещё", value: counts.free, icon: "fa-solid fa-circle-check", color: "#6f7a45", background: "#e6ead2" },
-      { label: "скоро платно", value: counts.soon, icon: "fa-solid fa-clock", color: "#c8892f", background: "#f6ead0" },
-      { label: "уже платно", value: counts.past, icon: "fa-solid fa-lock", color: "#b95c3f", background: "#f0ddd4" },
+    const summary: Array<{ label: string; value: number; color: string }> = [
+      { label: "бесплатно ещё", value: counts.free, color: "#6f7a45" },
+      { label: "скоро платно", value: counts.soon, color: "#c8892f" },
+      { label: "уже платно", value: counts.past, color: "#b95c3f" },
     ];
     return (
       <div style={{ animation: "fadeUp .4s ease both" }}>
@@ -225,20 +225,18 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
             <i className={sort === "desc" ? "fa-solid fa-arrow-down-wide-short" : "fa-solid fa-arrow-up-wide-short"}></i>Сначала {sort === "asc" ? "ближние" : "дальние"}
           </button>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(170px,1fr))", gap: 12, marginBottom: 18 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 18 }}>
           {summary.map((stat) => (
-            <div key={stat.label} style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 15, padding: "15px 18px", display: "flex", alignItems: "center", gap: 13 }}>
-              <span style={{ width: 38, height: 38, flex: "none", borderRadius: 12, background: stat.background, color: stat.color, display: "grid", placeItems: "center", fontSize: 16 }}><i className={stat.icon}></i></span>
-              <div>
-                <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: 26, lineHeight: 1 }}>{stat.value}</div>
-                <div style={{ fontSize: 11, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", fontWeight: 700, marginTop: 4 }}>{stat.label}</div>
+            <div key={stat.label} style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 14, padding: "14px 18px" }}>
+              <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: 26, lineHeight: 1 }}>{stat.value}</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 6 }}>
+                <span style={{ width: 8, height: 8, flex: "none", borderRadius: "50%", background: stat.color }} />
+                <span style={{ fontSize: 11, letterSpacing: ".08em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", fontWeight: 700 }}>{stat.label}</span>
               </div>
             </div>
           ))}
         </div>
-        <div style={{ position: "relative", borderRadius: 20, padding: 20, background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", overflow: "hidden" }}>
-          <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: .5, backgroundImage: "radial-gradient(var(--line,#d8c9ac) 1.1px, transparent 1.1px)", backgroundSize: "22px 22px" }}></div>
-          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {list.map(({ lodge, deadline: item }) => {
             const isNumber = item.days !== null && item.days > 0;
             const big = item.days === null ? "—" : item.tone === "past" ? "платно" : item.days === 0 ? "сегодня" : String(item.days);
@@ -248,26 +246,27 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
               className="cancel-row"
               title="Открыть во вкладке «Жильё»"
               onClick={() => navigate(`/lodging?focus=${lodge.id}`)}
-              style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderLeft: `4px solid ${item.color}`, borderRadius: 14, padding: "15px 18px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 15, boxShadow: "0 1px 3px rgba(59,50,40,.05)", cursor: "pointer", transition: "box-shadow .2s, transform .2s" }}
+              style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderLeft: `3px solid ${item.color}`, borderRadius: 12, padding: "15px 18px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 15, cursor: "pointer", transition: "border-color .2s, background .2s" }}
             >
-              <span style={{ width: 44, height: 44, flex: "none", borderRadius: 13, background: item.background, color: item.color, display: "grid", placeItems: "center", fontSize: 18 }}><i className={item.icon}></i></span>
               <div style={{ flex: 1, minWidth: 180 }}>
-                <div style={{ fontWeight: 700, fontSize: 18, display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 16, lineHeight: 1 }}>{flag(lodge.city)}</span>{lodge.name}</div>
-                <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)", marginTop: 2 }}>{lodge.city} · {lodge.dates}</div>
-                <div style={{ marginTop: 7 }}><span style={{ background: item.background, color: item.color, fontSize: 11, fontWeight: 700, letterSpacing: ".04em", textTransform: "uppercase", padding: "4px 11px", borderRadius: 999, whiteSpace: "nowrap" }}>{badges[item.tone]}</span></div>
-              </div>
-              <div style={{ textAlign: "right", minWidth: 108 }}>
-                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "flex-end", gap: 4 }}>
-                  <span style={{ fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: isNumber ? 34 : 20, lineHeight: 1, color: item.color }}>{big}</span>
-                  {isNumber && <span style={{ fontSize: 13, fontWeight: 700, color: item.color }}>дн.</span>}
+                <div style={{ fontWeight: 700, fontSize: 17, display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 15, lineHeight: 1 }}>{flag(lodge.city)}</span>{lodge.name}</div>
+                <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)", marginTop: 3 }}>{lodge.city} · {lodge.dates}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 8 }}>
+                  <span style={{ width: 7, height: 7, flex: "none", borderRadius: "50%", background: item.color }} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: "var(--muted,#8a7d6b)" }}>{badges[item.tone]}</span>
                 </div>
-                <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)", marginTop: 6 }}>до {item.label}</div>
               </div>
-              <i className="fa-solid fa-chevron-right cancel-chevron" style={{ fontSize: 13, color: "var(--muted,#8a7d6b)", flex: "none", opacity: .5 }}></i>
+              <div style={{ textAlign: "right", minWidth: 96 }}>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "flex-end", gap: 4 }}>
+                  <span style={{ fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: isNumber ? 30 : 19, lineHeight: 1, color: "var(--ink,#3b3228)" }}>{big}</span>
+                  {isNumber && <span style={{ fontSize: 13, color: "var(--muted,#8a7d6b)" }}>дн.</span>}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)", marginTop: 5 }}>до {item.label}</div>
+              </div>
+              <i className="fa-solid fa-chevron-right cancel-chevron" style={{ fontSize: 13, color: "var(--muted,#8a7d6b)", flex: "none", opacity: .45 }}></i>
             </div>
             );
           })}
-          </div>
         </div>
       </div>
     );

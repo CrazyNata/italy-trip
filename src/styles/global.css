@@ -87,8 +87,8 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--ac); outline-of
 
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
 .exp-row:hover { background: var(--soft); }
-.cancel-row:hover { box-shadow: 0 6px 18px rgba(59,50,40,.12); transform: translateY(-1px); }
-.cancel-row:hover .cancel-chevron { opacity: 1; }
+.cancel-row:hover { background: var(--soft); }
+.cancel-row:hover .cancel-chevron { opacity: .9; }
 a { color: var(--ac); text-decoration: none; }
 input:focus, textarea:focus, select:focus { outline: none; }
 ::placeholder { color: var(--muted); opacity: .65; }
