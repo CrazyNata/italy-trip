@@ -270,6 +270,7 @@ export function Restaurants() {
   });
   const groupLabel: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ac,#b95c3f)", whiteSpace: "nowrap" };
   const selectStyle = (active: boolean): CSSProperties => ({
+    flex: "1 1 auto", minWidth: 90,
     border: `1px solid ${active ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`,
     borderRadius: "var(--r-2)", padding: "7px 12px", fontSize: 12.5, fontWeight: 600,
     background: active ? "var(--ac,#b95c3f)" : "var(--card,#fff)",
