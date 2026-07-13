@@ -48,23 +48,6 @@ function distanceKm(a: [number, number], b: [number, number]) {
 const formatDistance = (km: number) =>
   km < 1 ? `${Math.round(km * 1000)} м` : `${km.toFixed(km < 10 ? 1 : 0)} км`;
 
-function Stars({ value, onSet }: { value: number; onSet: (rating: number) => void }) {
-  return (
-    <div style={{ display: "flex", gap: 2 }} title="Моя оценка">
-      {[1, 2, 3, 4, 5].map((star) => (
-        <button
-          key={star}
-          onClick={() => onSet(value === star ? 0 : star)}
-          style={{ border: "none", background: "none", cursor: "pointer", padding: 1, fontSize: 15, lineHeight: 1, color: star <= value ? "#e0a740" : "#d3c4a8" }}
-          title={`${star} из 5`}
-        >
-          <i className={star <= value ? "fa-solid fa-star" : "fa-regular fa-star"} />
-        </button>
-      ))}
-    </div>
-  );
-}
-
 export function Restaurants() {
   const { data, updateData, isReadOnly } = useTripData();
   const confirm = useConfirm();
@@ -93,13 +76,13 @@ export function Restaurants() {
       .filter((item) => !cityFilter || item.city === cityFilter)
       .filter((item) => !areaFilter || item.area === areaFilter)
       .filter((item) => !priceFilter || item.price === priceFilter)
-      .filter((item) => !minRating || (item.rating ?? 0) >= minRating)
+      .filter((item) => !minRating || (item.googleRating ?? 0) >= minRating)
       .map((item) => ({
         item,
         distance: userLoc && item.lnglat ? distanceKm(userLoc, item.lnglat) : null,
       }));
     if (sortBy === "rating")
-      filtered.sort((a, b) => (b.item.rating ?? 0) - (a.item.rating ?? 0));
+      filtered.sort((a, b) => (b.item.googleRating ?? 0) - (a.item.googleRating ?? 0));
     if (sortBy === "distance")
       filtered.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
     return filtered;
@@ -402,13 +385,16 @@ export function Restaurants() {
                       onChange={(event) => edit(item.id, { name: event.target.value })}
                       style={{ fontFamily: "'Playfair Display',serif", fontSize: 23, fontWeight: 600, border: "none", background: "none", width: "100%", padding: "2px 0", color: "var(--ink,#3b3228)" }}
                     />
-                    {item.googleRating != null && (
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                    {item.googleRating != null ? (
                       <a
                         href={item.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.name}, ${item.city}`)}`}
                         target="_blank"
                         rel="noreferrer"
                         title="Рейтинг Google"
-                        style={{ alignSelf: "flex-start", marginTop: 6, display: "inline-flex", alignItems: "center", gap: 7, textDecoration: "none", border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", borderRadius: "var(--r-2)", padding: "3px 11px 3px 10px" }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 7, textDecoration: "none", border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", borderRadius: "var(--r-2)", padding: "3px 11px 3px 10px" }}
                       >
                         <span style={{ fontFamily: "Arial, sans-serif", fontWeight: 800, fontSize: 12.5, letterSpacing: "-.02em" }}>
                           <span style={{ color: "#4285F4" }}>G</span>
@@ -426,10 +412,7 @@ export function Restaurants() {
                           </span>
                         )}
                       </a>
-                    )}
-                  </div>
-
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                    ) : <span />}
                     <div style={{ display: "flex", gap: 4 }} title="Уровень цен">
                       {priceLevels.map((level) => (
                         <button
@@ -441,7 +424,6 @@ export function Restaurants() {
                         </button>
                       ))}
                     </div>
-                    <Stars value={item.rating ?? 0} onSet={(rating) => edit(item.id, { rating })} />
                   </div>
 
                   <input
