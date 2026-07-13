@@ -4,7 +4,7 @@ export function Photos() {
       <div
         style={{
           border: "2px dashed var(--line)",
-          borderRadius: 18,
+          borderRadius: "var(--r-5)",
           padding: "56px 24px",
           textAlign: "center",
           color: "var(--muted)",

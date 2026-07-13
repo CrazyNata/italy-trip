@@ -198,11 +198,11 @@ export function Overview() {
   const headingStyle = { fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: 22, margin: "34px 0 4px" } as const;
   const noteStyle = { margin: "0 0 16px", fontSize: 13, color: "var(--muted,#8a7d6b)" } as const;
   return <div style={{ animation: "fadeUp .4s ease both" }}>
-    <div onClick={() => setLightbox(true)} style={{ position: "relative", borderRadius: 18, overflow: "hidden", minHeight: 340, border: "1px solid var(--line,#e7dcc7)", cursor: "zoom-in" }}>
+    <div onClick={() => setLightbox(true)} style={{ position: "relative", borderRadius: "var(--r-5)", overflow: "hidden", minHeight: 340, border: "1px solid var(--line,#e7dcc7)", cursor: "zoom-in" }}>
       {slides.map((slide, slideIndex) => <div key={slide[0]} style={{ position: "absolute", inset: 0, opacity: slideIndex === index ? 1 : 0, transition: "opacity .6s ease", zIndex: slideIndex === index ? 2 : 1 }}>
         <img src={imageUrl(`hero-${slide[0]}.png`)} alt={slide[1]} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         <div style={{ position: "absolute", left: 0, bottom: 0, right: 0, padding: 24, background: "linear-gradient(to top,rgba(45,36,26,.72),transparent)", pointerEvents: "none" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,.16)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 600, padding: "4px 11px", borderRadius: 999 }}>{slide[2]}</div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,.16)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 600, padding: "4px 11px", borderRadius: "var(--r-pill)" }}>{slide[2]}</div>
           <div style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontSize: 30, fontWeight: 600, marginTop: 8 }}>{slide[3]}</div>
           <div style={{ color: "rgba(255,255,255,.85)", fontSize: 13, marginTop: 2 }}>{slide[4]}</div>
         </div>
@@ -215,9 +215,9 @@ export function Overview() {
 
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", margin: "34px 0 4px" }}>
       <h2 style={{ ...headingStyle, margin: 0 }}>Погода</h2>
-      <div style={{ display: "inline-flex", background: "var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 999, padding: 3 }}>
+      <div style={{ display: "inline-flex", background: "var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-pill)", padding: 3 }}>
         {(["now", "then"] as const).map((value) => (
-          <button key={value} onClick={() => changeMode(value)} style={{ border: "none", borderRadius: 999, padding: "6px 15px", fontSize: 13, fontWeight: 600, cursor: "pointer", background: mode === value ? "var(--ac,#b95c3f)" : "transparent", color: mode === value ? "#fff" : "var(--muted,#8a7d6b)" }}>
+          <button key={value} onClick={() => changeMode(value)} style={{ border: "none", borderRadius: "var(--r-pill)", padding: "6px 15px", fontSize: 13, fontWeight: 600, cursor: "pointer", background: mode === value ? "var(--ac,#b95c3f)" : "transparent", color: mode === value ? "#fff" : "var(--muted,#8a7d6b)" }}>
             {value === "now" ? "Сейчас" : "В поездке"}
           </button>
         ))}
@@ -234,12 +234,12 @@ export function Overview() {
       } else {
         subtitle = `${state?.[0] || (current ? "Погода недоступна" : "загрузка…")} · сегодня`;
       }
-      return <div key={city} style={{ position: "relative", borderRadius: 16, overflow: "hidden", height: 150, border: "1px solid var(--line,#e7dcc7)", background: "var(--track,#f0e5d1)" }}>
+      return <div key={city} style={{ position: "relative", borderRadius: "var(--r-4)", overflow: "hidden", height: 150, border: "1px solid var(--line,#e7dcc7)", background: "var(--track,#f0e5d1)" }}>
         {cityPhotos[city] && <img src={imageUrl(`hero-${cityPhotos[city]}.png`)} alt={city} loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(24,18,12,.82),rgba(24,18,12,.1) 52%,rgba(24,18,12,.42))", pointerEvents: "none" }} />
         <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "13px 15px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", pointerEvents: "none" }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", lineHeight: 1.35, textShadow: "0 1px 8px rgba(0,0,0,.6)" }}>{!current ? "…" : "error" in current ? "—" : `Днём ${Math.round(current.high)}° · Ночью ${Math.round(current.low)}°`}</span>
-          <span style={{ width: 34, height: 34, flex: "none", borderRadius: 10, background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", display: "grid", placeItems: "center" }}><i className={state?.[1] || "fa-solid fa-cloud"} style={{ color: "#fff", fontSize: 16 }} /></span>
+          <span style={{ width: 34, height: 34, flex: "none", borderRadius: "var(--r-2)", background: "rgba(255,255,255,.18)", backdropFilter: "blur(4px)", display: "grid", placeItems: "center" }}><i className={state?.[1] || "fa-solid fa-cloud"} style={{ color: "#fff", fontSize: 16 }} /></span>
         </div>
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, padding: "13px 15px", pointerEvents: "none" }}>
           <div title={city} style={{ fontWeight: 700, fontSize: 15, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textShadow: "0 1px 6px rgba(0,0,0,.6)" }}>{city}</div>
@@ -255,15 +255,15 @@ export function Overview() {
       const day = data.days.find((item) => item.dayMapUrl?.trim() && item.city.includes(short));
       const url = day?.dayMapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lodge.city)}`;
       const isActive = focus?.city === lodge.city;
-      return <div key={lodge.id} role="button" tabIndex={0} onClick={() => focusOn(lodge.city)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); focusOn(lodge.city); } }} title="Навести карту на город" style={{ display: "flex", alignItems: "center", gap: 11, background: isActive ? "var(--soft,#fdfaf3)" : "var(--card,#fff)", border: `1px solid ${isActive ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: 12, padding: "11px 14px", color: "var(--ink)", cursor: "pointer", transition: "border-color .2s, background .2s" }}>
+      return <div key={lodge.id} role="button" tabIndex={0} onClick={() => focusOn(lodge.city)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); focusOn(lodge.city); } }} title="Навести карту на город" style={{ display: "flex", alignItems: "center", gap: 11, background: isActive ? "var(--soft,#fdfaf3)" : "var(--card,#fff)", border: `1px solid ${isActive ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, borderRadius: "var(--r-3)", padding: "11px 14px", color: "var(--ink)", cursor: "pointer", transition: "border-color .2s, background .2s" }}>
         <span style={{ width: 24, height: 24, flex: "none", borderRadius: "50%", background: "var(--ac,#b95c3f)", color: "#fff", display: "grid", placeItems: "center", fontSize: 12, fontWeight: 700 }}>{i + 1}</span>
         <span style={{ flex: 1, minWidth: 0 }}><span style={{ display: "block", fontWeight: 600, fontSize: 14, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{lodge.city}</span><span style={{ display: "block", fontSize: 12, color: "var(--muted,#8a7d6b)" }}>{lodge.dates}</span></span>
-        <a href={url} target="_blank" rel="noopener" onClick={(event) => event.stopPropagation()} title="Открыть в Google Maps" style={{ flex: "none", color: "var(--muted,#8a7d6b)", padding: "4px 6px", borderRadius: 8, display: "grid", placeItems: "center" }}><i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: 12 }} /></a>
+        <a href={url} target="_blank" rel="noopener" onClick={(event) => event.stopPropagation()} title="Открыть в Google Maps" style={{ flex: "none", color: "var(--muted,#8a7d6b)", padding: "4px 6px", borderRadius: "var(--r-1)", display: "grid", placeItems: "center" }}><i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: 12 }} /></a>
       </div>;
     })}</div>
     <div ref={mapWrapRef} style={{ position: "relative", scrollMarginTop: 16 }}><RouteMap cities={data.lodging.map((lodge) => lodge.city)} focus={focus} /><div style={{ position: "absolute", right: 14, bottom: 14, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
-      <button onClick={() => void copyText(routeUrl).then(() => showCopied(true, false))} title="Скопировать ссылку на карту" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", cursor: "pointer" }}><i className={copied ? "fa-solid fa-check" : "fa-solid fa-copy"} />{copied ? "Скопировано" : "Скопировать ссылку"}</button>
-      <a href={routeUrl} target="_blank" rel="noopener" title="Открыть маршрут в Google Maps" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", textDecoration: "none" }}><i className="fa-solid fa-arrow-up-right-from-square" />Открыть в Google Maps</a>
+      <button onClick={() => void copyText(routeUrl).then(() => showCopied(true, false))} title="Скопировать ссылку на карту" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: "var(--r-2)", padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", cursor: "pointer" }}><i className={copied ? "fa-solid fa-check" : "fa-solid fa-copy"} />{copied ? "Скопировано" : "Скопировать ссылку"}</button>
+      <a href={routeUrl} target="_blank" rel="noopener" title="Открыть маршрут в Google Maps" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: "var(--r-2)", padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", textDecoration: "none" }}><i className="fa-solid fa-arrow-up-right-from-square" />Открыть в Google Maps</a>
     </div></div>
 
     {lightbox && <Lightbox images={slides.map((slide) => imageUrl(`hero-${slide[0]}.png`))} index={index} alt={slides[index][1]} onClose={() => setLightbox(false)} onIndex={setIndex} />}

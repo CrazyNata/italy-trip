@@ -221,13 +221,13 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
       <div style={{ animation: "fadeUp .4s ease both" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, margin: "0 0 16px" }}>
           <p style={{ margin: 0, fontSize: 13, color: "var(--muted,#8a7d6b)", maxWidth: 560 }}>Сроки бесплатной отмены по каждому жилью — по возрастанию срочности.</p>
-          <button onClick={() => setSort(sort === "asc" ? "desc" : "asc")} style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", color: "var(--ink)", borderRadius: 10, padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+          <button onClick={() => setSort(sort === "asc" ? "desc" : "asc")} style={{ display: "inline-flex", alignItems: "center", gap: 8, border: "1px solid var(--line,#e7dcc7)", background: "var(--card,#fff)", color: "var(--ink)", borderRadius: "var(--r-2)", padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
             <i className={sort === "desc" ? "fa-solid fa-arrow-down-wide-short" : "fa-solid fa-arrow-up-wide-short"}></i>Сначала {sort === "asc" ? "ближние" : "дальние"}
           </button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12, marginBottom: 18 }}>
           {summary.map((stat) => (
-            <div key={stat.label} style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 14, padding: "14px 18px" }}>
+            <div key={stat.label} style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-3)", padding: "14px 18px" }}>
               <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: 26, lineHeight: 1 }}>{stat.value}</div>
               <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 6 }}>
                 <span style={{ width: 8, height: 8, flex: "none", borderRadius: "50%", background: stat.color }} />
@@ -246,7 +246,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
               className="cancel-row"
               title="Открыть во вкладке «Жильё»"
               onClick={() => navigate(`/lodging?focus=${lodge.id}`)}
-              style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderLeft: `3px solid ${item.color}`, borderRadius: 12, padding: "15px 18px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 15, cursor: "pointer", transition: "border-color .2s, background .2s" }}
+              style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderLeft: `3px solid ${item.color}`, borderRadius: "var(--r-3)", padding: "15px 18px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 15, cursor: "pointer", transition: "border-color .2s, background .2s" }}
             >
               <div style={{ flex: 1, minWidth: 180 }}>
                 <div style={{ fontWeight: 700, fontSize: 17, display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 15, lineHeight: 1 }}>{flag(lodge.city)}</span>{lodge.name}</div>
@@ -276,7 +276,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
     lightbox && data.lodging.find((lodge) => lodge.id === lightbox.id);
   return (
     <>
-      <div className="lodging-grid" style={{ animation: "fadeUp .4s ease both", position: "relative", borderRadius: 20, padding: 20, background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", overflow: "hidden" }}>
+      <div className="lodging-grid" style={{ animation: "fadeUp .4s ease both", position: "relative", borderRadius: "var(--r-5)", padding: 20, background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: .5, backgroundImage: "radial-gradient(var(--line,#d8c9ac) 1.1px, transparent 1.1px)", backgroundSize: "22px 22px" }}></div>
         <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 18 }}>
         {data.lodging.map((lodge) => {
@@ -288,7 +288,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
             <article
               id={`lodge-card-${lodge.id}`}
               key={lodge.id}
-              style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: 16, overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 1px 3px rgba(59,50,40,.05)", scrollMarginTop: 20, transition: "box-shadow .3s,border-color .3s" }}
+              style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-4)", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 1px 3px rgba(59,50,40,.05)", scrollMarginTop: 20, transition: "box-shadow .3s,border-color .3s" }}
             >
               {photos.length ? (
                 <div style={{ position: "relative", height: 230, overflow: "hidden" }}>
@@ -299,7 +299,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
                     alt="фото жилья"
                     onClick={() => setLightbox({ id: lodge.id, index })}
                   />
-                  <span style={{ position: "absolute", top: 12, left: 12, background: statusColor, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999, letterSpacing: ".04em" }}>{lodge.status}</span>
+                  <span style={{ position: "absolute", top: 12, left: 12, background: statusColor, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: "var(--r-pill)", letterSpacing: ".04em" }}>{lodge.status}</span>
                   {photos.length > 1 && (
                     <>
                       <button
@@ -330,7 +330,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
               ) : (
                 <div className="slot-wrap" style={{ position: "relative", height: 230 }}>
                   <div style={{ width: "100%", height: 230, display: "grid", placeItems: "center", background: "var(--track,#efe4cf)", color: "var(--muted,#8a7d6b)", fontSize: 13 }}>фото жилья</div>
-                  <span style={{ position: "absolute", top: 12, left: 12, background: statusColor, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: 999, letterSpacing: ".04em" }}>{lodge.status}</span>
+                  <span style={{ position: "absolute", top: 12, left: 12, background: statusColor, color: "#fff", fontSize: 11, fontWeight: 700, padding: "4px 10px", borderRadius: "var(--r-pill)", letterSpacing: ".04em" }}>{lodge.status}</span>
                 </div>
               )}
               <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
@@ -350,7 +350,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
                     <button
                       key={status}
                       onClick={() => edit(lodge.id, "status", status)}
-                      style={{ border: `1px solid ${lodge.status === status ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: lodge.status === status ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: lodge.status === status ? "#fff" : "var(--muted,#8a7d6b)", fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: 999, cursor: "pointer" }}
+                      style={{ border: `1px solid ${lodge.status === status ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: lodge.status === status ? "var(--ac,#b95c3f)" : "var(--card,#fff)", color: lodge.status === status ? "#fff" : "var(--muted,#8a7d6b)", fontSize: 12, fontWeight: 600, padding: "6px 12px", borderRadius: "var(--r-pill)", cursor: "pointer" }}
                     >
                       {status}
                     </button>
@@ -362,7 +362,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
                   onChange={(event) =>
                     edit(lodge.id, "notes", event.target.value)
                   }
-                  style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: 9, padding: "8px 11px", fontSize: 13, background: "var(--soft,#fdfaf3)", marginTop: 2 }}
+                  style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 11px", fontSize: 13, background: "var(--soft,#fdfaf3)", marginTop: 2 }}
                 />
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: "auto" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
@@ -394,7 +394,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
           );
         })}
         <button
-          style={{ border: "2px dashed #d8c9ac", background: "none", borderRadius: 16, minHeight: 220, color: "#a2937c", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "grid", placeItems: "center" }}
+          style={{ border: "2px dashed #d8c9ac", background: "none", borderRadius: "var(--r-4)", minHeight: 220, color: "#a2937c", fontSize: 15, fontWeight: 600, cursor: "pointer", display: "grid", placeItems: "center" }}
           onClick={() =>
             guard(() =>
               updateData((current) => {

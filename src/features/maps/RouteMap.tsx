@@ -43,5 +43,5 @@ export function RouteMap({cities,focus}:{cities:string[];focus?:{city:string;non
     if(map.loaded())go();else map.once('load',go);
   },[focus?.city,focus?.nonce]);
   const message=error||(!loading&&!mapboxToken?"Токен карты недоступен.":!mapboxToken?"Карта загружается…":"");
-  return <div className="map-box" style={{position:'relative',borderRadius:16,overflow:'hidden',border:'1px solid var(--line,#e7dcc7)',height:440,background:'var(--track,#efe4cf)'}}><div ref={ref} style={{position:'absolute',inset:0}}/>{message&&<div className="absolute inset-0 grid place-items-center bg-[var(--track)] p-6 text-center text-sm text-[var(--muted)]" role="status">{message}</div>}</div>
+  return <div className="map-box" style={{position:'relative',borderRadius: "var(--r-4)",overflow:'hidden',border:'1px solid var(--line,#e7dcc7)',height:440,background:'var(--track,#efe4cf)'}}><div ref={ref} style={{position:'absolute',inset:0}}/>{message&&<div className="absolute inset-0 grid place-items-center bg-[var(--track)] p-6 text-center text-sm text-[var(--muted)]" role="status">{message}</div>}</div>
 }
