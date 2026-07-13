@@ -369,24 +369,6 @@ export function Restaurants() {
                   )}
                 </div>
                 <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 15, lineHeight: 1 }}>{flag(item.city)}</span>
-                      <input
-                        value={item.city}
-                        onChange={(event) => edit(item.id, { city: event.target.value })}
-                        placeholder="Впишите город"
-                        title="Город, где находится ресторан"
-                        style={{ flex: 1, minWidth: 0, border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", borderRadius: "var(--r-1)", color: "var(--ac,#b95c3f)", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", fontSize: 11.5, padding: "5px 9px" }}
-                      />
-                    </div>
-                    <input
-                      value={item.name}
-                      onChange={(event) => edit(item.id, { name: event.target.value })}
-                      style={{ fontFamily: "'Playfair Display',serif", fontSize: 23, fontWeight: 600, border: "none", background: "none", width: "100%", padding: "2px 0", color: "var(--ink,#3b3228)" }}
-                    />
-                  </div>
-
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                     {item.googleRating != null ? (
                       <a
@@ -424,6 +406,24 @@ export function Restaurants() {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  <div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 15, lineHeight: 1 }}>{flag(item.city)}</span>
+                      <input
+                        value={item.city}
+                        onChange={(event) => edit(item.id, { city: event.target.value })}
+                        placeholder="Впишите город"
+                        title="Город, где находится ресторан"
+                        style={{ flex: 1, minWidth: 0, border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", borderRadius: "var(--r-1)", color: "var(--ac,#b95c3f)", fontWeight: 700, letterSpacing: ".1em", textTransform: "uppercase", fontSize: 11.5, padding: "5px 9px" }}
+                      />
+                    </div>
+                    <input
+                      value={item.name}
+                      onChange={(event) => edit(item.id, { name: event.target.value })}
+                      style={{ fontFamily: "'Playfair Display',serif", fontSize: 23, fontWeight: 600, border: "none", background: "none", width: "100%", padding: "2px 0", color: "var(--ink,#3b3228)" }}
+                    />
                   </div>
 
                   <input
