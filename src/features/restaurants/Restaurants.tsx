@@ -221,14 +221,6 @@ export function Restaurants() {
       setEditor({ draft, originalPhotos: [], uploadedPhotos: [], isNew: true });
     });
 
-  const chip = (active: boolean): CSSProperties => ({
-    border: `1px solid ${active ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`,
-    background: active ? "var(--ac,#b95c3f)" : "var(--card,#fff)",
-    color: active ? "#fff" : "var(--ink,#3b3228)",
-    fontSize: 12.5, fontWeight: 600, padding: "6px 12px", borderRadius: "var(--r-2)", cursor: "pointer", whiteSpace: "nowrap",
-    boxShadow: active ? "0 2px 8px color-mix(in srgb, var(--ac,#b95c3f) 45%, transparent)" : "none",
-    transition: "background .15s, box-shadow .15s, color .15s",
-  });
   const groupLabel: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ac,#b95c3f)", whiteSpace: "nowrap" };
   const selectStyle = (active: boolean): CSSProperties => ({
     flex: "1 1 auto", minWidth: 90,
@@ -264,11 +256,16 @@ export function Restaurants() {
         {areas.length > 0 && (
           <>
             <span style={groupLabel}>Район</span>
-            {areas.map((area) => (
-              <button key={area} style={chip(areaFilter === area)} onClick={() => setAreaFilter(areaFilter === area ? "" : area)}>
-                <i className="fa-solid fa-house" style={{ fontSize: 11, marginRight: 6 }} />{area}
-              </button>
-            ))}
+            <select
+              value={areaFilter}
+              onChange={(event) => setAreaFilter(event.target.value)}
+              style={{ ...selectStyle(!!areaFilter), maxWidth: 180 }}
+            >
+              <option value="" style={{ color: "var(--ink,#3b3228)" }}>Все районы</option>
+              {areas.map((area) => (
+                <option key={area} value={area} style={{ color: "var(--ink,#3b3228)" }}>{area}</option>
+              ))}
+            </select>
           </>
         )}
         <select title="Цена" value={priceFilter} onChange={(event) => setPriceFilter(event.target.value)} style={selectStyle(!!priceFilter)}>
