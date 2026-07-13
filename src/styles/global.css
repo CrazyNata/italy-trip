@@ -86,6 +86,7 @@ button:focus-visible, a:focus-visible { outline: 2px solid var(--ac); outline-of
 @keyframes confirmPop { from { opacity:0; transform:translateY(8px) scale(.98); } to { opacity:1; transform:none; } }
 
 @keyframes fadeUp { from { opacity: 0; transform: translateY(8px) } to { opacity: 1; transform: none } }
+.exp-row:hover { background: var(--soft); }
 a { color: var(--ac); text-decoration: none; }
 input:focus, textarea:focus, select:focus { outline: none; }
 ::placeholder { color: var(--muted); opacity: .65; }
