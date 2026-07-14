@@ -34,6 +34,19 @@ const days: Record<number, string> = {
   2: "День 2: центр Рима",
   3: "День 3: Ватикан и Боргезе",
 };
+// Именованные дни маршрута для каждого города — как у Рима.
+const cityDayLabels: Record<string, Record<number, string>> = {
+  "Рим, Италия": days,
+  "кьоджа, Италия": { 1: "День 1: Кьоджа — каналы и лагуна" },
+  "Фильине-Вальдарно, Италия": { 1: "День 1: Фильине-Вальдарно" },
+  "Кастель-Гандольфо, Италия": { 1: "День 1: Кастель-Гандольфо" },
+};
+const cityLabel = (city: string) => {
+  const bare = city.replace(/,\s*Италия\s*$/i, "").trim();
+  return bare ? bare.charAt(0).toUpperCase() + bare.slice(1) : "город";
+};
+const dayName = (city: string, day: number) =>
+  cityDayLabels[city]?.[day] || `День ${day}: ${cityLabel(city)}`;
 const toast = (message?: string) =>
   window.dispatchEvent(
     new CustomEvent(message ? "trip:toast" : "trip:readonly", {
@@ -345,7 +358,16 @@ export function Sights() {
     }, {});
   const defaultWalkCity = Object.entries(routeCities).sort(([, a], [, b]) => b - a)[0]?.[0] || cities[0] || "";
   const activeCity = cities.includes(walkCity) ? walkCity : defaultWalkCity;
-  const walkTitle = activeCity === "Рим, Италия" ? days[walkDay] : "Маршрут по городу";
+  const dayNumbers = [
+    ...new Set(
+      data.sights
+        .filter((sight) => sight.city === activeCity && sight.walkDay)
+        .map((sight) => sight.walkDay as number),
+    ),
+  ].sort((a, b) => a - b);
+  const cityDayOptions = dayNumbers.length ? dayNumbers : [1];
+  const effectiveDay = cityDayOptions.includes(walkDay) ? walkDay : cityDayOptions[0];
+  const walkTitle = dayName(activeCity, effectiveDay);
   const guard = (action: () => void) => (isReadOnly ? toast() : action());
   const mutate = (id: string, change: Partial<Sight>) =>
     guard(() =>
@@ -367,7 +389,7 @@ export function Sights() {
     .filter(
       (sight) =>
         sight.city === activeCity &&
-        (!sight.walkDay || sight.walkDay === walkDay),
+        (!sight.walkDay || sight.walkDay === effectiveDay),
     )
     .sort((a, b) => (a.walkOrder ?? a._index) - (b.walkOrder ?? b._index));
   const located = walkAll
@@ -608,26 +630,12 @@ export function Sights() {
   return (
     <>
       <div style={{ animation: "fadeUp .4s ease both" }}>
-      <div className="sights-controls" style={{ background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-4)", padding: "14px 16px", display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 22 }}>
-        <input value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} placeholder="город" style={{ width: 130, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)" }} />
-        <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="что посмотреть / куда сходить" style={{ flex: 1, minWidth: 160, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)" }} />
-        <select value={draft.group} onChange={(e) => setDraft({ ...draft, group: e.target.value })} style={{ width: 150, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", cursor: "pointer" }}><option value="">важность…</option><option>обязательные</option><option>необязательные</option></select>
-        <select value={draft.sub} onChange={(e) => setDraft({ ...draft, sub: e.target.value })} style={{ width: 160, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", cursor: "pointer" }}><option value="">подкатегория…</option>{subs.filter((sub) => sub !== "еда").map((sub) => <option key={sub}>{sub}</option>)}</select>
-        <button onClick={add} style={{ border: "none", background: "var(--ac,#b95c3f)", color: "#fff", borderRadius: "var(--r-2)", padding: "0 18px", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7 }}><i className="fa-solid fa-plus" style={{ fontSize: 12 }} />Добавить</button>
-      </div>
-
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 20 }}>
-        <span style={{ fontSize: 13, color: "var(--muted,#8a7d6b)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7 }}><i className="fa-solid fa-filter" style={{ fontSize: 12 }} />Фильтр</span>
-        {(["city", "group", "sub"] as const).map((key) => <select key={key} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 11px", fontSize: 13, background: "var(--card,#fff)", color: "var(--ink,#3b3228)", cursor: "pointer" }}><option value="">{key === "city" ? "все города" : key === "group" ? "вся важность" : "все подкатегории"}</option>{(key === "city" ? cities : key === "group" ? ["обязательные", "необязательные"] : subs.filter((sub) => sub !== "еда")).map((value) => <option key={value}>{value}</option>)}</select>)}
-        {Object.values(filter).some(Boolean) && <button onClick={() => setFilter({ city: "", group: "", sub: "" })} style={{ border: "none", background: "none", color: "var(--ac,#b95c3f)", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "8px 6px" }}><i className="fa-solid fa-xmark" style={{ marginRight: 5, fontSize: 12 }} />Сбросить</button>}
-      </div>
-
       <section style={{ background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-4)", padding: 16, margin: "0 0 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 13 }}>
           <div><div style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 600 }}><i className="fa-solid fa-person-walking" style={{ color: "var(--ac,#b95c3f)", fontSize: 18, marginRight: 7 }} />Пеший маршрут</div><div style={{ fontSize: 12.5, color: "var(--muted,#8a7d6b)", marginTop: 3 }}>Нажмите на пункт списка, чтобы показать его на карте. Порядок меняйте стрелками или перетаскиванием маркеров.</div></div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <select value={activeCity} onChange={(e) => { setWalkCity(e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ minWidth: 150, maxWidth: 175, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}><option value="">город…</option>{cities.map((city) => <option key={city}>{city}</option>)}</select>
-            <select value={walkDay} onChange={(e) => { setWalkDay(+e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ flex: "1 1 auto", minWidth: 165, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}>{[1, 2, 3].map((day) => <option value={day} key={day}>{days[day]}</option>)}</select>
+            <select value={effectiveDay} onChange={(e) => { setWalkDay(+e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ flex: "1 1 auto", minWidth: 165, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}>{cityDayOptions.map((day) => <option value={day} key={day}>{dayName(activeCity, day)}</option>)}</select>
             <button onClick={() => void geocodeMissing()} style={{ flex: "1 1 auto", justifyContent: "center", display: "inline-flex", alignItems: "center", border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className="fa-solid fa-location-crosshairs" style={{ marginRight: 5 }} />{geocoding ? "Ищу…" : "Найти точки"}</button>
             <button onClick={() => void fetchPhotosMissing()} style={{ flex: "1 1 auto", justifyContent: "center", display: "inline-flex", alignItems: "center", border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className="fa-solid fa-image" style={{ marginRight: 5 }} />{fetchingPhotos ? "Ищу…" : "Найти фото"}</button>
             <button onClick={async () => { if (!mapUrl) return void toast("Добавьте минимум две точки для маршрута"); try { await navigator.clipboard.writeText(mapUrl); } catch {} showCopied(true, false); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--line,#e7dcc7)", background: "transparent", color: "var(--muted,#8a7d6b)", borderRadius: "var(--r-1)", padding: "5px 9px", fontSize: 11.5, fontWeight: 600, cursor: "pointer" }}><i className={copied ? "fa-solid fa-check" : "fa-regular fa-copy"} style={{ fontSize: 11 }} />{copied ? "Скопировано" : "Копировать маршрут"}</button>
@@ -647,6 +655,20 @@ export function Sights() {
       </section>
 
       {!!data.sights.length && <div style={{ fontSize: 12.5, color: "var(--muted,#a2937c)", margin: "-4px 0 18px", display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}><i className="fa-solid fa-up-down-left-right" style={{ fontSize: 11 }} /><span>Перетащите место между разделами или нажмите <i className="fa-solid fa-star" style={{ fontSize: 10, color: "var(--ac,#b95c3f)" }} />, чтобы поменять важность. Значок <i className="fa-solid fa-camera" style={{ fontSize: 11 }} /> — добавить фото.</span></div>}
+
+      {!isReadOnly && <div className="sights-controls" style={{ background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-4)", padding: "14px 16px", display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+        <input value={draft.city} onChange={(e) => setDraft({ ...draft, city: e.target.value })} placeholder="город" style={{ width: 130, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)" }} />
+        <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} onKeyDown={(e) => e.key === "Enter" && add()} placeholder="что посмотреть / куда сходить" style={{ flex: 1, minWidth: 160, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)" }} />
+        <select value={draft.group} onChange={(e) => setDraft({ ...draft, group: e.target.value })} style={{ width: 150, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", cursor: "pointer" }}><option value="">важность…</option><option>обязательные</option><option>необязательные</option></select>
+        <select value={draft.sub} onChange={(e) => setDraft({ ...draft, sub: e.target.value })} style={{ width: 160, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "9px 12px", fontSize: 14, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", cursor: "pointer" }}><option value="">подкатегория…</option>{subs.filter((sub) => sub !== "еда").map((sub) => <option key={sub}>{sub}</option>)}</select>
+        <button onClick={add} style={{ border: "none", background: "var(--ac,#b95c3f)", color: "#fff", borderRadius: "var(--r-2)", padding: "0 18px", fontWeight: 600, fontSize: 14, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7 }}><i className="fa-solid fa-plus" style={{ fontSize: 12 }} />Добавить</button>
+      </div>}
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginBottom: 20 }}>
+        <span style={{ fontSize: 13, color: "var(--muted,#8a7d6b)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 7 }}><i className="fa-solid fa-filter" style={{ fontSize: 12 }} />Фильтр</span>
+        {(["city", "group", "sub"] as const).map((key) => <select key={key} value={filter[key]} onChange={(e) => setFilter({ ...filter, [key]: e.target.value })} style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 11px", fontSize: 13, background: "var(--card,#fff)", color: "var(--ink,#3b3228)", cursor: "pointer" }}><option value="">{key === "city" ? "все города" : key === "group" ? "вся важность" : "все подкатегории"}</option>{(key === "city" ? cities : key === "group" ? ["обязательные", "необязательные"] : subs.filter((sub) => sub !== "еда")).map((value) => <option key={value}>{value}</option>)}</select>)}
+        {Object.values(filter).some(Boolean) && <button onClick={() => setFilter({ city: "", group: "", sub: "" })} style={{ border: "none", background: "none", color: "var(--ac,#b95c3f)", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "8px 6px" }}><i className="fa-solid fa-xmark" style={{ marginRight: 5, fontSize: 12 }} />Сбросить</button>}
+      </div>
 
       {(["обязательные", "необязательные"] as const).map((group) => {
         const items = filtered.filter(
