@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { createPortal } from "react-dom";
 import { useDialogKeyboard, useScrollLock } from "../shared";
-import type { Restaurant } from "../../types/trip";
+import { restaurantCategories, type Restaurant } from "../../types/trip";
 
 type Props = {
   draft: Restaurant;
@@ -69,6 +69,7 @@ export function RestaurantEditorModal({
             />
           </label>
           <fieldset className="restaurant-editor-options"><legend>Тип места</legend><div>{["ресторан", "кафе", "бар"].map((type) => <button key={type} type="button" className={(draft.placeType ?? "ресторан") === type ? "is-active" : ""} onClick={() => onChange({ placeType: type as Restaurant["placeType"] })}>{type}</button>)}</div></fieldset>
+          <fieldset className="restaurant-editor-options"><legend>Категории</legend><div>{restaurantCategories.map((category) => { const selected = draft.categories?.includes(category) ?? false; return <button key={category} type="button" className={selected ? "is-active" : ""} onClick={() => onChange({ categories: selected ? (draft.categories ?? []).filter((item) => item !== category) : [...(draft.categories ?? []), category] })}>{category}</button>; })}</div></fieldset>
           <fieldset className="restaurant-editor-options">
             <legend>Уровень цен</legend>
             <div>

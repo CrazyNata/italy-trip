@@ -66,6 +66,9 @@ export interface Expense {
   amount: number;
 }
 
+export const restaurantCategories = ["пиццерия", "морепродукты", "желатерия", "бар", "ресторан", "кафе"] as const;
+export type RestaurantCategory = (typeof restaurantCategories)[number];
+
 export interface Restaurant {
   id: string;
   name: string;
@@ -86,6 +89,7 @@ export interface Restaurant {
   reservationDate?: string;
   reservationTime?: string;
   placeType?: "ресторан" | "кафе" | "бар";
+  categories?: RestaurantCategory[];
   /** Район/квартал для отдельного фильтра (например, «Пиньето» — рядом с домом). */
   area?: string;
   /** Публичные URL загруженных фото. */
@@ -241,6 +245,10 @@ function isRestaurant(value: unknown): value is Restaurant {
     hasOptionalString(value, "reservationDate") &&
     hasOptionalString(value, "reservationTime") &&
     (value.placeType === undefined || ["ресторан", "кафе", "бар"].includes(value.placeType as string)) &&
+    (value.categories === undefined ||
+      (Array.isArray(value.categories) &&
+        value.categories.every((category) =>
+          typeof category === "string" && restaurantCategories.includes(category as RestaurantCategory)))) &&
     hasOptionalString(value, "area") &&
     hasOptionalStringArray(value, "photos") &&
     (coordinates === undefined ||
