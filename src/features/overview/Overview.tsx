@@ -200,14 +200,14 @@ export function Overview() {
   return <div style={{ animation: "fadeUp .4s ease both" }}>
     <div onClick={() => setLightbox(true)} style={{ position: "relative", borderRadius: "var(--r-5)", overflow: "hidden", minHeight: 340, border: "1px solid var(--line,#e7dcc7)", cursor: "zoom-in" }}>
       {slides.map((slide, slideIndex) => <div key={slide[0]} style={{ position: "absolute", inset: 0, opacity: slideIndex === index ? 1 : 0, transition: "opacity .6s ease", zIndex: slideIndex === index ? 2 : 1 }}>
-        <img src={imageUrl(`hero-${slide[0]}.png`)} alt={slide[1]} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+        <img src={imageUrl(`hero-${slide[0]}.webp`)} alt={slide[1]} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         <div style={{ position: "absolute", left: 0, bottom: 0, right: 0, padding: 24, background: "linear-gradient(to top,rgba(45,36,26,.72),transparent)", pointerEvents: "none" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,.16)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 600, padding: "4px 11px", borderRadius: "var(--r-2)" }}>{slide[2]}</div>
           <div style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontSize: 30, fontWeight: 600, marginTop: 8 }}>{slide[3]}</div>
           <div style={{ color: "rgba(255,255,255,.85)", fontSize: 13, marginTop: 2 }}>{slide[4]}</div>
         </div>
       </div>)}
-      <img src={imageUrl("hero-salzburg.png")} alt="" aria-hidden="true" style={{ width: "100%", minHeight: 340, objectFit: "cover", display: "block", visibility: "hidden" }} />
+      <img src={imageUrl("hero-salzburg.webp")} alt="" aria-hidden="true" style={{ width: "100%", minHeight: 340, objectFit: "cover", display: "block", visibility: "hidden" }} />
       <button onClick={(event) => { event.stopPropagation(); shift(-1); }} title="Назад" style={{ position: "absolute", top: "50%", left: 12, transform: "translateY(-50%)", width: 38, height: 38, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 15, display: "grid", placeItems: "center", zIndex: 5 }}><i className="fa-solid fa-chevron-left" /></button>
       <button onClick={(event) => { event.stopPropagation(); shift(1); }} title="Вперёд" style={{ position: "absolute", top: "50%", right: 12, transform: "translateY(-50%)", width: 38, height: 38, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 15, display: "grid", placeItems: "center", zIndex: 5 }}><i className="fa-solid fa-chevron-right" /></button>
       <div style={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 6, zIndex: 5 }}>{slides.map((slide, i) => <span key={slide[0]} style={{ width: 8, height: 8, borderRadius: "50%", background: i === index ? "#fff" : "rgba(255,255,255,.5)", boxShadow: "0 0 3px rgba(0,0,0,.5)" }} />)}</div>
@@ -235,7 +235,7 @@ export function Overview() {
         subtitle = `${state?.[0] || (current ? "Погода недоступна" : "загрузка…")} · сегодня`;
       }
       return <div key={city} style={{ position: "relative", borderRadius: "var(--r-4)", overflow: "hidden", height: 150, border: "1px solid var(--line,#e7dcc7)", background: "var(--track,#f0e5d1)" }}>
-        {cityPhotos[city] && <img src={imageUrl(`hero-${cityPhotos[city]}.png`)} alt={city} loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
+        {cityPhotos[city] && <img src={imageUrl(`hero-${cityPhotos[city]}.webp`)} alt={city} loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top,rgba(24,18,12,.82),rgba(24,18,12,.1) 52%,rgba(24,18,12,.42))", pointerEvents: "none" }} />
         <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "13px 15px", display: "flex", justifyContent: "space-between", alignItems: "flex-start", pointerEvents: "none" }}>
           <span style={{ fontSize: 14, fontWeight: 700, color: "#fff", lineHeight: 1.35, textShadow: "0 1px 8px rgba(0,0,0,.6)" }}>{!current ? "…" : "error" in current ? "—" : `Днём ${Math.round(current.high)}° · Ночью ${Math.round(current.low)}°`}</span>
@@ -266,6 +266,6 @@ export function Overview() {
       <a href={routeUrl} target="_blank" rel="noopener" title="Открыть маршрут в Google Maps" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: "var(--r-2)", padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", textDecoration: "none" }}><i className="fa-solid fa-arrow-up-right-from-square" />Открыть в Google Maps</a>
     </div></div>
 
-    {lightbox && <Lightbox images={slides.map((slide) => imageUrl(`hero-${slide[0]}.png`))} index={index} alt={slides[index][1]} onClose={() => setLightbox(false)} onIndex={setIndex} />}
+    {lightbox && <Lightbox images={slides.map((slide) => imageUrl(`hero-${slide[0]}.webp`))} index={index} alt={slides[index][1]} onClose={() => setLightbox(false)} onIndex={setIndex} />}
   </div>;
 }
