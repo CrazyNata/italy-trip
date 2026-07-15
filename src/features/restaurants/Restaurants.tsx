@@ -64,7 +64,6 @@ export function Restaurants() {
   const [cityFilter, setCityFilter] = useState("");
   const [priceFilter, setPriceFilter] = useState("");
   const [minRating, setMinRating] = useState(0);
-  const [areaFilter, setAreaFilter] = useState("");
   const [priorityOnly, setPriorityOnly] = useState(false);
   const [placeTypeFilter, setPlaceTypeFilter] = useState("");
   const [sortBy, setSortBy] = useState<"booking" | "rating" | "price" | "distance">("rating");
@@ -77,15 +76,10 @@ export function Restaurants() {
     () => [...new Set(list.map((item) => item.city).filter(Boolean))],
     [list],
   );
-  const areas = useMemo(
-    () => [...new Set(list.map((item) => item.area).filter((area): area is string => !!area))],
-    [list],
-  );
 
   const visible = useMemo(() => {
     const filtered = list
       .filter((item) => !cityFilter || item.city === cityFilter)
-      .filter((item) => !areaFilter || item.area === areaFilter)
       .filter((item) => !priceFilter || item.price === priceFilter)
         .filter((item) => !minRating || (item.googleRating ?? 0) >= minRating)
         .filter((item) => !priorityOnly || item.priority)
@@ -108,7 +102,7 @@ export function Restaurants() {
     if (sortBy === "booking")
       filtered.sort((a, b) => `${a.item.reservationDate ?? "9999-99-99"}T${a.item.reservationTime ?? "99:99"}`.localeCompare(`${b.item.reservationDate ?? "9999-99-99"}T${b.item.reservationTime ?? "99:99"}`));
     return filtered;
-  }, [list, cityFilter, areaFilter, priceFilter, minRating, priorityOnly, placeTypeFilter, sortBy, userLoc]);
+  }, [list, cityFilter, priceFilter, minRating, priorityOnly, placeTypeFilter, sortBy, userLoc]);
 
   if (!data) return null;
 
@@ -262,21 +256,6 @@ export function Restaurants() {
               <option value="" style={{ color: "var(--ink,#3b3228)" }}>Все города</option>
               {cities.map((city) => (
                 <option key={city} value={city} style={{ color: "var(--ink,#3b3228)" }}>{flag(city)} {city}</option>
-              ))}
-            </select>
-          </>
-        )}
-        {areas.length > 0 && (
-          <>
-            <span style={groupLabel}>Район</span>
-            <select
-              value={areaFilter}
-              onChange={(event) => setAreaFilter(event.target.value)}
-              style={{ ...selectStyle(!!areaFilter), maxWidth: 180 }}
-            >
-              <option value="" style={{ color: "var(--ink,#3b3228)" }}>Все районы</option>
-              {areas.map((area) => (
-                <option key={area} value={area} style={{ color: "var(--ink,#3b3228)" }}>{area}</option>
               ))}
             </select>
           </>
