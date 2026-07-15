@@ -66,6 +66,7 @@ export function Restaurants() {
   const [minRating, setMinRating] = useState(0);
   const [areaFilter, setAreaFilter] = useState("");
   const [priorityOnly, setPriorityOnly] = useState(false);
+  const [placeTypeFilter, setPlaceTypeFilter] = useState("");
   const [sortBy, setSortBy] = useState<"booking" | "rating" | "price" | "distance">("rating");
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
@@ -88,6 +89,7 @@ export function Restaurants() {
       .filter((item) => !priceFilter || item.price === priceFilter)
         .filter((item) => !minRating || (item.googleRating ?? 0) >= minRating)
         .filter((item) => !priorityOnly || item.priority)
+        .filter((item) => !placeTypeFilter || (item.placeType ?? "ресторан") === placeTypeFilter)
         .filter((item) => sortBy !== "booking" || item.status === "бронь")
       .map((item) => ({
         item,
@@ -106,7 +108,7 @@ export function Restaurants() {
     if (sortBy === "booking")
       filtered.sort((a, b) => `${a.item.reservationDate ?? "9999-99-99"}T${a.item.reservationTime ?? "99:99"}`.localeCompare(`${b.item.reservationDate ?? "9999-99-99"}T${b.item.reservationTime ?? "99:99"}`));
     return filtered;
-  }, [list, cityFilter, areaFilter, priceFilter, minRating, priorityOnly, sortBy, userLoc]);
+  }, [list, cityFilter, areaFilter, priceFilter, minRating, priorityOnly, placeTypeFilter, sortBy, userLoc]);
 
   if (!data) return null;
 
@@ -294,6 +296,7 @@ export function Restaurants() {
         <button type="button" onClick={() => setPriorityOnly((current) => !current)} style={selectStyle(priorityOnly)}>
           🔥 приоритет
         </button>
+        <select value={placeTypeFilter} onChange={(event) => setPlaceTypeFilter(event.target.value)} style={selectStyle(!!placeTypeFilter)}><option value="">Тип места</option><option value="ресторан">Ресторан</option><option value="кафе">Кафе</option><option value="бар">Бар</option></select>
         <button
           onClick={findLocation}
           disabled={locating}

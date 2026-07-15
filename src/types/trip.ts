@@ -85,6 +85,7 @@ export interface Restaurant {
   priority?: boolean;
   reservationDate?: string;
   reservationTime?: string;
+  placeType?: "ресторан" | "кафе" | "бар";
   /** Район/квартал для отдельного фильтра (например, «Пиньето» — рядом с домом). */
   area?: string;
   /** Публичные URL загруженных фото. */
@@ -239,6 +240,7 @@ function isRestaurant(value: unknown): value is Restaurant {
     (value.priority === undefined || typeof value.priority === "boolean") &&
     hasOptionalString(value, "reservationDate") &&
     hasOptionalString(value, "reservationTime") &&
+    (value.placeType === undefined || ["ресторан", "кафе", "бар"].includes(value.placeType as string)) &&
     hasOptionalString(value, "area") &&
     hasOptionalStringArray(value, "photos") &&
     (coordinates === undefined ||

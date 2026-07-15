@@ -68,6 +68,7 @@ export function RestaurantEditorModal({
               placeholder="кухня / что заказать…"
             />
           </label>
+          <fieldset className="restaurant-editor-options"><legend>Тип места</legend><div>{["ресторан", "кафе", "бар"].map((type) => <button key={type} type="button" className={(draft.placeType ?? "ресторан") === type ? "is-active" : ""} onClick={() => onChange({ placeType: type as Restaurant["placeType"] })}>{type}</button>)}</div></fieldset>
           <fieldset className="restaurant-editor-options">
             <legend>Уровень цен</legend>
             <div>
