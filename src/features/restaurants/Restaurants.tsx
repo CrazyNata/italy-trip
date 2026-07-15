@@ -417,7 +417,10 @@ export function Restaurants() {
                         )}
                       </a>
                     ) : <span />}
-                    {item.price ? <span className="restaurant-card-price" title="Уровень цен">{item.price}</span> : <span />}
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      {item.priority && <span title="Приоритетный ресторан" aria-label="Приоритетный ресторан">🔥</span>}
+                      {item.price && <span className="restaurant-card-price" title="Уровень цен">{item.price}</span>}
+                    </span>
                   </div>
 
                   <h3 className="restaurant-card-title">{item.name}</h3>
