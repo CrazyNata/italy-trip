@@ -66,7 +66,7 @@ export function Restaurants() {
   const [minRating, setMinRating] = useState(0);
   const [areaFilter, setAreaFilter] = useState("");
   const [priorityOnly, setPriorityOnly] = useState(false);
-  const [sortBy, setSortBy] = useState<"default" | "rating" | "price" | "distance">("default");
+  const [sortBy, setSortBy] = useState<"booking" | "rating" | "price" | "distance">("rating");
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
   const [editor, setEditor] = useState<EditorState | null>(null);
@@ -88,6 +88,7 @@ export function Restaurants() {
       .filter((item) => !priceFilter || item.price === priceFilter)
         .filter((item) => !minRating || (item.googleRating ?? 0) >= minRating)
         .filter((item) => !priorityOnly || item.priority)
+        .filter((item) => sortBy !== "booking" || item.status === "бронь")
       .map((item) => ({
         item,
         distance: userLoc && item.lnglat ? distanceKm(userLoc, item.lnglat) : null,
@@ -102,6 +103,8 @@ export function Restaurants() {
       });
     if (sortBy === "distance")
       filtered.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+    if (sortBy === "booking")
+      filtered.sort((a, b) => `${a.item.reservationDate ?? "9999-99-99"}T${a.item.reservationTime ?? "99:99"}`.localeCompare(`${b.item.reservationDate ?? "9999-99-99"}T${b.item.reservationTime ?? "99:99"}`));
     return filtered;
   }, [list, cityFilter, areaFilter, priceFilter, minRating, priorityOnly, sortBy, userLoc]);
 
@@ -308,9 +311,9 @@ export function Restaurants() {
             setSortBy(value);
             if (value === "distance" && !userLoc) findLocation();
           }}
-          style={selectStyle(sortBy !== "default")}
+          style={selectStyle(sortBy !== "booking")}
         >
-          <option value="default" style={{ color: "var(--ink,#3b3228)" }}>по порядку</option>
+          <option value="booking" style={{ color: "var(--ink,#3b3228)" }}>по брони</option>
           <option value="rating" style={{ color: "var(--ink,#3b3228)" }}>по оценке</option>
           <option value="price" style={{ color: "var(--ink,#3b3228)" }}>по стоимости</option>
           <option value="distance" style={{ color: "var(--ink,#3b3228)" }}>по расстоянию</option>
