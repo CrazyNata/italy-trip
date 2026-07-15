@@ -105,6 +105,12 @@ export function RestaurantEditorModal({
               </button>
             </div>
           </fieldset>
+          {draft.status === "бронь" && (
+            <div style={{ display: "flex", gap: 10 }}>
+              <label className="restaurant-editor-field" style={{ flex: 1 }}><span>Дата брони</span><input type="date" value={draft.reservationDate ?? ""} onChange={(event) => onChange({ reservationDate: event.target.value })} /></label>
+              <label className="restaurant-editor-field" style={{ flex: 1 }}><span>Время</span><input type="time" value={draft.reservationTime ?? ""} onChange={(event) => onChange({ reservationTime: event.target.value })} /></label>
+            </div>
+          )}
           <section className="restaurant-editor-photos" aria-label="Фотографии">
             <div>
               <strong>Фотографии</strong>

@@ -426,6 +426,7 @@ export function Restaurants() {
                   <h3 className="restaurant-card-title">{item.name}</h3>
 
                   {item.note && <p className="restaurant-card-note">{item.note}</p>}
+                  {item.status === "бронь" && (item.reservationDate || item.reservationTime) && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ac,#b95c3f)" }}>📅 {item.reservationDate && new Date(`${item.reservationDate}T00:00:00`).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}{item.reservationDate && item.reservationTime && " · "}{item.reservationTime}</span>}
                   {distance !== null && photos.length === 0 && (
                     <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ac,#b95c3f)" }}>
                       <i className="fa-solid fa-location-arrow" style={{ fontSize: 10, marginRight: 5 }} />до ресторана {formatDistance(distance)}
