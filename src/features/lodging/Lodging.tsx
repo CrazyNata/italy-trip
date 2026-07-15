@@ -249,7 +249,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
               style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-3)", padding: "15px 18px", display: "flex", flexWrap: "wrap", alignItems: "center", gap: 15, cursor: "pointer", transition: "border-color .2s, background .2s" }}
             >
               <div style={{ flex: 1, minWidth: 180 }}>
-                <div style={{ fontWeight: 700, fontSize: 17, display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 15, lineHeight: 1 }}>{flag(lodge.city)}</span>{lodge.name}</div>
+                <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: 19, display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 15, lineHeight: 1 }}>{flag(lodge.city)}</span>{lodge.name}</div>
                 <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)", marginTop: 3 }}>{lodge.city} · {lodge.dates}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 8 }}>
                   <span style={{ width: 7, height: 7, flex: "none", borderRadius: "50%", background: item.color }} />
