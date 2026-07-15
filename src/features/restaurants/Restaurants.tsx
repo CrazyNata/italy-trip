@@ -87,7 +87,7 @@ export function Restaurants() {
       .filter((item) => !areaFilter || item.area === areaFilter)
       .filter((item) => !priceFilter || item.price === priceFilter)
         .filter((item) => !minRating || (item.googleRating ?? 0) >= minRating)
-        .filter((item) => !priorityOnly || item.status === "🔥 приоритет")
+        .filter((item) => !priorityOnly || item.priority)
       .map((item) => ({
         item,
         distance: userLoc && item.lnglat ? distanceKm(userLoc, item.lnglat) : null,

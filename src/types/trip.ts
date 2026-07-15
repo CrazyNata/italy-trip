@@ -81,6 +81,8 @@ export interface Restaurant {
   googleRating?: number;
   /** Число отзывов в Google. */
   googleReviews?: number;
+  /** Показывать в фильтре приоритетных ресторанов. */
+  priority?: boolean;
   /** Район/квартал для отдельного фильтра (например, «Пиньето» — рядом с домом). */
   area?: string;
   /** Публичные URL загруженных фото. */
@@ -232,6 +234,7 @@ function isRestaurant(value: unknown): value is Restaurant {
     hasOptionalFiniteNumber(value, "rating") &&
     hasOptionalFiniteNumber(value, "googleRating") &&
     hasOptionalFiniteNumber(value, "googleReviews") &&
+    (value.priority === undefined || typeof value.priority === "boolean") &&
     hasOptionalString(value, "area") &&
     hasOptionalStringArray(value, "photos") &&
     (coordinates === undefined ||

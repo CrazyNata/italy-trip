@@ -83,6 +83,9 @@ export function RestaurantEditorModal({
               ))}
             </div>
           </fieldset>
+          <button type="button" className={draft.priority ? "is-active" : ""} onClick={() => onChange({ priority: !draft.priority })}>
+            🔥 приоритет
+          </button>
           <fieldset className="restaurant-editor-options">
             <legend>Статус</legend>
             <div>
