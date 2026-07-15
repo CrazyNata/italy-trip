@@ -28,7 +28,7 @@
 - Consumes: the 35 existing `Restaurant` objects whose IDs start with `bar_`.
 - Produces: numeric `googleRating` and integer `googleReviews` fields on every consumed object.
 
-- [ ] **Step 1: Read all target IDs, names, cities, and links**
+- [x] **Step 1: Read all target IDs, names, cities, and links**
 
 ```sql
 select item->>'id' id, item->>'name' name, item->>'city' city, item->>'link' link
@@ -40,11 +40,11 @@ order by city, name;
 
 Expected: 35 rows.
 
-- [ ] **Step 2: Record current Google values**
+- [x] **Step 2: Record current Google values**
 
 For each exact business, verify the Google listing reached from its stored Maps search URL. Add `Google rating` and `Google reviews` columns to the candidate table in `docs/superpowers/research/2026-07-15-bars.md` and record the displayed numeric values. Reject a result if its name and city do not match the stored record.
 
-- [ ] **Step 3: Re-read the live row timestamp**
+- [x] **Step 3: Re-read the live row timestamp**
 
 ```sql
 select updated_at from public.trip_state where id = 'main';
@@ -52,13 +52,13 @@ select updated_at from public.trip_state where id = 'main';
 
 Expected: one timestamp used as the optimistic concurrency guard.
 
-- [ ] **Step 4: Update only the two Google fields atomically**
+- [x] **Step 4: Update only the two Google fields atomically**
 
 Build a 35-row `values` CTE containing each exact `bar_` ID and its researched numeric values. Rebuild the restaurants array with `jsonb_set(jsonb_set(item, '{googleRating}', to_jsonb(rating)), '{googleReviews}', to_jsonb(reviews))` for matching IDs, preserve unmatched objects unchanged, and guard the update with the timestamp from Step 3.
 
 Expected: one updated row and restaurant count remains 101.
 
-- [ ] **Step 5: Verify complete persisted coverage**
+- [x] **Step 5: Verify complete persisted coverage**
 
 ```sql
 select
@@ -74,6 +74,6 @@ where trip_state.id = 'main' and item->>'id' like 'bar_%';
 
 Expected: `bars = 35`, `valid_ratings = 35`, and `valid_review_counts = 35`.
 
-- [ ] **Step 6: Verify the production build and commit evidence**
+- [x] **Step 6: Verify the production build and commit evidence**
 
 Run `npx --yes --package node@22 --call 'node --version && npm run build'`. Expected: Node 22 and a successful Vite build. Then commit and push only the updated research document.
