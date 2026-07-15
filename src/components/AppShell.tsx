@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent, type TouchEvent } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 import { useTripData } from "../trip/TripDataContext";
@@ -31,6 +31,7 @@ export function AppShell() {
   const [toast, setToast] = useState<string | null>(null);
   const tabRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const toastTimer = useRef<number | null>(null);
+  const swipeRef = useRef<{ x: number; y: number; valid: boolean } | null>(null);
   const activeIndex = Math.max(
     0,
     tabs.findIndex((tab) => location.pathname === `/${tab.path}`),
@@ -61,6 +62,33 @@ export function AppShell() {
   useEffect(() => {
     tabRefs.current[activeIndex]?.scrollIntoView({ inline: "center", block: "nearest" });
   }, [activeIndex]);
+
+  // Mobile: a horizontal swipe across the page flips to the neighbouring tab.
+  // Ignored on maps (they pan) and photo carousels (marked .no-swipe), on any
+  // open dialog, on multi-touch, and on wide screens.
+  function onContentTouchStart(event: TouchEvent<HTMLElement>) {
+    if (event.touches.length !== 1 || window.innerWidth > 600) {
+      swipeRef.current = null;
+      return;
+    }
+    const target = event.target as HTMLElement;
+    const blocked = !!target.closest('.mapboxgl-map, .no-swipe, .restaurant-editor-backdrop, [role="dialog"]');
+    const touch = event.touches[0];
+    swipeRef.current = { x: touch.clientX, y: touch.clientY, valid: !blocked };
+  }
+  function onContentTouchEnd(event: TouchEvent<HTMLElement>) {
+    const start = swipeRef.current;
+    swipeRef.current = null;
+    if (!start || !start.valid) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    // Needs a decisive mostly-horizontal swipe so it never fires on a vertical scroll.
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    const nextIndex = activeIndex + (dx < 0 ? 1 : -1);
+    if (nextIndex < 0 || nextIndex >= tabs.length) return;
+    navigate(`/${tabs[nextIndex].path}`);
+  }
 
   function handleTabKeyDown(event: KeyboardEvent, index: number) {
     let nextIndex: number | undefined;
@@ -147,7 +175,7 @@ export function AppShell() {
         </nav>
       </header>
 
-      <main className="app-main">
+      <main className="app-main" onTouchStart={onContentTouchStart} onTouchEnd={onContentTouchEnd}>
         {(loading || error || usingCache || syncState !== "clean") && (
           <div
             className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${error || syncState === "failed" ? "border-[#d8a08d] bg-[#fff2ed] text-[#7f3524]" : "border-[var(--line)] bg-[var(--soft)] text-[var(--muted)]"}`}

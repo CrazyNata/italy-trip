@@ -381,7 +381,7 @@ export function Restaurants() {
                 key={item.id}
                 style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-4)", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 1px 3px rgba(59,50,40,.05)" }}
               >
-                <div style={{ position: "relative", height: 220, overflow: "hidden", background: "var(--track,#efe4cf)" }}>
+                <div className="no-swipe" style={{ position: "relative", height: 220, overflow: "hidden", background: "var(--track,#efe4cf)" }}>
                   {photos.length > 0 ? (
                     <>
                     <img

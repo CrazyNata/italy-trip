@@ -291,7 +291,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
               style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-4)", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 1px 3px rgba(59,50,40,.05)", scrollMarginTop: 20, transition: "box-shadow .3s,border-color .3s" }}
             >
               {photos.length ? (
-                <div style={{ position: "relative", height: 230, overflow: "hidden" }}>
+                <div className="no-swipe" style={{ position: "relative", height: 230, overflow: "hidden" }}>
                   <img
                     loading="lazy"
                     style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: lodge.objPosList?.[index] || lodge.objPos || "center", display: "block", cursor: "zoom-in" }}

@@ -198,7 +198,7 @@ export function Overview() {
   const headingStyle = { fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: 22, margin: "34px 0 4px" } as const;
   const noteStyle = { margin: "0 0 16px", fontSize: 13, color: "var(--muted,#8a7d6b)" } as const;
   return <div style={{ animation: "fadeUp .4s ease both" }}>
-    <div onClick={() => setLightbox(true)} style={{ position: "relative", borderRadius: "var(--r-5)", overflow: "hidden", minHeight: 340, border: "1px solid var(--line,#e7dcc7)", cursor: "zoom-in" }}>
+    <div className="no-swipe" onClick={() => setLightbox(true)} style={{ position: "relative", borderRadius: "var(--r-5)", overflow: "hidden", minHeight: 340, border: "1px solid var(--line,#e7dcc7)", cursor: "zoom-in" }}>
       {slides.map((slide, slideIndex) => <div key={slide[0]} style={{ position: "absolute", inset: 0, opacity: slideIndex === index ? 1 : 0, transition: "opacity .6s ease", zIndex: slideIndex === index ? 2 : 1 }}>
         <img src={imageUrl(`hero-${slide[0]}.webp`)} alt={slide[1]} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         <div style={{ position: "absolute", left: 0, bottom: 0, right: 0, padding: 24, background: "linear-gradient(to top,rgba(45,36,26,.72),transparent)", pointerEvents: "none" }}>
