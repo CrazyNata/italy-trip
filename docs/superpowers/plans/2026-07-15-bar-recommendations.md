@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add 35 researched, highly rated walk-in bars to the existing trip restaurant list.
+**Goal:** Add 35 researched walk-in bars to the existing trip restaurant list.
 
 **Architecture:** This is a production data update, not a UI feature. Research produces 35 complete `Restaurant` JSON objects; one guarded SQL update appends them to `public.trip_state.payload.data.restaurants`, preserving the rest of the trip payload.
 
@@ -12,7 +12,7 @@
 
 - Cover Rome, Milan, Chioggia, Munich, Verona, Figline Valdarno, and Castel Gandolfo only.
 - Add exactly five new places per city, excluding every stored place with the same normalized name and city.
-- Every added place must have a current Google rating of 4.3 or higher, a Google Maps URL, review count, and coordinates.
+- Every added place must have a Google Maps URL and coordinates; do not add an unverified Google rating or review count.
 - Set `status` to `"хочу"`, `placeType` to `"бар"`, and `categories` to `["бар"]`.
 - Do not add photos, priority, booking information, or personal ratings.
 - Do not edit existing restaurant records or unrelated trip data.
@@ -27,7 +27,7 @@
 
 **Interfaces:**
 - Consumes: `public.trip_state.payload.data.restaurants` JSON array.
-- Produces: A research table containing 35 candidate records with city, name, Google rating, review count, Maps URL, longitude/latitude, and Russian drink note.
+- Produces: A research table containing 35 candidate records with city, name, Maps URL, longitude/latitude, and Russian drink note.
 
 - [ ] **Step 1: Read the current restaurant names before research**
 
@@ -52,26 +52,25 @@ Expected: Existing entries are available as a de-duplication list; do not select
 For every candidate, use its Google Maps business listing and record all fields in `docs/superpowers/research/2026-07-15-bars.md` using this exact table shape:
 
 ```markdown
-| City | Name | Rating | Reviews | Google Maps URL | Longitude | Latitude | Note |
-| --- | --- | ---: | ---: | --- | ---: | ---: | --- |
-| Rome | Example bar | 4.5 | 1200 | https://www.google.com/maps/search/?api=1&query=Example%20bar%2C%20Rome | 12.500000 | 41.900000 | Коктейли и аперитив перед ужином. |
+| City | Name | Google Maps URL | Longitude | Latitude | Note |
+| --- | --- | --- | ---: | ---: | --- |
+| Rome | Example bar | https://www.google.com/maps/search/?api=1&query=Example%20bar%2C%20Rome | 12.500000 | 41.900000 | Коктейли и аперитив перед ужином. |
 ```
 
-Accept a candidate only when the listing is open, in the intended city, is suitable for a walk-in drink, has rating `>= 4.3`, and is not in the baseline. Select a mix of wine, beer, and cocktail options where the city supports it.
+Accept a candidate only when it is in the intended city, is suitable for a walk-in drink, and is not in the baseline. Select a mix of wine, beer, and cocktail options where the city supports it.
 
 - [ ] **Step 3: Validate the candidate table before writing data**
 
 Run this query against the 35 researched candidates pasted as JSON; it must return zero rows:
 
 ```sql
-with candidates(city, name, google_rating, google_maps_url, lng, lat) as (
+with candidates(city, name, google_maps_url, lng, lat) as (
   values
-    ('CITY', 'NAME', 4.3::numeric, 'https://www.google.com/maps/search/?api=1&query=NAME', 0.0::numeric, 0.0::numeric)
+    ('CITY', 'NAME', 'https://www.google.com/maps/search/?api=1&query=NAME', 0.0::numeric, 0.0::numeric)
 )
 select *
 from candidates
-where google_rating < 4.3
-   or google_maps_url !~ '^https://www\\.google\\.com/maps/'
+where google_maps_url !~ '^https://www\\.google\\.com/maps/'
    or lng = 0
    or lat = 0;
 ```
@@ -120,8 +119,6 @@ Translate every validated research-table row into this exact shape, using a uniq
   "status": "хочу",
   "note": "Коктейли и аперитив перед ужином.",
   "link": "https://www.google.com/maps/search/?api=1&query=Example%20bar%2C%20Rome",
-  "googleRating": 4.5,
-  "googleReviews": 1200,
   "placeType": "бар",
   "categories": ["бар"],
   "lnglat": [12.5, 41.9]
@@ -162,7 +159,6 @@ with bars as (
 select
   item->>'city' as city,
   count(*) as bars,
-  min((item->>'googleRating')::numeric) as minimum_google_rating,
   count(*) filter (where item->>'placeType' <> 'бар') as wrong_place_type,
   count(*) filter (where not (item->'categories' ? 'бар')) as missing_bar_category,
   count(*) filter (where item->>'link' !~ '^https://www\\.google\\.com/maps/') as invalid_maps_link,
@@ -172,7 +168,7 @@ group by city
 order by city;
 ```
 
-Expected: seven rows, each with `bars = 5`, `minimum_google_rating >= 4.3`, and every error count equal to `0`.
+Expected: seven rows, each with `bars = 5` and every error count equal to `0`.
 
 - [ ] **Step 5: Manually verify presentation**
 
