@@ -6,6 +6,7 @@ import { Lightbox } from "../../components/Lightbox";
 import type { Restaurant } from "../../types/trip";
 import { uid } from "../shared";
 import { RestaurantEditorModal } from "./RestaurantEditorModal";
+import { RestaurantCityMap } from "./RestaurantCityMap";
 
 const statuses = ["хочу", "бронь", "были"];
 const priceLevels = ["€", "€€", "€€€", "€€€€"];
@@ -70,12 +71,17 @@ export function Restaurants() {
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
   const [editor, setEditor] = useState<EditorState | null>(null);
+  const [mapCity, setMapCity] = useState("");
+  const [mapFocus, setMapFocus] = useState<string | null>(null);
+  const [mapCollapsed, setMapCollapsed] = useState(false);
 
   const list = useMemo(() => data?.restaurants ?? [], [data]);
   const cities = useMemo(
     () => [...new Set(list.map((item) => item.city).filter(Boolean))],
     [list],
   );
+  const activeMapCity = cities.includes(mapCity) ? mapCity : cities[0] ?? "";
+  const mappedRestaurants = list.filter((item) => item.city === activeMapCity && item.lnglat);
 
   const visible = useMemo(() => {
     const filtered = list
@@ -302,6 +308,10 @@ export function Restaurants() {
         </select>
       </div>
       )}
+      {mappedRestaurants.length > 0 && <section style={{ marginBottom: 20, padding: 16, borderRadius: "var(--r-4)", background: "var(--track)", border: "1px solid var(--line)" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: mapCollapsed ? 0 : 12 }}><strong style={{ flex: 1 }}>Карта ресторанов</strong><select value={activeMapCity} onChange={(event) => { setMapCity(event.target.value); setMapFocus(null); }}><option value="">город</option>{cities.map((city) => <option key={city}>{city}</option>)}</select><button type="button" onClick={() => setMapCollapsed((value) => !value)}>{mapCollapsed ? "Развернуть" : "Свернуть"}</button></div>
+        {!mapCollapsed && <div style={{ display: "grid", gridTemplateColumns: "minmax(180px,1fr) minmax(260px,2fr)", gap: 12 }}><div>{mappedRestaurants.map((item, index) => <button key={item.id} type="button" onClick={() => setMapFocus(item.id)} style={{ display: "block", width: "100%", textAlign: "left", padding: "8px", border: "1px solid var(--line)", background: "var(--card)", borderRadius: 8, marginBottom: 6 }}>{index + 1}. {item.name}</button>)}</div><RestaurantCityMap restaurants={mappedRestaurants} focus={mapFocus} /></div>}
+      </section>}
 
       <div
         className="lodging-grid"
