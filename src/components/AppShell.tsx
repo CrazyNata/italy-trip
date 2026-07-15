@@ -1,14 +1,16 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 
 import { useTripData } from "../trip/TripDataContext";
+// Overview is the landing tab, so keep it eager; lazy-load the rest so the first
+// paint on mobile only downloads and parses the shell + overview, not every tab.
 import { Overview } from "../features/overview/Overview";
-import { Itinerary } from "../features/itinerary/Itinerary";
-import { Lodging } from "../features/lodging/Lodging";
-import { Sights } from "../features/sights/Sights";
-import { Budget } from "../features/budget/Budget";
-import { Photos } from "../features/photos/Photos";
-import { Restaurants } from "../features/restaurants/Restaurants";
+const Itinerary = lazy(() => import("../features/itinerary/Itinerary").then((m) => ({ default: m.Itinerary })));
+const Lodging = lazy(() => import("../features/lodging/Lodging").then((m) => ({ default: m.Lodging })));
+const Sights = lazy(() => import("../features/sights/Sights").then((m) => ({ default: m.Sights })));
+const Budget = lazy(() => import("../features/budget/Budget").then((m) => ({ default: m.Budget })));
+const Photos = lazy(() => import("../features/photos/Photos").then((m) => ({ default: m.Photos })));
+const Restaurants = lazy(() => import("../features/restaurants/Restaurants").then((m) => ({ default: m.Restaurants })));
 
 const tabs = [
   { path: "overview", label: "Обзор", icon: "fa-solid fa-compass" },
@@ -54,6 +56,11 @@ export function AppShell() {
       if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
     };
   }, []);
+
+  // Keep the active tab in view when the tab bar scrolls horizontally on mobile.
+  useEffect(() => {
+    tabRefs.current[activeIndex]?.scrollIntoView({ inline: "center", block: "nearest" });
+  }, [activeIndex]);
 
   function handleTabKeyDown(event: KeyboardEvent, index: number) {
     let nextIndex: number | undefined;
@@ -179,18 +186,20 @@ export function AppShell() {
         )}
         <section className="animate-[fadeUp_.4s_ease_both]" role="tabpanel" tabIndex={0}>
           {data && (
-            <Routes>
-              <Route index element={<Navigate to="/overview" replace />} />
-              <Route path="overview" element={<Overview />} />
-              <Route path="route" element={<Itinerary />} />
-              <Route path="lodging" element={<Lodging />} />
-              <Route path="cancellation" element={<Lodging cancellation />} />
-              <Route path="places" element={<Sights />} />
-              <Route path="restaurants" element={<Restaurants />} />
-              <Route path="budget" element={<Budget />} />
-              <Route path="photos" element={<Photos />} />
-              <Route path="*" element={<Navigate to="/overview" replace />} />
-            </Routes>
+            <Suspense fallback={<div className="grid place-items-center py-16" role="status" aria-label="Загружаем раздел"><div className="size-7 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--ac)]" /></div>}>
+              <Routes>
+                <Route index element={<Navigate to="/overview" replace />} />
+                <Route path="overview" element={<Overview />} />
+                <Route path="route" element={<Itinerary />} />
+                <Route path="lodging" element={<Lodging />} />
+                <Route path="cancellation" element={<Lodging cancellation />} />
+                <Route path="places" element={<Sights />} />
+                <Route path="restaurants" element={<Restaurants />} />
+                <Route path="budget" element={<Budget />} />
+                <Route path="photos" element={<Photos />} />
+                <Route path="*" element={<Navigate to="/overview" replace />} />
+              </Routes>
+            </Suspense>
           )}
         </section>
       </main>

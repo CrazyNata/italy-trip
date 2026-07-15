@@ -298,7 +298,7 @@ export function Restaurants() {
       </section>}
       {/* Панель фильтров — только когда есть что фильтровать, всё в одну строку */}
       {list.length > 0 && (
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 10, marginBottom: 16, padding: "12px 14px", borderRadius: "var(--r-3)", background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)" }}>
+      <div className="filter-bar" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", columnGap: 6, rowGap: 10, marginBottom: 16, padding: "12px 14px", borderRadius: "var(--r-3)", background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)" }}>
         {cities.length > 1 && (
           <>
             <span style={groupLabel}>Город</span>

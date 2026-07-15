@@ -224,7 +224,7 @@ export function Overview() {
       </div>
     </div>
     <p style={noteStyle}>{mode === "now" ? "Текущая погода во всех городах маршрута — обновляется при загрузке страницы." : "Погода на даты визита. Для дальних дат показываем типичную по прошлым годам — точный прогноз появится ближе к поездке."}</p>
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(190px,1fr))", gap: 14 }}>{weatherCities.map((city) => {
+    <div className="weather-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(190px,1fr))", gap: 14 }}>{weatherCities.map((city) => {
       const current = mode === "then" ? thenWeather[city] : weather[city];
       const state = current && !("error" in current) ? (weatherInfo[current.code] || ["—", "fa-solid fa-cloud"]) : null;
       let subtitle: string;
@@ -261,7 +261,7 @@ export function Overview() {
         <a href={url} target="_blank" rel="noopener" onClick={(event) => event.stopPropagation()} title="Открыть в Google Maps" style={{ flex: "none", color: "var(--muted,#8a7d6b)", padding: "4px 6px", borderRadius: "var(--r-1)", display: "grid", placeItems: "center" }}><i className="fa-solid fa-arrow-up-right-from-square" style={{ fontSize: 12 }} /></a>
       </div>;
     })}</div>
-    <div ref={mapWrapRef} style={{ position: "relative", scrollMarginTop: 16 }}><RouteMap cities={data.lodging.map((lodge) => lodge.city)} focus={focus} /><div style={{ position: "absolute", right: 14, bottom: 14, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+    <div ref={mapWrapRef} style={{ position: "relative", scrollMarginTop: 16 }}><RouteMap cities={data.lodging.map((lodge) => lodge.city)} focus={focus} /><div className="map-actions" style={{ position: "absolute", right: 14, bottom: 14, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
       <button onClick={() => void copyText(routeUrl).then(() => showCopied(true, false))} title="Скопировать ссылку на карту" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: "var(--r-2)", padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", cursor: "pointer" }}><i className={copied ? "fa-solid fa-check" : "fa-solid fa-copy"} />{copied ? "Скопировано" : "Скопировать ссылку"}</button>
       <a href={routeUrl} target="_blank" rel="noopener" title="Открыть маршрут в Google Maps" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", color: "var(--ink)", borderRadius: "var(--r-2)", padding: "9px 14px", fontSize: 13, fontWeight: 600, boxShadow: "0 2px 10px rgba(0,0,0,.14)", textDecoration: "none" }}><i className="fa-solid fa-arrow-up-right-from-square" />Открыть в Google Maps</a>
     </div></div>
