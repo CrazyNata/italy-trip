@@ -89,9 +89,11 @@ export function Restaurants() {
   const mappedRestaurants = cityMappedRestaurants.filter((item) =>
     !mapCategories.length || item.categories?.some((category) => mapCategories.includes(category)),
   );
-  const mapUrl = mappedRestaurants.length > 1
-    ? `https://www.google.com/maps/dir/?api=1&origin=${mappedRestaurants[0].lnglat!.slice().reverse().join(",")}&destination=${mappedRestaurants[mappedRestaurants.length - 1].lnglat!.slice().reverse().join(",")}${mappedRestaurants.length > 2 ? `&waypoints=${mappedRestaurants.slice(1, -1).map((item) => item.lnglat!.slice().reverse().join(",")).join("%7C")}` : ""}`
-    : "";
+  const mapUrl = mappedRestaurants.length === 1
+    ? `https://www.google.com/maps/search/?api=1&query=${mappedRestaurants[0].lnglat!.slice().reverse().join(",")}`
+    : mappedRestaurants.length > 1
+      ? `https://www.google.com/maps/dir/?api=1&origin=${mappedRestaurants[0].lnglat!.slice().reverse().join(",")}&destination=${mappedRestaurants[mappedRestaurants.length - 1].lnglat!.slice().reverse().join(",")}${mappedRestaurants.length > 2 ? `&waypoints=${mappedRestaurants.slice(1, -1).map((item) => item.lnglat!.slice().reverse().join(",")).join("%7C")}` : ""}`
+      : "";
   const toggleMapCategory = (category: RestaurantCategory) => {
     setMapFocus(null);
     setMapCategories((current) => current.includes(category)
