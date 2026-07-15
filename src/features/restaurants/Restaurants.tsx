@@ -461,6 +461,14 @@ export function Restaurants() {
           onChange={(patch) => setEditor((current) => current ? { ...current, draft: { ...current.draft, ...patch } } : current)}
           onUpload={(files) => void uploadEditorPhotos(files)}
           onRemovePhoto={(index) => void removeEditorPhoto(index)}
+          onMovePhoto={(index, amount) => setEditor((current) => {
+            if (!current) return current;
+            const photos = [...(current.draft.photos ?? [])];
+            const target = index + amount;
+            if (target < 0 || target >= photos.length) return current;
+            [photos[index], photos[target]] = [photos[target], photos[index]];
+            return { ...current, draft: { ...current.draft, photos } };
+          })}
           onSave={() => void saveEditor()}
           onCancel={() => void closeEditor()}
           onDelete={() => void deleteEditorRestaurant()}

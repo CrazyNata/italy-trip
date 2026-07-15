@@ -11,6 +11,7 @@ type Props = {
   onChange: (patch: Partial<Restaurant>) => void;
   onUpload: (files: FileList | null) => void;
   onRemovePhoto: (index: number) => void;
+  onMovePhoto: (index: number, amount: number) => void;
   onSave: () => void;
   onCancel: () => void;
   onDelete: () => void;
@@ -24,6 +25,7 @@ export function RestaurantEditorModal({
   onChange,
   onUpload,
   onRemovePhoto,
+  onMovePhoto,
   onSave,
   onCancel,
   onDelete,
@@ -118,6 +120,14 @@ export function RestaurantEditorModal({
                 {photos.map((photo, index) => (
                   <figure key={photo}>
                     <img src={photo} alt={`Фото ресторана ${index + 1}`} />
+                    <div className="restaurant-editor-photo-move">
+                      <button type="button" disabled={index === 0} onClick={() => onMovePhoto(index, -1)} aria-label={`Переместить фото ${index + 1} влево`}>
+                        <i className="fa-solid fa-arrow-left" aria-hidden />
+                      </button>
+                      <button type="button" disabled={index === photos.length - 1} onClick={() => onMovePhoto(index, 1)} aria-label={`Переместить фото ${index + 1} вправо`}>
+                        <i className="fa-solid fa-arrow-right" aria-hidden />
+                      </button>
+                    </div>
                     <button type="button" onClick={() => onRemovePhoto(index)} aria-label={`Удалить фото ${index + 1}`}>
                       <i className="fa-solid fa-trash" aria-hidden />
                     </button>
