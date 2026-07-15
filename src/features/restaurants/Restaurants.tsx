@@ -65,6 +65,7 @@ export function Restaurants() {
   const [priceFilter, setPriceFilter] = useState("");
   const [minRating, setMinRating] = useState(0);
   const [areaFilter, setAreaFilter] = useState("");
+  const [priorityOnly, setPriorityOnly] = useState(false);
   const [sortBy, setSortBy] = useState<"default" | "rating" | "price" | "distance">("default");
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
@@ -85,7 +86,8 @@ export function Restaurants() {
       .filter((item) => !cityFilter || item.city === cityFilter)
       .filter((item) => !areaFilter || item.area === areaFilter)
       .filter((item) => !priceFilter || item.price === priceFilter)
-      .filter((item) => !minRating || (item.googleRating ?? 0) >= minRating)
+        .filter((item) => !minRating || (item.googleRating ?? 0) >= minRating)
+        .filter((item) => !priorityOnly || item.status === "🔥 приоритет")
       .map((item) => ({
         item,
         distance: userLoc && item.lnglat ? distanceKm(userLoc, item.lnglat) : null,
@@ -101,7 +103,7 @@ export function Restaurants() {
     if (sortBy === "distance")
       filtered.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
     return filtered;
-  }, [list, cityFilter, areaFilter, priceFilter, minRating, sortBy, userLoc]);
+  }, [list, cityFilter, areaFilter, priceFilter, minRating, priorityOnly, sortBy, userLoc]);
 
   if (!data) return null;
 
@@ -286,6 +288,9 @@ export function Restaurants() {
             <option key={value} value={value} style={{ color: "var(--ink,#3b3228)" }}>от {value}★</option>
           ))}
         </select>
+        <button type="button" onClick={() => setPriorityOnly((current) => !current)} style={selectStyle(priorityOnly)}>
+          🔥 приоритет
+        </button>
         <button
           onClick={findLocation}
           disabled={locating}
