@@ -429,8 +429,8 @@ export function Restaurants() {
                     </div>
                   )}
                 </div>
-                <div style={{ padding: "16px 18px 18px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <div className="restaurant-card-content">
+                  <div className="restaurant-card-meta">
                     {item.googleRating != null ? (
                       <a
                         href={item.link || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${item.name}, ${item.city}`)}`}
@@ -462,17 +462,23 @@ export function Restaurants() {
                     </span>
                   </div>
 
-                  <h3 className="restaurant-card-title">{item.name}</h3>
+                  <div className="restaurant-card-title-row">
+                    <h3 className="restaurant-card-title">{item.name}</h3>
+                  </div>
 
-                  {item.note && <p className="restaurant-card-note">{item.note}</p>}
-                  {item.status === "бронь" && (item.reservationDate || item.reservationTime) && <span style={{ fontSize: 12, fontWeight: 700, color: "var(--ac,#b95c3f)" }}>📅 {item.reservationDate && new Date(`${item.reservationDate}T00:00:00`).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}{item.reservationDate && item.reservationTime && " · "}{item.reservationTime}</span>}
-                  {distance !== null && photos.length === 0 && (
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "var(--ac,#b95c3f)" }}>
+                  <div className="restaurant-card-note-row">
+                    {item.note && <p className="restaurant-card-note">{item.note}</p>}
+                  </div>
+                  <div className="restaurant-card-detail-row">
+                    {item.status === "бронь" && (item.reservationDate || item.reservationTime) && <span className="restaurant-card-reservation">📅 {item.reservationDate && new Date(`${item.reservationDate}T00:00:00`).toLocaleDateString("ru-RU", { day: "numeric", month: "long" })}{item.reservationDate && item.reservationTime && " · "}{item.reservationTime}</span>}
+                    {distance !== null && photos.length === 0 && (
+                    <span className="restaurant-card-distance">
                       <i className="fa-solid fa-location-arrow" style={{ fontSize: 10, marginRight: 5 }} />до ресторана {formatDistance(distance)}
                     </span>
-                  )}
+                    )}
+                  </div>
                   <span className="restaurant-card-status">{item.status}</span>
-                  <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 8, marginTop: "auto" }}>
+                  <div className="restaurant-card-footer">
                     {!isReadOnly && (
                       <button
                         type="button"
