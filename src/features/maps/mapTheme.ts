@@ -36,5 +36,17 @@ export function warmLut(): string {
 }
 
 // Shared basemap options so every map uses the same warm Standard theme.
+// The Standard style is heavy by default (3D buildings, tree/landmark models,
+// dynamic lighting, POI/transit labels) — none of which our pin maps need, and
+// they noticeably slow the first paint on mobile. Keep the warm colour grade,
+// but switch off the expensive layers so the map appears much faster.
 export const WARM_STYLE = "mapbox://styles/mapbox/standard";
-export const warmConfig = () => ({ basemap: { theme: "custom", "theme-data": warmLut() } });
+export const warmConfig = () => ({
+  basemap: {
+    theme: "custom",
+    "theme-data": warmLut(),
+    show3dObjects: false,
+    showPointOfInterestLabels: false,
+    showTransitLabels: false,
+  },
+});
