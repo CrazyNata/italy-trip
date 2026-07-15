@@ -78,6 +78,7 @@ export function Restaurants() {
   const [mapCopied, setMapCopied] = useState(false);
   const [mapCategories, setMapCategories] = useState<RestaurantCategory[]>([]);
   const [mapFiltersOpen, setMapFiltersOpen] = useState(false);
+  const [geocodingMap, setGeocodingMap] = useState(false);
 
   const list = useMemo(() => data?.restaurants ?? [], [data]);
   const cities = useMemo(
@@ -164,6 +165,22 @@ export function Restaurants() {
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
+  };
+  const geocodeMapRestaurants = async () => {
+    const missing = list.filter((item) => item.city === activeMapCity && !item.lnglat);
+    if (!missing.length) return toast("У всех ресторанов этого города уже есть точки");
+    setGeocodingMap(true);
+    const locations = new Map<string, [number, number]>();
+    for (const item of missing) {
+      try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&accept-language=ru&q=${encodeURIComponent(`${item.name}, ${item.city}`)}`);
+        const result = response.ok ? (await response.json() as Array<{ lat: string; lon: string }>)[0] : undefined;
+        if (result) locations.set(item.id, [Number(result.lon), Number(result.lat)]);
+      } catch {}
+    }
+    if (locations.size) updateData((current) => ({ ...current, restaurants: (current.restaurants ?? []).map((item) => locations.has(item.id) ? { ...item, lnglat: locations.get(item.id)! } : item) }));
+    setGeocodingMap(false);
+    toast(locations.size ? `Нашёл точки: ${locations.size}` : "Не удалось найти точки");
   };
 
   const shift = (item: Restaurant, amount: number) =>
@@ -331,6 +348,7 @@ export function Restaurants() {
           <div onClick={() => setMapCollapsed((value) => !value)} title={mapCollapsed ? "Развернуть карту ресторанов" : "Свернуть карту ресторанов"} style={{ cursor: "pointer", userSelect: "none" }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 600 }}><i className="fa-solid fa-utensils" style={{ color: "var(--ac,#b95c3f)", fontSize: 18, marginRight: 7 }} />Карта ресторанов</div><span style={{ flex: 1 }} /><i className="fa-solid fa-chevron-down" style={{ fontSize: 14, color: "var(--muted,#8a7d6b)", transform: mapCollapsed ? "rotate(-90deg)" : "none", transition: "transform .2s" }} /></div>{!mapCollapsed && <div style={{ fontSize: 12.5, color: "var(--muted,#8a7d6b)", marginTop: 3 }}>Нажмите на ресторан в списке, чтобы показать его на карте.</div>}</div>
           {!mapCollapsed && <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
             <select value={activeMapCity} onChange={(event) => { setMapCity(event.target.value); setMapFocus(null); }} style={{ flex: "1 1 260px", minWidth: 220, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 12px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}><option value="">город...</option>{cities.map((city) => <option key={city}>{city}</option>)}</select>
+            <button type="button" onClick={() => void geocodeMapRestaurants()} disabled={geocodingMap} style={{ flex: "1 1 auto", justifyContent: "center", display: "inline-flex", alignItems: "center", border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: geocodingMap ? "wait" : "pointer" }}><i className="fa-solid fa-location-crosshairs" style={{ marginRight: 5 }} />{geocodingMap ? "Ищу…" : "Найти точки"}</button>
             <div style={{ display: "contents" }}><button type="button" onClick={() => setMapFiltersOpen((open) => !open)} style={{ flex: "1 1 auto", justifyContent: "center", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--line,#e7dcc7)", background: mapFiltersOpen || mapCategories.length ? "var(--soft,#fdfaf3)" : "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className="fa-solid fa-sliders" style={{ fontSize: 12 }} />Фильтры{mapCategories.length ? ` · ${mapCategories.length}` : ""}</button>{mapFiltersOpen && <div style={{ flexBasis: "100%", display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center", padding: "4px 0 0" }}><span style={{ fontSize: 11, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", marginRight: 3 }}>Категории</span>{restaurantCategories.map((category) => { const selected = mapCategories.includes(category); return <button key={category} type="button" onClick={() => toggleMapCategory(category)} style={{ border: `1px solid ${selected ? "var(--ac,#b95c3f)" : "var(--line,#e7dcc7)"}`, background: selected ? "var(--ac,#b95c3f)" : "var(--soft,#fdfaf3)", color: selected ? "#fff" : "var(--ink,#3b3228)", borderRadius: "var(--r-1)", padding: "5px 8px", fontSize: 11.5, fontWeight: 600, cursor: "pointer" }}>{category}</button>; })}</div>}</div>
             <button type="button" onClick={async () => { if (!mapUrl) return toast("Добавьте минимум два ресторана с координатами"); try { await navigator.clipboard.writeText(mapUrl); } catch {} setMapCopied(true); window.setTimeout(() => setMapCopied(false), 1800); }} style={{ flex: "1 1 auto", justifyContent: "center", display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className={mapCopied ? "fa-solid fa-check" : "fa-regular fa-copy"} style={{ fontSize: 11 }} />{mapCopied ? "Скопировано" : "Копировать маршрут"}</button>
           </div>}
