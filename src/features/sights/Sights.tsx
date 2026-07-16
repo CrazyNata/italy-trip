@@ -152,12 +152,14 @@ function WalkingMap({
   sights,
   readOnly,
   focus,
+  userLocation,
   onMove,
   onRoute,
 }: {
   sights: Sight[];
   readOnly: boolean;
   focus?: { id: string; nonce: number } | null;
+  userLocation: [number, number] | null;
   onMove: (id: string, lnglat: [number, number]) => void;
   onRoute: (route: RouteState, error: string) => void;
 }) {
@@ -195,6 +197,21 @@ function WalkingMap({
         "top-left",
       );
       map.addControl(new mapbox.AttributionControl({ compact: true }));
+      const routePoints = userLocation
+        ? [userLocation, ...sights.map((sight) => sight.lnglat!)]
+        : sights.map((sight) => sight.lnglat!);
+      if (userLocation) {
+        markers.push(
+          new mapbox.Marker({ color: "#2a7089" })
+            .setLngLat(userLocation)
+            .setPopup(
+              new mapbox.Popup({ offset: 18, closeButton: false }).setText(
+                "Вы здесь",
+              ),
+            )
+            .addTo(map!),
+        );
+      }
       sights.forEach((sight, index) => {
         const markerElement = document.createElement("div");
         markerElement.className =
@@ -221,26 +238,26 @@ function WalkingMap({
       map.on("load", async () => {
         if (sights.length) {
           const bounds = new mapbox.LngLatBounds();
+          if (userLocation) bounds.extend(userLocation);
           sights.forEach((sight) => bounds.extend(sight.lnglat!));
-          sights.length === 1
+          routePoints.length === 1
             ? map!.flyTo({
-                center: sights[0].lnglat!,
+                center: routePoints[0],
                 zoom: 14,
                 essential: false,
               })
             : map!.fitBounds(bounds, { padding: 55, maxZoom: 15, duration: 0 });
         }
-        if (sights.length < 2) {
+        if (sights.length + Number(Boolean(userLocation)) < 2) {
           onRoute(null, "");
           return;
         }
-        const signature = sights
-          .map((sight) => `${sight.id}:${sight.lnglat!.join(",")}`)
-          .join("|");
+        const signature = [
+          ...sights.map((sight) => `${sight.id}:${sight.lnglat!.join(",")}`),
+          ...(userLocation ? [`you:${userLocation.join(",")}`] : []),
+        ].join("|");
         try {
-          const coordinates = sights
-            .map((sight) => sight.lnglat!.join(","))
-            .join(";");
+          const coordinates = routePoints.map((point) => point.join(",")).join(";");
           const response = await fetch(
             `https://api.mapbox.com/directions/v5/mapbox/walking/${coordinates}?geometries=geojson&overview=full&access_token=${encodeURIComponent(mapboxToken)}`,
             { signal: controller.signal },
@@ -292,6 +309,7 @@ function WalkingMap({
     mapboxToken,
     readOnly,
     sights.map((sight) => `${sight.id}:${sight.lnglat?.join(",")}`).join("|"),
+    userLocation?.join(","),
   ]);
 
   // Fly to a sight's marker and open its label when its list item is clicked.
@@ -351,6 +369,8 @@ export function Sights() {
   const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const [route, setRoute] = useState<RouteState>(null);
   const [routeError, setRouteError] = useState("");
+  const [walkLocation, setWalkLocation] = useState<[number, number] | null>(null);
+  const [locatingWalk, setLocatingWalk] = useState(false);
   const [copied, setCopied] = useState(false);
   const showCopied = useTransientState(setCopied);
   const closeInfo = () => { wikiRequest.current?.controller.abort(); wikiRequest.current = null; setOpen(null); };
@@ -412,19 +432,40 @@ export function Sights() {
   const located = walkAll
     .filter((sight) => sight.lnglat?.length === 2)
     .slice(0, 25);
+  const routeCoordinates = walkLocation
+    ? [walkLocation, ...located.map((sight) => sight.lnglat!)]
+    : located.map((sight) => sight.lnglat!);
   const mapUrl =
-    located.length < 2
+    routeCoordinates.length < 2
       ? ""
-      : `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(`${located[0].lnglat![1]},${located[0].lnglat![0]}`)}&destination=${encodeURIComponent(`${located.at(-1)!.lnglat![1]},${located.at(-1)!.lnglat![0]}`)}${
-          located.length > 2
+      : `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(`${routeCoordinates[0][1]},${routeCoordinates[0][0]}`)}&destination=${encodeURIComponent(`${routeCoordinates.at(-1)![1]},${routeCoordinates.at(-1)![0]}`)}${
+          routeCoordinates.length > 2
             ? `&waypoints=${encodeURIComponent(
-                located
+                routeCoordinates
                   .slice(1, -1)
-                  .map((sight) => `${sight.lnglat![1]},${sight.lnglat![0]}`)
+                  .map((point) => `${point[1]},${point[0]}`)
                   .join("|"),
               )}`
             : ""
         }&travelmode=walking`;
+
+  function findWalkLocation() {
+    if (!navigator.geolocation)
+      return toast("Геолокация недоступна в этом браузере");
+    setLocatingWalk(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setWalkLocation([position.coords.longitude, position.coords.latitude]);
+        setLocatingWalk(false);
+        toast("Местоположение определено — маршрут начинается от вас");
+      },
+      () => {
+        setLocatingWalk(false);
+        toast("Не удалось определить местоположение");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  }
 
   async function geocodeSight(sight: Sight) {
     try {
@@ -651,9 +692,10 @@ export function Sights() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 13 }}>
           <div onClick={() => setCollapsed((prev) => ({ ...prev, route: !prev.route }))} title={collapsed.route ? "Развернуть маршрут" : "Свернуть маршрут"} style={{ cursor: "pointer", userSelect: "none" }}><div style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 600 }}><i className="fa-solid fa-person-walking" style={{ color: "var(--ac,#b95c3f)", fontSize: 18, marginRight: 7 }} />Пеший маршрут</div><span style={{ flex: 1 }} /><i className="fa-solid fa-chevron-down" style={{ fontSize: 14, color: "var(--muted,#8a7d6b)", transform: collapsed.route ? "rotate(-90deg)" : "none", transition: "transform .2s" }} /></div>{!collapsed.route && <div style={{ fontSize: 12.5, color: "var(--muted,#8a7d6b)", marginTop: 3 }}>Нажмите на пункт списка, чтобы показать его на карте. Порядок меняйте стрелками или перетаскиванием маркеров.</div>}</div>
           {!collapsed.route && <div className="walk-controls" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-            <select value={activeCity} onChange={(e) => { setWalkCity(e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ minWidth: 150, maxWidth: 175, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}><option value="">город…</option>{cities.map((city) => <option key={city}>{city}</option>)}</select>
-            <select value={effectiveDay} onChange={(e) => { setWalkDay(+e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ flex: "1 1 auto", minWidth: 165, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}>{cityDayOptions.map((day) => <option value={day} key={day}>{dayName(activeCity, day)}</option>)}</select>
-            <button onClick={() => void geocodeMissing()} style={{ flex: "1 1 auto", justifyContent: "center", display: "inline-flex", alignItems: "center", border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className="fa-solid fa-location-crosshairs" style={{ marginRight: 5 }} />{geocoding ? "Ищу…" : "Найти точки"}</button>
+             <select value={activeCity} onChange={(e) => { setWalkCity(e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ minWidth: 150, maxWidth: 175, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}><option value="">город…</option>{cities.map((city) => <option key={city}>{city}</option>)}</select>
+             <select value={effectiveDay} onChange={(e) => { setWalkDay(+e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ flex: "1 1 auto", minWidth: 165, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}>{cityDayOptions.map((day) => <option value={day} key={day}>{dayName(activeCity, day)}</option>)}</select>
+            <button type="button" onClick={findWalkLocation} disabled={locatingWalk} title={walkLocation ? "Местоположение найдено" : "Определить моё местоположение"} style={{ flex: "1 1 auto", justifyContent: "center", display: "inline-flex", alignItems: "center", border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: locatingWalk ? "wait" : "pointer" }}><i className={locatingWalk ? "fa-solid fa-spinner fa-spin" : walkLocation ? "fa-solid fa-location-dot" : "fa-solid fa-location-crosshairs"} style={{ marginRight: 5 }} />{walkLocation ? "Вы здесь" : "Моё место"}</button>
+             <button onClick={() => void geocodeMissing()} style={{ flex: "1 1 auto", justifyContent: "center", display: "inline-flex", alignItems: "center", border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className="fa-solid fa-location-crosshairs" style={{ marginRight: 5 }} />{geocoding ? "Ищу…" : "Найти точки"}</button>
             <button onClick={() => void fetchPhotosMissing()} style={{ flex: "1 1 auto", justifyContent: "center", display: "inline-flex", alignItems: "center", border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className="fa-solid fa-image" style={{ marginRight: 5 }} />{fetchingPhotos ? "Ищу…" : "Найти фото"}</button>
             <button onClick={async () => { if (!mapUrl) return void toast("Добавьте минимум две точки для маршрута"); try { await navigator.clipboard.writeText(mapUrl); } catch {} showCopied(true, false); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--line,#e7dcc7)", background: "transparent", color: "var(--muted,#8a7d6b)", borderRadius: "var(--r-1)", padding: "5px 9px", fontSize: 11.5, fontWeight: 600, cursor: "pointer" }}><i className={copied ? "fa-solid fa-check" : "fa-regular fa-copy"} style={{ fontSize: 11 }} />{copied ? "Скопировано" : "Копировать маршрут"}</button>
           </div>}
@@ -665,7 +707,7 @@ export function Sights() {
             {walkAll.some((sight) => !sight.lnglat) && <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)" }}>Без точки: {walkAll.filter((sight) => !sight.lnglat).length}</div>}
             <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)", padding: "3px 2px" }}>{routeError || (route ? `Пешком: ${(route.distance / 1000).toFixed(1).replace(".", ",")} км · ${Math.round(route.duration / 60)} мин.` : located.length > 1 ? "Строим пеший маршрут…" : "Добавьте минимум две точки для маршрута.")}</div>
           </div>
-          <WalkingMap sights={located} readOnly={isReadOnly} focus={walkFocus} onMove={(id, lnglat) => mutate(id, { lnglat })} onRoute={(next, error) => { setRoute(next); setRouteError(error); }} />
+          <WalkingMap sights={located} readOnly={isReadOnly} focus={walkFocus} userLocation={walkLocation} onMove={(id, lnglat) => mutate(id, { lnglat })} onRoute={(next, error) => { setRoute(next); setRouteError(error); }} />
         </div> : <div style={{ fontSize: 13, color: "var(--muted,#8a7d6b)", padding: "6px 0" }}>Добавьте места с указанным городом, чтобы построить маршрут.</div>)}
         {!collapsed.route && walkAll.length > 0 && <div style={{ display: "flex", alignItems: "center", gap: 7, margin: "17px 0 -12px", fontSize: 12, color: "var(--muted,#5f7c7e)" }}><i className="fa-solid fa-circle-info" style={{ color: "var(--ac,#2a7089)" }} />Нажмите на карточку достопримечательности, чтобы прочитать её историю.</div>}
         {!collapsed.route && walkAll.length > 0 && <div style={{ margin: "20px -16px -16px", padding: "18px 16px 16px", background: "var(--soft,#f1f7f6)", borderTop: "1px solid var(--line,#e7dcc7)" }}><div style={{ display: "flex", alignItems: "baseline", gap: 9, margin: "0 0 13px" }}><h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: 22, fontWeight: 600, margin: 0 }}>{walkTitle}</h2><span style={{ fontSize: 12, color: "var(--muted,#8a7d6b)" }}>{walkAll.length} мест</span></div><div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(160px,1fr))", gap: 10 }}>{walkAll.map((sight, index) => <div key={sight.id} onClick={() => void openInfo(sight)} title="Открыть описание места" style={{ position: "relative", minHeight: 145, borderRadius: "var(--r-2)", overflow: "hidden", background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", cursor: "pointer" }}>{sight.photo && <img src={sight.photo} alt={sight.name} loading="lazy" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: .78 }} />}<div style={{ position: "absolute", inset: 0, background: "linear-gradient(0deg,rgba(20,35,36,.78),transparent 72%)" }} /><span style={{ position: "absolute", top: 9, left: 9, width: 23, height: 23, borderRadius: "50%", background: "var(--ac,#2a7089)", color: "#fff", display: "grid", placeItems: "center", fontSize: 11, fontWeight: 700 }}>{index + 1}</span><div style={{ position: "absolute", left: 11, right: 11, bottom: 10, color: "#fff", textShadow: "0 1px 5px rgba(0,0,0,.42)" }}><div style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, fontWeight: 600, lineHeight: 1.05 }}>{sight.name}</div><div style={{ fontSize: 10, letterSpacing: ".1em", textTransform: "uppercase", opacity: .82, marginTop: 4 }}>{subOf(sight)}</div></div></div>)}</div></div>}
