@@ -121,7 +121,7 @@ select
   count(*) filter (where item->>'link' like '%query=place_id:%') as invalid_maps_links
 from public.trip_state
 cross join lateral jsonb_array_elements(payload->'data'->'restaurants') item
-where id = 'main' and (item->>'id' like 'prague_pork_%' or item->>'id' like 'prague_beer_%');
+where id = 'main' and (item->>'id' like 'prague_pork_knee_%' or item->>'id' like 'prague_traditional_beer_%');
 ```
 
 Expected: 12 new cards, 6 pork-knee flags, 12 Maps links, 0 invalid Maps links.

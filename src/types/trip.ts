@@ -88,6 +88,8 @@ export interface Restaurant {
   priority?: boolean;
   /** Подтверждено, что в заведение можно с собакой. */
   petFriendly?: boolean;
+  /** Подтверждено, что в меню есть вепрево колено. */
+  hasPorkKnee?: boolean;
   reservationDate?: string;
   reservationTime?: string;
   placeType?: "ресторан" | "кафе" | "бар";
@@ -262,6 +264,7 @@ function isRestaurant(value: unknown): value is Restaurant {
     hasOptionalFiniteNumber(value, "googleReviews") &&
     (value.priority === undefined || typeof value.priority === "boolean") &&
     (value.petFriendly === undefined || typeof value.petFriendly === "boolean") &&
+    (value.hasPorkKnee === undefined || typeof value.hasPorkKnee === "boolean") &&
     hasOptionalString(value, "reservationDate") &&
     hasOptionalString(value, "reservationTime") &&
     (value.placeType === undefined || ["ресторан", "кафе", "бар"].includes(value.placeType as string)) &&
