@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTripData } from "../../trip/TripDataContext";
-import { supabase } from "../../lib/supabase/client";
 import type { Lodging as LodgingRecord } from "../../types/trip";
 import { Lightbox } from "../../components/Lightbox";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { uid, useTransientState } from "../shared";
+import { omitPhotoPreviews, photoPreviewUrl, removePhotoObjects } from "../photos/imageStorage";
 
 const statuses = ["хочу", "бронь", "оплачено", "пожили"];
 const flag = (city: string) =>
@@ -18,17 +18,6 @@ const flag = (city: string) =>
         : "🇮🇹";
 const readonly = () => window.dispatchEvent(new CustomEvent("trip:readonly"));
 const toast = (message: string) => window.dispatchEvent(new CustomEvent("trip:toast", { detail: message }));
-const storageBase = new URL(supabase.storage.from("place-photos").getPublicUrl("__probe__").data.publicUrl);
-const storagePrefix = storageBase.pathname.slice(0, -"__probe__".length);
-const storagePath = (url: string) => {
-  try {
-    const parsed = new URL(url);
-    return parsed.origin === storageBase.origin && parsed.pathname.startsWith(storagePrefix)
-      ? decodeURIComponent(parsed.pathname.slice(storagePrefix.length))
-      : "";
-  } catch { return ""; }
-};
-
 type Tone = "none" | "past" | "today" | "soon" | "free";
 
 function deadline(lodge: LodgingRecord) {
@@ -176,21 +165,23 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
       return;
     const current = data?.lodging.find((item) => item.id === lodge.id);
     if (!current) return;
-    const paths = [...new Set((current.photos || []).map(storagePath).filter(Boolean))];
-    if (paths.length) {
-      const { error } = await supabase.storage.from("place-photos").remove(paths);
-      if (error) return toast("Не удалось удалить фото жилья из хранилища");
-    }
-    const deletedPaths = new Set(paths);
+    const deletedUrls = current.photos ?? [];
+    const error = await removePhotoObjects(deletedUrls, data.photoPreviews);
+    if (error) return toast("Не удалось удалить фото жилья из хранилища");
+    const deleted = new Set(deletedUrls);
     let changed = false;
-    updateData((payload) => ({ ...payload, lodging: payload.lodging.filter((item) => {
-      if (item.id !== lodge.id) return true;
-      if ((item.photos || []).some((url) => { const path = storagePath(url); return path && !deletedPaths.has(path); })) {
-        changed = true;
-        return true;
-      }
-      return false;
-    }) }));
+    updateData((payload) => ({
+      ...payload,
+      lodging: payload.lodging.filter((item) => {
+        if (item.id !== lodge.id) return true;
+        if ((item.photos ?? []).some((url) => !deleted.has(url))) {
+          changed = true;
+          return true;
+        }
+        return false;
+      }),
+      photoPreviews: omitPhotoPreviews(payload.photoPreviews, deletedUrls),
+    }));
     if (changed) toast("Галерея изменилась во время удаления. Повторите попытку.");
   };
 
@@ -298,7 +289,7 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
                   <img
                     loading="lazy"
                     style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: lodge.objPosList?.[index] || lodge.objPos || "center", display: "block", cursor: "zoom-in" }}
-                    src={photos[index]}
+                    src={photoPreviewUrl(data, photos[index])}
                     alt="фото жилья"
                     onClick={() => setLightbox({ id: lodge.id, index })}
                   />

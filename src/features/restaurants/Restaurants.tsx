@@ -1,10 +1,10 @@
 import { useMemo, useState, type CSSProperties } from "react";
 import { useTripData } from "../../trip/TripDataContext";
-import { supabase } from "../../lib/supabase/client";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { Lightbox } from "../../components/Lightbox";
-import { restaurantCategories, type Restaurant, type RestaurantCategory } from "../../types/trip";
+import { restaurantCategories, type PhotoPreview, type Restaurant, type RestaurantCategory } from "../../types/trip";
 import { uid } from "../shared";
+import { omitPhotoPreviews, photoPreviewUrl, removePhotoObjects, uploadImageVariants } from "../photos/imageStorage";
 import { RestaurantEditorModal } from "./RestaurantEditorModal";
 import { RestaurantCityMap } from "./RestaurantCityMap";
 
@@ -25,21 +25,11 @@ const readonly = () => window.dispatchEvent(new CustomEvent("trip:readonly"));
 const toast = (message: string) =>
   window.dispatchEvent(new CustomEvent("trip:toast", { detail: message }));
 
-const storageBase = new URL(supabase.storage.from("place-photos").getPublicUrl("__probe__").data.publicUrl);
-const storagePrefix = storageBase.pathname.slice(0, -"__probe__".length);
-const storagePath = (url: string) => {
-  try {
-    const parsed = new URL(url);
-    return parsed.origin === storageBase.origin && parsed.pathname.startsWith(storagePrefix)
-      ? decodeURIComponent(parsed.pathname.slice(storagePrefix.length))
-      : "";
-  } catch { return ""; }
-};
-
 type EditorState = {
   draft: Restaurant;
   originalPhotos: string[];
   uploadedPhotos: string[];
+  uploadedPreviews: Record<string, PhotoPreview>;
   isNew: boolean;
 };
 
@@ -88,9 +78,9 @@ export function Restaurants() {
   );
   const activeMapCity = cities.includes(mapCity) ? mapCity : cities[0] ?? "";
   const cityMappedRestaurants = list.filter((item) => item.city === activeMapCity && item.lnglat);
-   const mappedRestaurants = cityMappedRestaurants.filter((item) =>
-     !mapCategories.length || item.categories?.some((category) => mapCategories.includes(category)),
-   );
+   const mappedRestaurants = cityMappedRestaurants
+     .filter((item) => !mapCategories.length || item.categories?.some((category) => mapCategories.includes(category)))
+     .map((item) => ({ ...item, photos: item.photos?.map((url) => photoPreviewUrl(data, url)) }));
    const mapRoutePoints = userLoc
      ? [userLoc, ...mappedRestaurants.map((item) => item.lnglat!)]
      : mappedRestaurants.map((item) => item.lnglat!);

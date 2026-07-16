@@ -5,7 +5,7 @@ const BUCKET = "place-photos";
 const storageBase = new URL(supabase.storage.from(BUCKET).getPublicUrl("__probe__").data.publicUrl);
 const storagePrefix = storageBase.pathname.slice(0, -"__probe__".length);
 
-export function photoPreviewUrl(data: TripData, fullUrl: string) {
+export function photoPreviewUrl(data: TripData | null | undefined, fullUrl: string) {
   return data.photoPreviews?.[fullUrl]?.url ?? fullUrl;
 }
 

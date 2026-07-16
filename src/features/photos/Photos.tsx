@@ -4,21 +4,29 @@ import { Lightbox } from "../../components/Lightbox";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { supabase } from "../../lib/supabase/client";
 import { useTripData } from "../../trip/TripDataContext";
-import type { TripPhoto } from "../../types/trip";
+import type { PhotoPreview, TripData, TripPhoto } from "../../types/trip";
 import { PanelTitle, uid } from "../shared";
-import { exif, scaleToBlob } from "./exif";
+import { exif } from "./exif";
+import {
+  createThumbnail,
+  omitPhotoPreviews,
+  photoPreviewUrl,
+  removePhotoObjects,
+  uploadImageVariants,
+  uploadMigratedThumbnail,
+} from "./imageStorage";
 
 type Kind = "lodging" | "sight" | "restaurant" | "upload";
 
 interface Shot {
-  url: string;
+  fullUrl: string;
+  previewUrl: string;
   place: string;
   kind: Kind;
   city: string;
   iso?: string;
   /** Заполнено только у загруженных снимков — их можно удалять. */
   photoId?: string;
-  path?: string;
 }
 
 interface DaySection {
@@ -36,6 +44,7 @@ interface CityAlbum {
 
 const MISC = "Разное";
 const NO_DATE = "__none__";
+const MIGRATION_BATCH = 10;
 
 const KIND_ICON: Record<Kind, string> = {
   lodging: "fa-solid fa-bed",
@@ -125,13 +134,23 @@ function reverseGeocode(lat: number, lng: number, signal: AbortSignal): Promise<
   return request as Promise<string | undefined>;
 }
 
+function allPhotoUrls(data: TripData) {
+  return [...new Set([
+    ...data.lodging.flatMap((item) => item.photos ?? []),
+    ...data.sights.map((item) => item.photo).filter((url): url is string => Boolean(url)),
+    ...(data.restaurants ?? []).flatMap((item) => item.photos ?? []),
+    ...(data.photos ?? []).map((item) => item.url),
+  ])];
+}
+
 export function Photos() {
-  const { data, isReadOnly, updateData } = useTripData();
+  const { data, isReadOnly, syncState, updateData } = useTripData();
   const confirm = useConfirm();
   const input = useRef<HTMLInputElement>(null);
   const abort = useRef<AbortController | null>(null);
   const [view, setView] = useState<{ shots: Shot[]; index: number } | null>(null);
   const [busy, setBusy] = useState("");
+  const [migration, setMigration] = useState("");
   const [dateFilter, setDateFilter] = useState<string | null>(null);
 
   useEffect(() => {
@@ -153,10 +172,10 @@ export function Photos() {
 
     const shots: Shot[] = [];
     const seen = new Set<string>();
-    const add = (url: string | undefined, city: string, shot: Omit<Shot, "url" | "city">) => {
-      if (!url || seen.has(url)) return;
-      seen.add(url);
-      shots.push({ url, city: city || MISC, ...shot });
+    const add = (fullUrl: string | undefined, city: string, shot: Omit<Shot, "fullUrl" | "previewUrl" | "city">) => {
+      if (!fullUrl || seen.has(fullUrl)) return;
+      seen.add(fullUrl);
+      shots.push({ fullUrl, previewUrl: photoPreviewUrl(data, fullUrl), city: city || MISC, ...shot });
     };
 
     data.lodging.forEach((l) =>
@@ -176,7 +195,6 @@ export function Photos() {
         kind: "upload",
         iso: photo.iso,
         photoId: photo.id,
-        path: photo.path,
       });
     });
 
@@ -224,6 +242,9 @@ export function Photos() {
   }, [data, dateFilter]);
 
   const total = albums.reduce((sum, album) => sum + album.count, 0);
+  const missingPreviews = data
+    ? allPhotoUrls(data).filter((url) => !data.photoPreviews?.[url])
+    : [];
 
   async function importFiles(fileList: FileList | null) {
     if (isReadOnly) return readonly();
@@ -237,23 +258,20 @@ export function Photos() {
       try {
         const file = files[index];
         const meta = exif(await file.arrayBuffer());
-        const scaled = await scaleToBlob(file);
-        const body = scaled ?? file;
         const id = uid("ph");
-        const path = `trip/${id}.jpg`;
-        const { error } = await supabase.storage
-          .from("place-photos")
-          .upload(path, body, { upsert: true, contentType: scaled ? "image/jpeg" : file.type || "image/jpeg" });
-        if (error) throw error;
-        const url = supabase.storage.from("place-photos").getPublicUrl(path).data.publicUrl;
+        const uploaded = await uploadImageVariants(file, `trip/${id}`);
         let place: string | undefined;
         if (meta.lat != null && meta.lng != null) {
           // Не удалось определить город по координатам — не страшно, фото уйдёт
           // в город по дате съёмки или в «Разное».
           place = await reverseGeocode(meta.lat, meta.lng, signal).catch(() => undefined);
         }
-        const photo: TripPhoto = { id, url, path, iso: meta.iso, lat: meta.lat, lng: meta.lng, place };
-        updateData((current) => ({ ...current, photos: [...(current.photos ?? []), photo] }));
+        const photo: TripPhoto = { id, url: uploaded.fullUrl, path: uploaded.fullPath, iso: meta.iso, lat: meta.lat, lng: meta.lng, place };
+        updateData((current) => ({
+          ...current,
+          photos: [...(current.photos ?? []), photo],
+          photoPreviews: { ...current.photoPreviews, [uploaded.fullUrl]: uploaded.preview },
+        }));
         done += 1;
       } catch {
         failed += 1;
@@ -263,12 +281,47 @@ export function Photos() {
     window.setTimeout(() => setBusy(""), failed ? 3200 : 100);
   }
 
+  async function migratePreviews() {
+    if (!data || isReadOnly || syncState !== "clean" || !missingPreviews.length) return;
+    const signal = abort.current?.signal ?? new AbortController().signal;
+    let done = 0;
+    let failed = 0;
+    let batch: Record<string, PhotoPreview> = {};
+    const flush = () => {
+      if (!Object.keys(batch).length) return;
+      const completed = batch;
+      batch = {};
+      updateData((current) => ({
+        ...current,
+        photoPreviews: { ...current.photoPreviews, ...completed },
+      }));
+    };
+    for (const fullUrl of missingPreviews) {
+      if (signal.aborted) break;
+      setMigration(`Создаю превью ${done + failed + 1} из ${missingPreviews.length}…`);
+      try {
+        const response = await fetch(fullUrl, { signal });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const thumbnail = await createThumbnail(await response.blob());
+        batch[fullUrl] = await uploadMigratedThumbnail(fullUrl, thumbnail);
+        done += 1;
+        if (Object.keys(batch).length >= MIGRATION_BATCH) flush();
+      } catch (error) {
+        if ((error as Error).name === "AbortError") break;
+        failed += 1;
+      }
+    }
+    flush();
+    setMigration(failed ? `Готово: ${done}. Не удалось: ${failed}.` : `Готово: ${done}.`);
+    window.setTimeout(() => setMigration(""), 5000);
+  }
+
   async function removePhoto(shot: Shot) {
     if (isReadOnly) return readonly();
-    if (!shot.photoId || !shot.path) return;
+    if (!shot.photoId || !data) return;
     if (!(await confirm({ title: "Удалить фото?", message: "Снимок будет удалён из альбома безвозвратно.", tone: "danger" })))
       return;
-    const { error } = await supabase.storage.from("place-photos").remove([shot.path]);
+    const error = await removePhotoObjects([shot.fullUrl], data.photoPreviews);
     if (error) {
       setBusy("Не удалось удалить фото из хранилища.");
       window.setTimeout(() => setBusy(""), 3200);
@@ -277,6 +330,7 @@ export function Photos() {
     updateData((current) => ({
       ...current,
       photos: (current.photos ?? []).filter((photo) => photo.id !== shot.photoId),
+      photoPreviews: omitPhotoPreviews(current.photoPreviews, [shot.fullUrl]),
     }));
   }
 
@@ -372,6 +426,22 @@ export function Photos() {
         </div>
       )}
 
+      {!isReadOnly && missingPreviews.length > 0 && (
+        <div className="photo-busy">
+          <span style={{ flex: 1 }}>
+            Для {missingPreviews.length} {plural(missingPreviews.length, "фото", "фото", "фото")} ещё нужны лёгкие превью.
+          </span>
+          <button
+            type="button"
+            className="photo-add"
+            disabled={Boolean(migration) || syncState !== "clean"}
+            onClick={() => void migratePreviews()}
+          >
+            {migration || "Оптимизировать галерею"}
+          </button>
+        </div>
+      )}
+
       {anyPhotos === 0 ? (
         <div className="photo-empty">
           <span className="fa-solid fa-images" />
@@ -431,7 +501,7 @@ export function Photos() {
                         <div className="photo-grid">
                           {section.shots.map((shot, shotIndex) => (
                             <figure
-                              key={shot.url}
+                              key={shot.fullUrl}
                               className={shotIndex === 0 && section.shots.length > 2 ? "is-hero" : undefined}
                             >
                               <button
@@ -440,7 +510,7 @@ export function Photos() {
                                 onClick={() => setView({ shots: section.shots, index: shotIndex })}
                                 aria-label={`Открыть фото: ${shot.place}`}
                               >
-                                <img src={shot.url} alt={shot.place} loading="lazy" />
+                                <img src={shot.previewUrl} alt={shot.place} loading="lazy" decoding="async" />
                               </button>
                               {shot.photoId && !isReadOnly && (
                                 <button
@@ -471,7 +541,7 @@ export function Photos() {
 
       {view && (
         <Lightbox
-          images={view.shots.map((shot) => shot.url)}
+          images={view.shots.map((shot) => shot.fullUrl)}
           index={view.index}
           alt={view.shots[view.index]?.place}
           onClose={() => setView(null)}

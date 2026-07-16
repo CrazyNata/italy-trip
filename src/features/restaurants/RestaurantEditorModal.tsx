@@ -15,6 +15,7 @@ type Props = {
   onSave: () => void;
   onCancel: () => void;
   onDelete: () => void;
+  previewUrl: (url: string) => string;
 };
 
 export function RestaurantEditorModal({
@@ -29,6 +30,7 @@ export function RestaurantEditorModal({
   onSave,
   onCancel,
   onDelete,
+  previewUrl,
 }: Props) {
   const closeButton = useRef<HTMLButtonElement>(null);
   const photos = draft.photos ?? [];
@@ -141,7 +143,7 @@ export function RestaurantEditorModal({
               <div className="restaurant-editor-photo-grid">
                 {photos.map((photo, index) => (
                   <figure key={photo}>
-                    <img src={photo} alt={`Фото ресторана ${index + 1}`} />
+                    <img src={previewUrl(photo)} alt={`Фото ресторана ${index + 1}`} />
                     <div className="restaurant-editor-photo-move">
                       <button type="button" disabled={index === 0} onClick={() => onMovePhoto(index, -1)} aria-label={`Переместить фото ${index + 1} влево`}>
                         <i className="fa-solid fa-arrow-left" aria-hidden />
