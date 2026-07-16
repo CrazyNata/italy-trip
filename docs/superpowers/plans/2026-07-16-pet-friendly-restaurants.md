@@ -31,7 +31,7 @@
 - Consumes: `Restaurant.petFriendly?: boolean`.
 - Produces: a card dog indicator, owner editor control, and `sortBy: "petFriendly"` behavior.
 
-- [ ] **Step 1: Extend the Restaurant model**
+- [x] **Step 1: Extend the Restaurant model**
 
 Add this property after `priority` in `src/types/trip.ts`:
 
@@ -40,7 +40,7 @@ Add this property after `priority` in `src/types/trip.ts`:
 petFriendly?: boolean;
 ```
 
-- [ ] **Step 2: Add the owner editor toggle**
+- [x] **Step 2: Add the owner editor toggle**
 
 Add a button to the existing `Статус` fieldset in `src/features/restaurants/RestaurantEditorModal.tsx`:
 
@@ -54,7 +54,7 @@ Add a button to the existing `Статус` fieldset in `src/features/restaurant
 </button>
 ```
 
-- [ ] **Step 3: Add sort behavior and option**
+- [x] **Step 3: Add sort behavior and option**
 
 Extend the existing `sortBy` union with `"petFriendly"`. Before the existing booking/rating/price/distance sort branches, add:
 
@@ -70,7 +70,7 @@ Add the option to the existing sort `<select>`:
 <option value="petFriendly" style={{ color: "var(--ink,#3b3228)" }}>pet friendly</option>
 ```
 
-- [ ] **Step 4: Add the accessible card indicator**
+- [x] **Step 4: Add the accessible card indicator**
 
 Add this before the priority indicator inside the card metadata span in `src/features/restaurants/Restaurants.tsx`:
 
@@ -78,7 +78,7 @@ Add this before the priority indicator inside the card metadata span in `src/fea
 {item.petFriendly && <span title="Можно с собакой" aria-label="Можно с собакой">🐶</span>}
 ```
 
-- [ ] **Step 5: Verify the production build**
+- [x] **Step 5: Verify the production build**
 
 Run:
 
@@ -88,7 +88,7 @@ npx --yes --package node@22 --call 'node --version && npm run build'
 
 Expected: Node 22 is printed and the Vite build exits successfully.
 
-- [ ] **Step 6: Commit the UI change**
+- [x] **Step 6: Commit the UI change**
 
 ```bash
 git add src/types/trip.ts src/features/restaurants/RestaurantEditorModal.tsx src/features/restaurants/Restaurants.tsx
@@ -105,7 +105,7 @@ git commit -m "Add pet-friendly restaurant controls"
 - Consumes: the live 101-record `payload.data.restaurants` array and the `petFriendly` field from Task 1.
 - Produces: an evidence table for every restaurant ID and `petFriendly: true` only on confirmed records.
 
-- [ ] **Step 1: Capture the live research baseline**
+- [x] **Step 1: Capture the live research baseline**
 
 ```sql
 select updated_at, item->>'id' id, item->>'city' city, item->>'name' name, item->>'link' link
@@ -117,7 +117,7 @@ order by city, name;
 
 Expected: 101 rows and one `updated_at` timestamp.
 
-- [ ] **Step 2: Create the complete evidence table**
+- [x] **Step 2: Create the complete evidence table**
 
 Create `docs/superpowers/research/2026-07-16-pet-friendly-restaurants.md` with this exact table shape and one row per baseline ID:
 
@@ -129,7 +129,7 @@ Create `docs/superpowers/research/2026-07-16-pet-friendly-restaurants.md` with t
 
 Use `yes` only for explicit confirmation from `Official`, `Google Maps`, or `Visitor review`; record `no confirmation` and leave the database field absent otherwise.
 
-- [ ] **Step 3: Re-read the timestamp immediately before write**
+- [x] **Step 3: Re-read the timestamp immediately before write**
 
 ```sql
 select updated_at, jsonb_array_length(payload->'data'->'restaurants') restaurant_count
@@ -139,7 +139,7 @@ where id = 'main';
 
 Expected: record count remains 101. If the timestamp changed, repeat Step 1 and remove IDs no longer present.
 
-- [ ] **Step 4: Apply the guarded JSONB update**
+- [x] **Step 4: Apply the guarded JSONB update**
 
 Build a `confirmed(id)` CTE with every research row marked `yes`. Update the array with:
 
@@ -153,7 +153,7 @@ jsonb_agg(
 
 Use `where id = 'main' and updated_at = 'EXPECTED_UPDATED_AT'::timestamptz`, and return the updated timestamp and restaurant count. Expected: one returned row and a count of 101.
 
-- [ ] **Step 5: Verify source coverage and stored types**
+- [x] **Step 5: Verify source coverage and stored types**
 
 ```sql
 select
@@ -167,7 +167,7 @@ where trip_state.id = 'main';
 
 Expected: `restaurants = 101`, `invalid_flags = 0`. Cross-check each flagged ID against a `yes` row in the research table and each `yes` row against a flagged ID.
 
-- [ ] **Step 6: Verify the production build and commit evidence**
+- [x] **Step 6: Verify the production build and commit evidence**
 
 Run:
 
