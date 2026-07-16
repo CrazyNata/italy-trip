@@ -200,6 +200,8 @@ function WalkingMap({
         markerElement.className =
           "grid h-7 w-7 place-items-center rounded-full border-2 border-white bg-[var(--ac)] text-xs font-bold text-white shadow-md";
         markerElement.textContent = String(index + 1);
+        markerElement.style.cursor = "pointer";
+        markerElement.title = "Открыть на Google Картах";
         const marker = new mapbox.Marker({
           element: markerElement,
           draggable: !readOnly,
@@ -211,9 +213,18 @@ function WalkingMap({
             ),
           )
           .addTo(map!);
+        // Click a pin → open that place on Google Maps by name. A click right
+        // after a drag (reordering) is ignored so moving markers doesn't open a tab.
+        let lastDragEnd = 0;
         marker.on("dragend", () => {
+          lastDragEnd = Date.now();
           const point = marker.getLngLat();
           onMove(sight.id, [point.lng, point.lat]);
+        });
+        markerElement.addEventListener("click", (event) => {
+          event.stopPropagation();
+          if (Date.now() - lastDragEnd < 300) return;
+          window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${sight.name}, ${sight.city}`)}`, "_blank", "noopener,noreferrer");
         });
         markers.push(marker);
         markersRef.current[sight.id] = marker;
