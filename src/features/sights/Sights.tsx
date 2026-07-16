@@ -125,23 +125,6 @@ let nextNominatimRequest = 0;
 // Pull a header image for a place from the Russian Wikipedia REST summary.
 // Prefers the full-size original over the small thumbnail so card and dialog
 // imagery stays crisp. Returns undefined when the article has no picture.
-async function fetchWikiImage(name: string, signal: AbortSignal): Promise<string | undefined> {
-  try {
-    const response = await fetch(
-      `https://ru.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`,
-      { signal },
-    );
-    if (!response.ok) return undefined;
-    const json = (await response.json()) as {
-      originalimage?: { source?: string };
-      thumbnail?: { source?: string };
-    };
-    return json.originalimage?.source || json.thumbnail?.source;
-  } catch {
-    return undefined;
-  }
-}
-
 type RouteState = {
   signature: string;
   distance: number;
@@ -366,7 +349,6 @@ export function Sights() {
   const [walkDay, setWalkDay] = useState(1);
   const [walkFocus, setWalkFocus] = useState<{ id: string; nonce: number } | null>(null);
   const [geocoding, setGeocoding] = useState(false);
-  const [fetchingPhotos, setFetchingPhotos] = useState(false);
   const [route, setRoute] = useState<RouteState>(null);
   const [routeError, setRouteError] = useState("");
   const [walkLocation, setWalkLocation] = useState<[number, number] | null>(null);
@@ -515,35 +497,6 @@ export function Sights() {
       found
         ? `Найдены точки: ${found} из ${missing.length}`
         : "Точки не найдены. Проверьте названия мест.",
-    );
-  }
-  async function fetchPhotosMissing() {
-    if (isReadOnly) return void toast();
-    const missing = walkAll.filter((sight) => !sight.photo);
-    if (!missing.length)
-      return void toast("У всех мест этого города уже есть фото");
-    setFetchingPhotos(true);
-    let found = 0;
-    for (const sight of missing) {
-      const photo = await fetchWikiImage(sight.name, geocodeController.current.signal);
-      if (!mounted.current) return;
-      if (photo) {
-        found += 1;
-        updateData((current) => ({
-          ...current,
-          sights: current.sights.map((item) =>
-            item.id === sight.id && !item.photo ? { ...item, photo } : item,
-          ),
-        }));
-      }
-      await new Promise((resolve) => window.setTimeout(resolve, 250));
-      if (!mounted.current) return;
-    }
-    setFetchingPhotos(false);
-    toast(
-      found
-        ? `Найдены фото: ${found} из ${missing.length}`
-        : "Фото не найдены. Проверьте названия мест.",
     );
   }
   async function openInfo(sight: Sight) {
@@ -695,7 +648,6 @@ export function Sights() {
              <select value={activeCity} onChange={(e) => { setWalkCity(e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ minWidth: 150, maxWidth: 175, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}><option value="">город…</option>{cities.map((city) => <option key={city}>{city}</option>)}</select>
              <select value={effectiveDay} onChange={(e) => { setWalkDay(+e.target.value); setWalkFocus(null); setRoute(null); setRouteError(""); }} style={{ flex: "1 1 auto", minWidth: 165, border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-2)", padding: "8px 10px", fontSize: 13, background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)" }}>{cityDayOptions.map((day) => <option value={day} key={day}>{dayName(activeCity, day)}</option>)}</select>
             <button type="button" onClick={findWalkLocation} disabled={locatingWalk} title={walkLocation ? "Местоположение найдено" : "Определить моё местоположение"} style={{ flex: "1 1 auto", justifyContent: "center", display: "inline-flex", alignItems: "center", border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: locatingWalk ? "wait" : "pointer" }}><i className={locatingWalk ? "fa-solid fa-spinner fa-spin" : walkLocation ? "fa-solid fa-location-dot" : "fa-solid fa-location-crosshairs"} style={{ marginRight: 5 }} />{walkLocation ? "Вы здесь" : "Моё местоположение"}</button>
-            <button onClick={() => void fetchPhotosMissing()} style={{ flex: "1 1 auto", justifyContent: "center", display: "inline-flex", alignItems: "center", border: "1px solid var(--line,#e7dcc7)", background: "var(--soft,#fdfaf3)", color: "var(--ink,#3b3228)", borderRadius: "var(--r-2)", padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer" }}><i className="fa-solid fa-image" style={{ marginRight: 5 }} />{fetchingPhotos ? "Ищу…" : "Найти фото"}</button>
             <button onClick={async () => { if (!mapUrl) return void toast("Добавьте минимум две точки для маршрута"); try { await navigator.clipboard.writeText(mapUrl); } catch {} showCopied(true, false); }} style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--line,#e7dcc7)", background: "transparent", color: "var(--muted,#8a7d6b)", borderRadius: "var(--r-1)", padding: "5px 9px", fontSize: 11.5, fontWeight: 600, cursor: "pointer" }}><i className={copied ? "fa-solid fa-check" : "fa-regular fa-copy"} style={{ fontSize: 11 }} />{copied ? "Скопировано" : "Копировать маршрут"}</button>
           </div>}
         </div>
