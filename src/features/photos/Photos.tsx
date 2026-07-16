@@ -285,6 +285,7 @@ export function Photos() {
     const signal = abort.current?.signal ?? new AbortController().signal;
     let done = 0;
     let failed = 0;
+    let skipped = 0;
     let batch: Record<string, PhotoPreview> = {};
     const flush = () => {
       if (!Object.keys(batch).length) return;
@@ -297,7 +298,7 @@ export function Photos() {
     };
     for (const fullUrl of missingPreviews) {
       if (signal.aborted) break;
-      setMigration(`Создаю превью ${done + failed + 1} из ${missingPreviews.length}…`);
+      setMigration(`Создаю превью ${done + failed + skipped + 1} из ${missingPreviews.length}…`);
       try {
         const response = await fetch(fullUrl, { signal });
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -307,11 +308,25 @@ export function Photos() {
         if (Object.keys(batch).length >= MIGRATION_BATCH) flush();
       } catch (error) {
         if ((error as Error).name === "AbortError") break;
-        failed += 1;
+        const external = new URL(fullUrl, window.location.href).origin !== window.location.origin;
+        if (external && error instanceof TypeError) {
+          // Некоторые сайты разрешают показывать <img>, но запрещают CORS-fetch.
+          // Помечаем такие единичные URL как passthrough, чтобы не повторять миграцию бесконечно.
+          batch[fullUrl] = { url: fullUrl };
+          skipped += 1;
+          if (Object.keys(batch).length >= MIGRATION_BATCH) flush();
+        } else {
+          failed += 1;
+        }
       }
     }
     flush();
-    setMigration(failed ? `Готово: ${done}. Не удалось: ${failed}.` : `Готово: ${done}.`);
+    const details = [
+      `Готово: ${done}.`,
+      skipped ? `Без CORS: ${skipped}.` : "",
+      failed ? `Не удалось: ${failed}.` : "",
+    ].filter(Boolean).join(" ");
+    setMigration(details);
     window.setTimeout(() => setMigration(""), 5000);
   }
 
