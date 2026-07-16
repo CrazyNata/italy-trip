@@ -7,7 +7,7 @@ import { Lightbox } from "../../components/Lightbox";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { uid, useTransientState } from "../shared";
 
-const statuses = ["хочу", "бронь", "оплачено"];
+const statuses = ["хочу", "бронь", "оплачено", "пожили"];
 const flag = (city: string) =>
   /зальцбург|австри/i.test(city)
     ? "🇦🇹"
@@ -279,16 +279,19 @@ export function Lodging({ cancellation = false }: { cancellation?: boolean }) {
       <div className="lodging-grid" style={{ animation: "fadeUp .4s ease both", position: "relative", borderRadius: "var(--r-5)", padding: 20, background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, pointerEvents: "none", opacity: .5, backgroundImage: "radial-gradient(var(--line,#d8c9ac) 1.1px, transparent 1.1px)", backgroundSize: "22px 22px" }}></div>
         <div style={{ position: "relative", display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: 18 }}>
-        {data.lodging.map((lodge) => {
+        {[...data.lodging]
+          .sort((a, b) => Number(a.status === "пожили") - Number(b.status === "пожили"))
+          .map((lodge) => {
           const index = (photo[lodge.id] || 0) % (lodge.photos?.length || 1);
           const photos = lodge.photos || [];
-          const statusColors: Record<string, [string, string]> = { хочу: ["#efe4cf", "#8a7d6b"], бронь: ["#e6ead2", "#6f7a45"], оплачено: ["#f0ddd4", "#b95c3f"] };
+          const lived = lodge.status === "пожили";
+          const statusColors: Record<string, [string, string]> = { хочу: ["#efe4cf", "#8a7d6b"], бронь: ["#e6ead2", "#6f7a45"], оплачено: ["#f0ddd4", "#b95c3f"], пожили: ["#e8e2d6", "#8a8172"] };
           const [, statusColor] = statusColors[lodge.status] || statusColors.хочу;
           return (
             <article
               id={`lodge-card-${lodge.id}`}
               key={lodge.id}
-              style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-4)", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 1px 3px rgba(59,50,40,.05)", scrollMarginTop: 20, transition: "box-shadow .3s,border-color .3s" }}
+              style={{ background: "var(--paper,#fbf2df)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-4)", overflow: "hidden", display: "flex", flexDirection: "column", boxShadow: "0 1px 3px rgba(59,50,40,.05)", scrollMarginTop: 20, transition: "box-shadow .3s,border-color .3s,opacity .3s,filter .3s", opacity: lived ? .58 : 1, filter: lived ? "grayscale(.4)" : undefined }}
             >
               {photos.length ? (
                 <div className="no-swipe" style={{ position: "relative", height: 230, overflow: "hidden" }}>

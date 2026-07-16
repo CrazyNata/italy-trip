@@ -118,6 +118,14 @@ export interface TripPhoto {
   place?: string;
 }
 
+/** Уменьшенная копия фотографии для карточек и галерей. */
+export interface PhotoPreview {
+  /** Публичный URL уменьшенной копии. */
+  url: string;
+  /** Путь в Storage, если превью хранится в нашем бакете. */
+  path?: string;
+}
+
 export interface TripData {
   trip: TripDetails;
   days: TripDay[];
@@ -128,6 +136,8 @@ export interface TripData {
   budgetV: number;
   restaurants?: Restaurant[];
   photos?: TripPhoto[];
+  /** Производные превью, индексированные по URL большой фотографии. */
+  photoPreviews?: Record<string, PhotoPreview>;
 }
 
 export interface TripPayload {
@@ -301,6 +311,14 @@ function isTripPhoto(value: unknown): value is TripPhoto {
   );
 }
 
+function isPhotoPreview(value: unknown): value is PhotoPreview {
+  return isRecord(value) && hasString(value, "url") && hasOptionalString(value, "path");
+}
+
+function isPhotoPreviewRecord(value: unknown): value is Record<string, PhotoPreview> {
+  return isRecord(value) && Object.values(value).every(isPhotoPreview);
+}
+
 export function parseTripPayload(value: unknown): TripPayload | null {
   if (
     !isRecord(value) ||
@@ -327,6 +345,7 @@ export function parseTripPayload(value: unknown): TripPayload | null {
       !(Array.isArray(data.restaurants) && data.restaurants.every(isRestaurant))) ||
     (data.photos !== undefined &&
       !(Array.isArray(data.photos) && data.photos.every(isTripPhoto))) ||
+    (data.photoPreviews !== undefined && !isPhotoPreviewRecord(data.photoPreviews)) ||
     !hasFiniteNumber(data, "romeSightsV") ||
     !hasFiniteNumber(data, "budgetV")
   )
