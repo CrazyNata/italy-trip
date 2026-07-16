@@ -27,6 +27,7 @@ export function Budget() {
       return currencies.includes(saved as Currency) ? saved as Currency : "EUR";
     } catch { return "EUR"; }
   });
+  const [expandedBreakdowns, setExpandedBreakdowns] = useState<Record<"family" | "day", boolean>>({ family: false, day: false });
   const [rates, setRates] = useState<Record<Currency, number>>({ EUR: 1, RUB: 0, CZK: 0 });
   useEffect(() => {
     const controller = new AbortController();
@@ -54,7 +55,8 @@ export function Budget() {
     try { localStorage.setItem(CURRENCY_KEY, next); } catch { /* Preference stays in memory. */ }
   };
   const total = data.expenses.reduce((sum, expense) => sum + (Number(expense.amount) || 0), 0);
-  const days = Math.max(1, Math.round((new Date(data.trip.end).getTime() - new Date(data.trip.start).getTime()) / 86400000));
+  const days = 16;
+  const familySize = Math.max(1, data.trip.people);
   const byCategory = new Map<string, number>();
   for (const expense of data.expenses) {
     const key = expense.category.trim() || "разное";
@@ -68,6 +70,11 @@ export function Budget() {
     if (!(await confirm({ title: "Удалить расход?", message: <>«{expense?.label || "расход"}» будет удалён из бюджета.</> }))) return;
     updateData((current) => ({ ...current, expenses: current.expenses.filter((item) => item.id !== id) }));
   };
+  const breakdown = (divisor: number, color: string) => (
+    <div style={{ display: "grid", gap: 6, marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--line,#e7dcc7)" }}>
+      {data.expenses.map((expense) => <div key={expense.id} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 12 }}><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: "var(--muted,#8a7d6b)" }}>{expense.label}</span><strong style={{ flex: "none", color, fontVariantNumeric: "tabular-nums" }}>{formatAmount(expense.amount / divisor)}</strong></div>)}
+    </div>
+  );
 
   return <div style={{ animation: "fadeUp .4s ease both" }}>
     <div style={{ position: "relative", overflow: "hidden", borderRadius: "var(--r-5)", padding: 24, background: "linear-gradient(125deg,var(--ac,#2a7089),#195866)", color: "#fff", marginBottom: 18 }}>
@@ -79,8 +86,8 @@ export function Budget() {
       </div>
     </div>
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(180px,1fr))", gap: 12, marginBottom: 18 }}>
-      <div style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-3)", padding: "16px 18px", display: "flex", alignItems: "center", gap: 12 }}><span style={{ width: 34, height: 34, borderRadius: "var(--r-2)", background: "var(--soft,#f1f7f6)", color: "var(--ac,#2a7089)", display: "grid", placeItems: "center" }}><i className="fa-solid fa-people-group" /></span><div><div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", fontWeight: 700 }}>На семью</div><div style={{ fontFamily: "'Mulish',system-ui,sans-serif", fontVariantNumeric: "tabular-nums", fontSize: 27, fontWeight: 700, lineHeight: 1.15, marginTop: 3 }}>{formatAmount(total / 2)}</div></div></div>
-      <div style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-3)", padding: "16px 18px", display: "flex", alignItems: "center", gap: 12 }}><span style={{ width: 34, height: 34, borderRadius: "var(--r-2)", background: "#f7eee1", color: "var(--ac2,#d99a4e)", display: "grid", placeItems: "center" }}><i className="fa-regular fa-calendar" /></span><div><div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", fontWeight: 700 }}>В день</div><div style={{ fontFamily: "'Mulish',system-ui,sans-serif", fontVariantNumeric: "tabular-nums", fontSize: 27, fontWeight: 700, lineHeight: 1.15, marginTop: 3 }}>{formatAmount(total / days)}</div></div></div>
+      <button type="button" onClick={() => setExpandedBreakdowns((current) => ({ ...current, family: !current.family }))} aria-expanded={expandedBreakdowns.family} style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-3)", padding: "16px 18px", background: "var(--card,#fff)", textAlign: "left", color: "inherit" }}><div style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ width: 34, height: 34, borderRadius: "var(--r-2)", background: "var(--soft,#f1f7f6)", color: "var(--ac,#2a7089)", display: "grid", placeItems: "center" }}><i className="fa-solid fa-people-group" /></span><div style={{ flex: 1 }}><div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", fontWeight: 700 }}>На семью</div><div style={{ fontFamily: "'Mulish',system-ui,sans-serif", fontVariantNumeric: "tabular-nums", fontSize: 27, fontWeight: 700, lineHeight: 1.15, marginTop: 3 }}>{formatAmount(total / familySize)}</div></div><i className="fa-solid fa-chevron-down" style={{ color: "var(--muted,#8a7d6b)", fontSize: 12, transform: expandedBreakdowns.family ? "rotate(180deg)" : undefined, transition: "transform .2s" }} /></div>{expandedBreakdowns.family && breakdown(familySize, "var(--ac,#2a7089)")}</button>
+      <button type="button" onClick={() => setExpandedBreakdowns((current) => ({ ...current, day: !current.day }))} aria-expanded={expandedBreakdowns.day} style={{ border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-3)", padding: "16px 18px", background: "var(--card,#fff)", textAlign: "left", color: "inherit" }}><div style={{ display: "flex", alignItems: "center", gap: 12 }}><span style={{ width: 34, height: 34, borderRadius: "var(--r-2)", background: "#f7eee1", color: "var(--ac2,#d99a4e)", display: "grid", placeItems: "center" }}><i className="fa-regular fa-calendar" /></span><div style={{ flex: 1 }}><div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", fontWeight: 700 }}>В день</div><div style={{ fontFamily: "'Mulish',system-ui,sans-serif", fontVariantNumeric: "tabular-nums", fontSize: 27, fontWeight: 700, lineHeight: 1.15, marginTop: 3 }}>{formatAmount(total / days)}</div></div><i className="fa-solid fa-chevron-down" style={{ color: "var(--muted,#8a7d6b)", fontSize: 12, transform: expandedBreakdowns.day ? "rotate(180deg)" : undefined, transition: "transform .2s" }} /></div>{expandedBreakdowns.day && breakdown(days, "var(--ac2,#d99a4e)")}</button>
       <div style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-3)", padding: "16px 18px", display: "flex", alignItems: "center", gap: 12 }}><span style={{ width: 34, height: 34, borderRadius: "var(--r-2)", background: "color-mix(in srgb,var(--ol,#2f8a6a) 14%,transparent)", color: "var(--ol,#2f8a6a)", display: "grid", placeItems: "center" }}><i className="fa-solid fa-list-ul" /></span><div><div style={{ fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--muted,#8a7d6b)", fontWeight: 700 }}>Записей</div><div style={{ fontFamily: "'Mulish',system-ui,sans-serif", fontVariantNumeric: "tabular-nums", fontSize: 27, fontWeight: 700, lineHeight: 1.15, marginTop: 3 }}>{data.expenses.length}</div></div></div>
     </div>
     {categories.length > 0 && <div style={{ background: "var(--card,#fff)", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-5)", overflow: "hidden", marginBottom: 18 }}>
