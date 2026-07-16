@@ -58,6 +58,7 @@ export function Restaurants() {
   const [priorityOnly, setPriorityOnly] = useState(false);
   const [porkKneeOnly, setPorkKneeOnly] = useState(false);
   const [placeTypeFilter, setPlaceTypeFilter] = useState("");
+  const [nameQuery, setNameQuery] = useState("");
   const [sortBy, setSortBy] = useState<"booking" | "rating" | "price" | "distance" | "petFriendly">("rating");
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
@@ -97,7 +98,9 @@ export function Restaurants() {
   };
 
   const visible = useMemo(() => {
+    const query = nameQuery.trim().toLowerCase();
     const filtered = list
+      .filter((item) => !query || item.name.toLowerCase().includes(query))
       .filter((item) => !cityFilter || item.city === cityFilter)
       .filter((item) => !priceFilter || item.price === priceFilter)
         .filter((item) => !minRating || (item.googleRating ?? 0) >= minRating)
@@ -124,15 +127,13 @@ export function Restaurants() {
     if (sortBy === "booking")
       filtered.sort((a, b) => `${a.item.reservationDate ?? "9999-99-99"}T${a.item.reservationTime ?? "99:99"}`.localeCompare(`${b.item.reservationDate ?? "9999-99-99"}T${b.item.reservationTime ?? "99:99"}`));
     return filtered;
-  }, [list, cityFilter, priceFilter, minRating, priorityOnly, porkKneeOnly, placeTypeFilter, sortBy, userLoc]);
+  }, [list, nameQuery, cityFilter, priceFilter, minRating, priorityOnly, porkKneeOnly, placeTypeFilter, sortBy, userLoc]);
 
   if (!data) return null;
 
   const guard = (action: () => void) => (isReadOnly ? readonly() : action());
-  const deleteStorageUrls = async (urls: string[], failureMessage: string) => {
-    const paths = [...new Set(urls.map(storagePath).filter(Boolean))];
-    if (!paths.length) return true;
-    const { error } = await supabase.storage.from("place-photos").remove(paths);
+  const deleteStorageUrls = async (urls: string[], failureMessage: string, previews = data.photoPreviews) => {
+    const error = await removePhotoObjects(urls, previews);
     if (!error) return true;
     toast(failureMessage);
     return false;
@@ -143,6 +144,7 @@ export function Restaurants() {
         draft: { ...item, photos: [...(item.photos ?? [])] },
         originalPhotos: [...(item.photos ?? [])],
         uploadedPhotos: [],
+        uploadedPreviews: {},
         isNew: false,
       }),
     );
@@ -195,13 +197,16 @@ export function Restaurants() {
     toast("Загружаю фото…");
     const urls: string[] = [];
     for (const file of Array.from(files)) {
-      const extension = (file.name.split(".").pop() || "jpg").replace(/[^a-z0-9]/gi, "") || "jpg";
-      const path = `${editor.draft.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}.${extension}`;
-      const result = await supabase.storage
-        .from("place-photos")
-        .upload(path, file, { upsert: true, contentType: file.type || "image/jpeg" });
-      if (result.error) { toast("Не удалось загрузить фото"); continue; }
-      urls.push(supabase.storage.from("place-photos").getPublicUrl(path).data.publicUrl);
+      try {
+        const uploaded = await uploadImageVariants(file, `restaurants/${uid("photo")}`);
+        urls.push(uploaded.fullUrl);
+        setEditor((current) => current ? {
+          ...current,
+          uploadedPreviews: { ...current.uploadedPreviews, [uploaded.fullUrl]: uploaded.preview },
+        } : current);
+      } catch {
+        toast("Не удалось загрузить фото");
+      }
     }
     if (!urls.length) return;
     setEditor((current) => current ? {
@@ -218,18 +223,19 @@ export function Restaurants() {
     if (!url) return;
     if (!(await confirm({ title: "Удалить фото?", message: <>Это фото ресторана «{editor?.draft.name}» будет удалено безвозвратно.</> }))) return;
     if (editor?.uploadedPhotos.includes(url)) {
-      if (!(await deleteStorageUrls([url], "Не удалось удалить фото из хранилища"))) return;
+      if (!(await deleteStorageUrls([url], "Не удалось удалить фото из хранилища", editor.uploadedPreviews))) return;
     }
     setEditor((current) => current ? {
       ...current,
       draft: { ...current.draft, photos: (current.draft.photos ?? []).filter((_, photoIndex) => photoIndex !== index) },
       uploadedPhotos: current.uploadedPhotos.filter((photo) => photo !== url),
+      uploadedPreviews: omitPhotoPreviews(current.uploadedPreviews, [url]) ?? {},
     } : current);
   };
 
   const closeEditor = async () => {
     if (!editor) return;
-    if (!(await deleteStorageUrls(editor.uploadedPhotos, "Не удалось удалить фото из хранилища"))) return;
+    if (!(await deleteStorageUrls(editor.uploadedPhotos, "Не удалось удалить фото из хранилища", editor.uploadedPreviews))) return;
     setEditor(null);
   };
   const saveEditor = async () => {
@@ -242,6 +248,10 @@ export function Restaurants() {
       restaurants: editor.isNew
         ? [...(current.restaurants ?? []), editor.draft]
         : (current.restaurants ?? []).map((item) => item.id === editor.draft.id ? editor.draft : item),
+      photoPreviews: {
+        ...omitPhotoPreviews(current.photoPreviews, removedPhotos),
+        ...editor.uploadedPreviews,
+      },
     }));
     setEditor(null);
   };
@@ -253,17 +263,21 @@ export function Restaurants() {
       message: <>{`«${editor.draft.name}» (${editor.draft.city}) будет удалён безвозвратно вместе со всеми загруженными фото. Это действие нельзя отменить.`}</>,
     }))) return;
     const photos = [...new Set([...editor.originalPhotos, ...editor.uploadedPhotos])];
-    if (!(await deleteStorageUrls(photos, "Не удалось удалить фото ресторана из хранилища"))) return;
+    if (!(await deleteStorageUrls(photos, "Не удалось удалить фото ресторана из хранилища", {
+      ...data.photoPreviews,
+      ...editor.uploadedPreviews,
+    }))) return;
     updateData((current) => ({
       ...current,
       restaurants: (current.restaurants ?? []).filter((item) => item.id !== editor.draft.id),
+      photoPreviews: omitPhotoPreviews(current.photoPreviews, photos),
     }));
     setEditor(null);
   };
   const add = () =>
     guard(() => {
       const draft: Restaurant = { id: uid("r"), name: "Новый ресторан", city: "", status: "хочу", note: "", link: "" };
-      setEditor({ draft, originalPhotos: [], uploadedPhotos: [], isNew: true });
+      setEditor({ draft, originalPhotos: [], uploadedPhotos: [], uploadedPreviews: {}, isNew: true });
     });
 
   const groupLabel: CSSProperties = { fontSize: 12, fontWeight: 800, letterSpacing: ".1em", textTransform: "uppercase", color: "var(--ac,#b95c3f)", whiteSpace: "nowrap" };
@@ -358,6 +372,31 @@ export function Restaurants() {
       </div>
       )}
 
+      {list.length > 0 && (
+        <div style={{ position: "relative", marginBottom: 16 }}>
+          <i className="fa-solid fa-magnifying-glass" style={{ position: "absolute", left: 15, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "var(--muted,#8a7d6b)", pointerEvents: "none" }} />
+          <input
+            type="text"
+            value={nameQuery}
+            onChange={(event) => setNameQuery(event.target.value)}
+            placeholder="Поиск по названию ресторана…"
+            aria-label="Поиск по названию ресторана"
+            style={{ width: "100%", boxSizing: "border-box", border: "1px solid var(--line,#e7dcc7)", borderRadius: "var(--r-3)", padding: "11px 42px 11px 40px", fontSize: 14, background: "var(--card,#fff)", color: "var(--ink,#3b3228)" }}
+          />
+          {nameQuery && (
+            <button
+              type="button"
+              onClick={() => setNameQuery("")}
+              title="Очистить"
+              aria-label="Очистить поиск"
+              style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", border: "none", background: "none", color: "var(--muted,#8a7d6b)", cursor: "pointer", fontSize: 15, padding: 6, lineHeight: 1 }}
+            >
+              <i className="fa-solid fa-xmark" />
+            </button>
+          )}
+        </div>
+      )}
+
       <div
         className="lodging-grid"
         style={{ animation: "fadeUp .4s ease both", position: "relative", borderRadius: "var(--r-5)", padding: 20, background: "radial-gradient(120% 90% at 0% 0%, rgba(42,112,137,.16), transparent 55%), radial-gradient(120% 90% at 100% 100%, rgba(217,154,78,.16), transparent 55%), var(--track,#efe4cf)", border: "1px solid var(--line,#e7dcc7)", overflow: "hidden" }}
@@ -387,13 +426,13 @@ export function Restaurants() {
                     <>
                     <img
                       aria-hidden
-                      src={photos[index]}
+                      src={photoPreviewUrl(data, photos[index])}
                       alt=""
                       style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", filter: "blur(18px)", transform: "scale(1.15)", opacity: .55 }}
                     />
                     <img
                       loading="lazy"
-                      src={photos[index]}
+                      src={photoPreviewUrl(data, photos[index])}
                       alt={item.name}
                       onClick={() => setLightbox({ id: item.id, index })}
                       style={{ position: "relative", width: "100%", height: "100%", objectFit: "contain", display: "block", cursor: "zoom-in" }}
@@ -528,6 +567,7 @@ export function Restaurants() {
           onSave={() => void saveEditor()}
           onCancel={() => void closeEditor()}
           onDelete={() => void deleteEditorRestaurant()}
+          previewUrl={(url) => editor.uploadedPreviews[url]?.url ?? photoPreviewUrl(data, url)}
         />
       )}
 

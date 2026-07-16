@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Map as MapboxMap, Marker as MapboxMarker } from "mapbox-gl";
 import { useAuth } from "../../auth";
-import { supabase } from "../../lib/supabase/client";
 import { useTripData } from "../../trip/TripDataContext";
 import type { Sight } from "../../types/trip";
 import { useConfirm } from "../../components/ConfirmDialog";
 import { WARM_STYLE, warmConfig } from "../maps/mapTheme";
 import { uid, useDialogKeyboard, useScrollLock, useTransientState } from "../shared";
+import { omitPhotoPreviews, photoPreviewUrl, removePhotoObjects, uploadImageVariants } from "../photos/imageStorage";
 
 const subs = [
   "достопримечательности",
@@ -404,7 +404,11 @@ export function Sights() {
       (!filter.sub || subOf(sight) === filter.sub),
   );
   const walkAll = data.sights
-    .map((sight, index) => ({ ...sight, _index: index }))
+    .map((sight, index) => ({
+      ...sight,
+      photo: sight.photo ? photoPreviewUrl(data, sight.photo) : undefined,
+      _index: index,
+    }))
     .filter(
       (sight) =>
         sight.city === activeCity &&
@@ -500,6 +504,7 @@ export function Sights() {
     );
   }
   async function openInfo(sight: Sight) {
+    sight = data?.sights.find((item) => item.id === sight.id) ?? sight;
     wikiRequest.current?.controller.abort();
     const controller = new AbortController();
     wikiRequest.current = { id: sight.id, controller };
@@ -518,6 +523,7 @@ export function Sights() {
       };
       if (wikiRequest.current?.id !== sight.id) return;
       const photo = json.originalimage?.source || json.thumbnail?.source;
+      const preview = json.thumbnail?.source;
       setWiki({
         id: sight.id,
         text: json.extract || "Описание пока не найдено.",
@@ -532,6 +538,9 @@ export function Sights() {
           sights: current.sights.map((item) =>
             item.id === sight.id && !item.photo ? { ...item, photo } : item,
           ),
+          photoPreviews: preview
+            ? { ...current.photoPreviews, [photo]: { url: preview } }
+            : current.photoPreviews,
         }));
       }
     } catch (error) {
@@ -546,32 +555,30 @@ export function Sights() {
     if (!file) return;
     if (isReadOnly) return void toast();
     toast("Загружаю фото…");
-    const extension =
-      (file.name.split(".").pop() || "jpg").replace(/[^a-z0-9]/gi, "") || "jpg";
-    const path = `${sight.id}_${Date.now()}.${extension}`;
-    const result = await supabase.storage
-      .from("place-photos")
-      .upload(path, file, {
-        upsert: true,
-        contentType: file.type || "image/jpeg",
-      });
-    if (result.error) return void toast("Не удалось загрузить фото");
-    const photo = supabase.storage.from("place-photos").getPublicUrl(path)
-      .data.publicUrl;
-    let oldPath = "";
+    let uploaded;
+    try {
+      uploaded = await uploadImageVariants(file, `sights/${uid("photo")}`);
+    } catch {
+      return void toast("Не удалось загрузить фото");
+    }
+    let oldPhoto = "";
     let retained = false;
     updateData((current) => ({ ...current, sights: current.sights.map((item) => {
       if (item.id !== sight.id) return item;
       retained = true;
-      oldPath = item.photoPath || "";
-      return { ...item, photo, photoPath: path };
-    }) }));
+      oldPhoto = item.photo || "";
+      return { ...item, photo: uploaded.fullUrl, photoPath: uploaded.fullPath };
+    }),
+    photoPreviews: {
+      ...omitPhotoPreviews(current.photoPreviews, oldPhoto ? [oldPhoto] : []),
+      [uploaded.fullUrl]: uploaded.preview,
+    } }));
     if (!retained) {
-      await supabase.storage.from("place-photos").remove([path]);
+      await removePhotoObjects([uploaded.fullUrl], { [uploaded.fullUrl]: uploaded.preview });
       return;
     }
-    if (oldPath && oldPath !== path) {
-      const { error } = await supabase.storage.from("place-photos").remove([oldPath]);
+    if (oldPhoto && oldPhoto !== uploaded.fullUrl) {
+      const error = await removePhotoObjects([oldPhoto], data?.photoPreviews);
       if (error) toast("Новое фото сохранено, старое не удалось удалить");
     }
     toast("Фото сохранено");
@@ -579,23 +586,27 @@ export function Sights() {
   async function removeSightPhoto(sight: Sight) {
     if (isReadOnly) return void toast();
     if (!(await confirm({ title: "Удалить фото?", message: <>Фото места «{sight.name}» будет удалено безвозвратно.</> }))) return;
-    const path = data?.sights.find((item) => item.id === sight.id)?.photoPath || "";
-    if (path) {
-      const { error } = await supabase.storage.from("place-photos").remove([path]);
-      if (error) return void toast("Не удалось удалить фото из хранилища");
-    }
-    updateData((current) => ({ ...current, sights: current.sights.map((item) => item.id === sight.id && (item.photoPath || "") === path ? { ...item, photo: "", photoPath: "" } : item) }));
+    const currentPhoto = data?.sights.find((item) => item.id === sight.id)?.photo || "";
+    const error = await removePhotoObjects(currentPhoto ? [currentPhoto] : [], data?.photoPreviews);
+    if (error) return void toast("Не удалось удалить фото из хранилища");
+    updateData((current) => ({
+      ...current,
+      sights: current.sights.map((item) => item.id === sight.id && (item.photo || "") === currentPhoto ? { ...item, photo: "", photoPath: "" } : item),
+      photoPreviews: omitPhotoPreviews(current.photoPreviews, currentPhoto ? [currentPhoto] : []),
+    }));
     toast("Фото удалено");
   }
   async function removeSight(sight: Sight) {
     if (isReadOnly) return void toast();
     if (!(await confirm({ title: "Удалить место?", message: <>«{sight.name}» будет удалено безвозвратно вместе с фото. Это действие нельзя отменить.</> }))) return;
-    const path = data?.sights.find((item) => item.id === sight.id)?.photoPath || "";
-    if (path) {
-      const { error } = await supabase.storage.from("place-photos").remove([path]);
-      if (error) return void toast("Не удалось удалить фото места из хранилища");
-    }
-    updateData((current) => ({ ...current, sights: current.sights.filter((item) => item.id !== sight.id || (item.photoPath || "") !== path) }));
+    const currentPhoto = data?.sights.find((item) => item.id === sight.id)?.photo || "";
+    const error = await removePhotoObjects(currentPhoto ? [currentPhoto] : [], data?.photoPreviews);
+    if (error) return void toast("Не удалось удалить фото места из хранилища");
+    updateData((current) => ({
+      ...current,
+      sights: current.sights.filter((item) => item.id !== sight.id || (item.photo || "") !== currentPhoto),
+      photoPreviews: omitPhotoPreviews(current.photoPreviews, currentPhoto ? [currentPhoto] : []),
+    }));
   }
   function add() {
     if (!draft.name.trim()) return;
@@ -727,7 +738,7 @@ export function Sights() {
                           <div style={{ position: "relative", height: 132, background: "var(--track,#efe4cf)" }}>
                             <img
                               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-                              src={sight.photo}
+                              src={photoPreviewUrl(data, sight.photo)}
                               alt={sight.name}
                               loading="lazy"
                               decoding="async"

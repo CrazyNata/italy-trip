@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react"
 
 import { Lightbox } from "../../components/Lightbox";
 import { useConfirm } from "../../components/ConfirmDialog";
-import { supabase } from "../../lib/supabase/client";
 import { useTripData } from "../../trip/TripDataContext";
 import type { PhotoPreview, TripData, TripPhoto } from "../../types/trip";
 import { PanelTitle, uid } from "../shared";
