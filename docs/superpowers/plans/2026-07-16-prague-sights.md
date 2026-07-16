@@ -27,7 +27,7 @@
 - Consumes: `Sight.city` and `Sight.walkDay`.
 - Produces: human-readable labels for Prague days 1 and 2 in the existing day selector and route-card heading.
 
-- [ ] **Step 1: Add labels to `cityDayLabels`**
+- [x] **Step 1: Add labels to `cityDayLabels`**
 
 Insert this property after the Rome entry:
 
@@ -38,7 +38,7 @@ Insert this property after the Rome entry:
 },
 ```
 
-- [ ] **Step 2: Verify the production build**
+- [x] **Step 2: Verify the production build**
 
 Run:
 
@@ -48,7 +48,7 @@ npx --yes --package node@22 --call 'node --version && npm run build'
 
 Expected: Node 22 is printed and the Vite build exits successfully.
 
-- [ ] **Step 3: Commit the label change**
+- [x] **Step 3: Commit the label change**
 
 ```bash
 git add src/features/sights/Sights.tsx
@@ -65,7 +65,7 @@ git commit -m "Add Prague sightseeing day labels"
 - Consumes: live `payload.data.sights` and `updated_at` from `trip_state.main`.
 - Produces: 15 Prague `Sight` records with a complete two-day walking route.
 
-- [ ] **Step 1: Record the 15 researched objects**
+- [x] **Step 1: Record the 15 researched objects**
 
 Create `docs/superpowers/research/2026-07-16-prague-sights.md` with these exact rows:
 
@@ -89,7 +89,7 @@ Create `docs/superpowers/research/2026-07-16-prague-sights.md` with these exact 
 ]
 ```
 
-- [ ] **Step 2: Re-read the live row immediately before write**
+- [x] **Step 2: Re-read the live row immediately before write**
 
 ```sql
 select updated_at, jsonb_array_length(payload->'data'->'sights') as sight_count
@@ -99,11 +99,11 @@ where id = 'main';
 
 Expected: record timestamp and sight count. Do not use a stale timestamp.
 
-- [ ] **Step 3: Append records atomically**
+- [x] **Step 3: Append records atomically**
 
 Append the exact JSON array from Step 1 to `payload.data.sights` with `jsonb_set`, guard with the Step 2 timestamp, and return the new count. Expected: one updated row and count increases by 15.
 
-- [ ] **Step 4: Verify persisted route shape**
+- [x] **Step 4: Verify persisted route shape**
 
 ```sql
 select
@@ -120,7 +120,7 @@ order by walk_day;
 
 Expected: day 1 is 8 sights with orders `{0,1,2,3,4,5,6,7}`; day 2 is 7 sights with orders `{0,1,2,3,4,5,6}`; `located` equals each day’s count.
 
-- [ ] **Step 5: Build and commit**
+- [x] **Step 5: Build and commit**
 
 ```bash
 npx --yes --package node@22 --call 'node --version && npm run build'
