@@ -757,7 +757,7 @@ export function Sights() {
                             {sight.done ? "✓" : ""}
                           </button>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: 17, lineHeight: 1.22, textDecoration: sight.done ? "line-through" : "none", color: sight.done ? "var(--muted,#8a7d6b)" : undefined }}>{sight.name}</div>
+                            <div style={{ overflow: "hidden", fontFamily: "'Playfair Display',serif", fontSize: 16, lineHeight: 1.22, textDecoration: sight.done ? "line-through" : "none", color: sight.done ? "var(--muted,#8a7d6b)" : undefined, textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sight.name}</div>
                             <div style={{ fontSize: 12, color: "var(--muted,#8a7d6b)", marginTop: 4, display: "flex", alignItems: "center", gap: 5 }}><i className="fa-solid fa-location-dot" style={{ fontSize: 10, opacity: .7 }} /><span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{sight.city}</span></div>
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 2, flex: "none" }}><button
