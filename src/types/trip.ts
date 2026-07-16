@@ -100,6 +100,22 @@ export interface Restaurant {
   lnglat?: [number, number];
 }
 
+/** Личный снимок из поездки, загруженный во вкладке «Фото». */
+export interface TripPhoto {
+  id: string;
+  /** Публичный URL в бакете place-photos. */
+  url: string;
+  /** Путь в хранилище — нужен, чтобы удалить файл. */
+  path: string;
+  /** Дата съёмки YYYY-MM-DD из EXIF. */
+  iso?: string;
+  /** Координаты съёмки из EXIF — по ним фото раскладывается по городам. */
+  lat?: number;
+  lng?: number;
+  /** Город/местность, определённые по координатам. */
+  place?: string;
+}
+
 export interface TripData {
   trip: TripDetails;
   days: TripDay[];
@@ -109,6 +125,7 @@ export interface TripData {
   expenses: Expense[];
   budgetV: number;
   restaurants?: Restaurant[];
+  photos?: TripPhoto[];
 }
 
 export interface TripPayload {
@@ -268,6 +285,19 @@ function isRestaurant(value: unknown): value is Restaurant {
   );
 }
 
+function isTripPhoto(value: unknown): value is TripPhoto {
+  return (
+    isRecord(value) &&
+    hasString(value, "id") &&
+    hasString(value, "url") &&
+    hasString(value, "path") &&
+    hasOptionalString(value, "iso") &&
+    hasOptionalString(value, "place") &&
+    hasOptionalFiniteNumber(value, "lat") &&
+    hasOptionalFiniteNumber(value, "lng")
+  );
+}
+
 export function parseTripPayload(value: unknown): TripPayload | null {
   if (
     !isRecord(value) ||
@@ -292,6 +322,8 @@ export function parseTripPayload(value: unknown): TripPayload | null {
     !data.expenses.every(isExpense) ||
     (data.restaurants !== undefined &&
       !(Array.isArray(data.restaurants) && data.restaurants.every(isRestaurant))) ||
+    (data.photos !== undefined &&
+      !(Array.isArray(data.photos) && data.photos.every(isTripPhoto))) ||
     !hasFiniteNumber(data, "romeSightsV") ||
     !hasFiniteNumber(data, "budgetV")
   )
