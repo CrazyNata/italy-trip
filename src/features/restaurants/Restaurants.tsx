@@ -109,7 +109,7 @@ export function Restaurants() {
       .filter((item) => !priceFilter || item.price === priceFilter)
         .filter((item) => !minRating || (item.googleRating ?? 0) >= minRating)
         .filter((item) => !priorityOnly || item.priority)
-        .filter((item) => !porkKneeOnly || item.hasPorkKnee)
+        .filter((item) => !porkKneeOnly || (item.hasPorkKnee && item.city === "Прага, Чехия"))
         .filter((item) => !placeTypeFilter || (item.placeType ?? "ресторан") === placeTypeFilter)
         .filter((item) => sortBy !== "booking" || item.status === "бронь")
       .map((item) => ({
