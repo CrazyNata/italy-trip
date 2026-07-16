@@ -25,7 +25,13 @@ export function RestaurantCityMap({ restaurants, focus, googleMapsUrl, userLocat
        }
        restaurants.forEach((restaurant, index) => {
         bounds.extend(restaurant.lnglat!);
-        const node = document.createElement("div"); node.textContent = String(index + 1); node.className = "grid h-7 w-7 place-items-center rounded-full border-2 border-white bg-[var(--ac)] text-xs font-bold text-white shadow-md";
+        const node = document.createElement("div"); node.textContent = String(index + 1); node.className = "grid h-7 w-7 place-items-center rounded-full border-2 border-white bg-[var(--ac)] text-xs font-bold text-white shadow-md"; node.style.cursor = "pointer"; node.title = "Открыть на Google Картах";
+        // Click a pin → open that one restaurant on Google Maps. stopPropagation
+        // keeps the map-wide click (whole route) from also firing.
+        node.addEventListener("click", (event) => {
+          event.stopPropagation();
+          window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${restaurant.name}, ${restaurant.city}`)}`, "_blank", "noopener,noreferrer");
+        });
         markers.current[restaurant.id] = new mapbox.Marker({ element: node }).setLngLat(restaurant.lnglat!).setPopup(new mapbox.Popup({ offset: 18 }).setText(restaurant.name)).addTo(map!);
       });
        map.on("load", () => map!.fitBounds(bounds, { padding: 45, maxZoom: 15, duration: 0 }));
