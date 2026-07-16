@@ -67,7 +67,7 @@ export function Restaurants() {
   const [minRating, setMinRating] = useState(0);
   const [priorityOnly, setPriorityOnly] = useState(false);
   const [placeTypeFilter, setPlaceTypeFilter] = useState("");
-  const [sortBy, setSortBy] = useState<"booking" | "rating" | "price" | "distance">("rating");
+  const [sortBy, setSortBy] = useState<"booking" | "rating" | "price" | "distance" | "petFriendly">("rating");
   const [userLoc, setUserLoc] = useState<[number, number] | null>(null);
   const [locating, setLocating] = useState(false);
   const [editor, setEditor] = useState<EditorState | null>(null);
@@ -124,6 +124,8 @@ export function Restaurants() {
       });
     if (sortBy === "distance")
       filtered.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity));
+    if (sortBy === "petFriendly")
+      filtered.sort((a, b) => Number(Boolean(b.item.petFriendly)) - Number(Boolean(a.item.petFriendly)));
     if (sortBy === "booking")
       filtered.sort((a, b) => `${a.item.reservationDate ?? "9999-99-99"}T${a.item.reservationTime ?? "99:99"}`.localeCompare(`${b.item.reservationDate ?? "9999-99-99"}T${b.item.reservationTime ?? "99:99"}`));
     return filtered;
@@ -351,8 +353,9 @@ export function Restaurants() {
         >
           <option value="booking" style={{ color: "var(--ink,#3b3228)" }}>по брони</option>
           <option value="rating" style={{ color: "var(--ink,#3b3228)" }}>по оценке</option>
-          <option value="price" style={{ color: "var(--ink,#3b3228)" }}>по стоимости</option>
-          <option value="distance" style={{ color: "var(--ink,#3b3228)" }}>по расстоянию</option>
+           <option value="price" style={{ color: "var(--ink,#3b3228)" }}>по стоимости</option>
+           <option value="distance" style={{ color: "var(--ink,#3b3228)" }}>по расстоянию</option>
+           <option value="petFriendly" style={{ color: "var(--ink,#3b3228)" }}>pet friendly</option>
         </select>
       </div>
       )}
@@ -457,6 +460,7 @@ export function Restaurants() {
                       </a>
                     ) : <span />}
                     <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      {item.petFriendly && <span title="Можно с собакой" aria-label="Можно с собакой">🐶</span>}
                       {item.priority && <span title="Приоритетный ресторан" aria-label="Приоритетный ресторан">🔥</span>}
                       {item.price && <span className="restaurant-card-price" title="Уровень цен">{item.price}</span>}
                     </span>

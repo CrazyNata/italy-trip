@@ -105,6 +105,13 @@ export function RestaurantEditorModal({
               >
                 🔥 приоритет
               </button>
+              <button
+                type="button"
+                className={draft.petFriendly ? "is-active" : ""}
+                onClick={() => onChange({ petFriendly: !draft.petFriendly })}
+              >
+                🐶 Можно с собакой
+              </button>
             </div>
           </fieldset>
           {draft.status === "бронь" && (
