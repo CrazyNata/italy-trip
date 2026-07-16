@@ -736,6 +736,8 @@ export function Sights() {
                               style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
                               src={sight.photo}
                               alt={sight.name}
+                              loading="lazy"
+                              decoding="async"
                             />
                             <button
                               style={{ position: "absolute", top: 8, right: 8, width: 26, height: 26, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 13, display: "grid", placeItems: "center" }}
