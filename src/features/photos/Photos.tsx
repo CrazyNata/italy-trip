@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { Lightbox } from "../../components/Lightbox";
 import { useConfirm } from "../../components/ConfirmDialog";
@@ -14,18 +14,28 @@ interface Shot {
   url: string;
   place: string;
   kind: Kind;
+  city: string;
+  iso?: string;
   /** Заполнено только у загруженных снимков — их можно удалять. */
   photoId?: string;
   path?: string;
 }
 
+interface DaySection {
+  key: string;
+  iso?: string;
+  shots: Shot[];
+}
+
 interface CityAlbum {
   city: string;
-  shots: Shot[];
+  sections: DaySection[];
+  count: number;
   places: number;
 }
 
 const MISC = "Разное";
+const NO_DATE = "__none__";
 
 const KIND_ICON: Record<Kind, string> = {
   lodging: "fa-solid fa-bed",
@@ -36,10 +46,29 @@ const KIND_ICON: Record<Kind, string> = {
 
 const MONTHS = ["янв", "фев", "мар", "апр", "май", "июн", "июл", "авг", "сен", "окт", "ноя", "дек"];
 
-function formatDate(iso?: string) {
+// Короткая подпись на плитке загруженного снимка.
+function shortDate(iso?: string) {
   if (!iso) return "Моё фото";
   const [, month, day] = iso.split("-");
   return `${Number(day)} ${MONTHS[Number(month) - 1] ?? ""}`.trim();
+}
+
+// Подзаголовок дня внутри города: «14 июля» + день недели.
+function dayLabel(iso: string) {
+  const date = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return { date: iso, weekday: "" };
+  return {
+    date: date.toLocaleDateString("ru-RU", { day: "numeric", month: "long" }),
+    weekday: date.toLocaleDateString("ru-RU", { weekday: "long" }),
+  };
+}
+
+// Чип фильтра: «14 июл.».
+function chipLabel(iso: string) {
+  const date = new Date(`${iso}T00:00:00`);
+  return Number.isNaN(date.getTime())
+    ? iso
+    : date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" });
 }
 
 const readonly = () => window.dispatchEvent(new CustomEvent("trip:readonly"));
@@ -103,14 +132,15 @@ export function Photos() {
   const abort = useRef<AbortController | null>(null);
   const [view, setView] = useState<{ shots: Shot[]; index: number } | null>(null);
   const [busy, setBusy] = useState("");
+  const [dateFilter, setDateFilter] = useState<string | null>(null);
 
   useEffect(() => {
     abort.current = new AbortController();
     return () => abort.current?.abort();
   }, []);
 
-  const albums = useMemo<CityAlbum[]>(() => {
-    if (!data) return [];
+  const { albums, dates, hasUndated, anyPhotos } = useMemo(() => {
+    if (!data) return { albums: [] as CityAlbum[], dates: [] as string[], hasUndated: false, anyPhotos: 0 };
 
     // Порядок городов задаёт сам маршрут — так альбом читается как хронология
     // поездки, а не как случайный список.
@@ -121,12 +151,12 @@ export function Photos() {
       if (name && !order.has(name)) order.set(name, order.size);
     });
 
-    const buckets = new Map<string, Shot[]>();
+    const shots: Shot[] = [];
     const seen = new Set<string>();
-    const add = (url: string | undefined, city: string, shot: Omit<Shot, "url">) => {
+    const add = (url: string | undefined, city: string, shot: Omit<Shot, "url" | "city">) => {
       if (!url || seen.has(url)) return;
       seen.add(url);
-      buckets.set(city || MISC, [...(buckets.get(city || MISC) ?? []), { url, ...shot }]);
+      shots.push({ url, city: city || MISC, ...shot });
     };
 
     data.lodging.forEach((l) =>
@@ -136,31 +166,64 @@ export function Photos() {
     (data.restaurants ?? []).forEach((r) =>
       (r.photos ?? []).forEach((url) => add(url, cityName(r.city), { place: r.name, kind: "restaurant" })),
     );
-
     // Загруженные снимки раскладываются автоматически: сначала по городу из
     // координат, иначе — по городу из плана на дату съёмки, иначе — в «Разное».
     (data.photos ?? []).forEach((photo) => {
       const dayCity = photo.iso ? daysByIso.get(photo.iso) : undefined;
       const city = photo.place || (dayCity ? cityName(dayCity.city) : "");
       add(photo.url, city, {
-        place: formatDate(photo.iso),
+        place: shortDate(photo.iso),
         kind: "upload",
+        iso: photo.iso,
         photoId: photo.id,
         path: photo.path,
       });
     });
 
-    const rank = (city: string) => (city === MISC ? 2e9 : order.has(city) ? order.get(city)! : 1e9);
-    return [...buckets.entries()]
-      .map(([city, shots]) => ({
-        city,
-        shots,
-        places: new Set(shots.filter((s) => s.kind !== "upload").map((s) => s.place)).size,
-      }))
-      .sort((a, b) => rank(a.city) - rank(b.city) || a.city.localeCompare(b.city, "ru"));
-  }, [data]);
+    const dates = [...new Set(shots.map((s) => s.iso).filter((iso): iso is string => Boolean(iso)))].sort();
+    const hasUndated = shots.some((s) => !s.iso);
 
-  const total = albums.reduce((sum, album) => sum + album.shots.length, 0);
+    const visible = shots.filter((s) =>
+      dateFilter === null ? true : dateFilter === NO_DATE ? !s.iso : s.iso === dateFilter,
+    );
+
+    const buckets = new Map<string, Shot[]>();
+    visible.forEach((s) => buckets.set(s.city, [...(buckets.get(s.city) ?? []), s]));
+
+    const rank = (city: string) => (city === MISC ? 2e9 : order.has(city) ? order.get(city)! : 1e9);
+    const albums: CityAlbum[] = [...buckets.entries()]
+      .map(([city, cityShots]) => {
+        // Город бьём на дни только если в нём есть датированные снимки —
+        // иначе показываем единой сеткой, без пустой шапки дня.
+        const dated = cityShots.some((s) => s.iso);
+        let sections: DaySection[];
+        if (!dated) {
+          sections = [{ key: "all", shots: cityShots }];
+        } else {
+          const byDay = new Map<string, Shot[]>();
+          const undated: Shot[] = [];
+          cityShots.forEach((s) => {
+            if (s.iso) byDay.set(s.iso, [...(byDay.get(s.iso) ?? []), s]);
+            else undated.push(s);
+          });
+          sections = [...byDay.entries()]
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([iso, list]) => ({ key: iso, iso, shots: list }));
+          if (undated.length) sections.push({ key: NO_DATE, shots: undated });
+        }
+        return {
+          city,
+          sections,
+          count: cityShots.length,
+          places: new Set(cityShots.filter((s) => s.kind !== "upload").map((s) => s.place)).size,
+        };
+      })
+      .sort((a, b) => rank(a.city) - rank(b.city) || a.city.localeCompare(b.city, "ru"));
+
+    return { albums, dates, hasUndated, anyPhotos: shots.length };
+  }, [data, dateFilter]);
+
+  const total = albums.reduce((sum, album) => sum + album.count, 0);
 
   async function importFiles(fileList: FileList | null) {
     if (isReadOnly) return readonly();
@@ -197,8 +260,7 @@ export function Photos() {
       }
     }
     setBusy(failed ? `Готово: ${done}. Не удалось: ${failed}.` : "");
-    if (!failed) window.setTimeout(() => setBusy(""), 100);
-    else window.setTimeout(() => setBusy(""), 3200);
+    window.setTimeout(() => setBusy(""), failed ? 3200 : 100);
   }
 
   async function removePhoto(shot: Shot) {
@@ -217,6 +279,13 @@ export function Photos() {
       photos: (current.photos ?? []).filter((photo) => photo.id !== shot.photoId),
     }));
   }
+
+  const uploadButton = (extra?: CSSProperties) => (
+    <button type="button" className="photo-add" style={extra} onClick={() => input.current?.click()}>
+      <i className="fa-solid fa-arrow-up-from-bracket" />
+      Загрузить фото
+    </button>
+  );
 
   let cityNumber = 0;
 
@@ -242,7 +311,7 @@ export function Photos() {
                 type="button"
                 className="photo-add"
                 onClick={() => input.current?.click()}
-                disabled={Boolean(busy) && busy.startsWith("Загружаю")}
+                disabled={busy.startsWith("Загружаю")}
               >
                 <i className="fa-solid fa-arrow-up-from-bracket" />
                 Загрузить фото
@@ -254,7 +323,7 @@ export function Photos() {
         Альбом поездки
       </PanelTitle>
 
-      {total > 0 && (
+      {anyPhotos > 0 && (
         <p className="photo-lead">
           <span>
             <i className="fa-solid fa-images" />
@@ -265,28 +334,54 @@ export function Photos() {
             {albums.length} {plural(albums.length, "город", "города", "городов")}
           </span>
           <span style={{ color: "var(--muted)" }}>
-            Загружайте снимки как есть — они сами разложатся по городам маршрута.
+            Загружайте снимки как есть — они сами разложатся по городам и дням.
           </span>
         </p>
       )}
 
-      {busy && <div className="photo-busy">{busy.startsWith("Загружаю") && <span className="photo-spinner" />}{busy}</div>}
+      {dates.length > 0 && (
+        <div className="photo-filter">
+          <button className={dateFilter === null ? "is-active" : ""} onClick={() => setDateFilter(null)}>
+            Все
+          </button>
+          {dates.map((iso) => (
+            <button
+              key={iso}
+              className={dateFilter === iso ? "is-active" : ""}
+              onClick={() => setDateFilter(iso)}
+            >
+              <i className="fa-solid fa-calendar-day" />
+              {chipLabel(iso)}
+            </button>
+          ))}
+          {hasUndated && (
+            <button
+              className={dateFilter === NO_DATE ? "is-active" : ""}
+              onClick={() => setDateFilter(NO_DATE)}
+            >
+              Без даты
+            </button>
+          )}
+        </div>
+      )}
 
-      {total === 0 ? (
+      {busy && (
+        <div className="photo-busy">
+          {busy.startsWith("Загружаю") && <span className="photo-spinner" />}
+          {busy}
+        </div>
+      )}
+
+      {anyPhotos === 0 ? (
         <div className="photo-empty">
           <span className="fa-solid fa-images" />
           <strong>Здесь будет ваш альбом</strong>
           <p>
             Загрузите фото из поездки — по геометкам и датам снимков они сами
-            разложатся по городам. Фото из жилья, мест и ресторанов тоже попадут
-            сюда автоматически.
+            разложатся по городам и дням. Фото из жилья, мест и ресторанов тоже
+            попадут сюда автоматически.
           </p>
-          {!isReadOnly && (
-            <button type="button" className="photo-add" style={{ marginTop: 18 }} onClick={() => input.current?.click()}>
-              <i className="fa-solid fa-arrow-up-from-bracket" />
-              Загрузить фото
-            </button>
-          )}
+          {!isReadOnly && uploadButton({ marginTop: 18 })}
         </div>
       ) : (
         <div className="photo-groups">
@@ -307,41 +402,66 @@ export function Photos() {
                       ))}
                     <h2>{album.city}</h2>
                     <small>
-                      {album.shots.length} {plural(album.shots.length, "фото", "фото", "фото")}
+                      {album.count} {plural(album.count, "фото", "фото", "фото")}
                       {album.places > 0 && ` · ${album.places} ${plural(album.places, "место", "места", "мест")}`}
                     </small>
                   </header>
-                  <div className="photo-grid">
-                    {album.shots.map((shot, shotIndex) => (
-                      <figure
-                        key={shot.url}
-                        className={shotIndex === 0 && album.shots.length > 2 ? "is-hero" : undefined}
-                      >
-                        <button
-                          type="button"
-                          className="photo-open"
-                          onClick={() => setView({ shots: album.shots, index: shotIndex })}
-                          aria-label={`Открыть фото: ${shot.place}`}
-                        >
-                          <img src={shot.url} alt={shot.place} loading="lazy" />
-                        </button>
-                        {shot.photoId && !isReadOnly && (
-                          <button
-                            type="button"
-                            className="photo-delete"
-                            onClick={() => void removePhoto(shot)}
-                            aria-label="Удалить фото"
-                          >
-                            <i className="fa-solid fa-trash-can" />
-                          </button>
-                        )}
-                        <figcaption>
-                          <i className={KIND_ICON[shot.kind]} aria-hidden="true" />
-                          <span>{shot.place}</span>
-                        </figcaption>
-                      </figure>
-                    ))}
-                  </div>
+                  {album.sections.map((section) => {
+                    const label = section.iso ? dayLabel(section.iso) : null;
+                    return (
+                      <div key={section.key}>
+                        {section.iso ? (
+                          <div className="photo-day">
+                            <i className="fa-solid fa-calendar-day" aria-hidden="true" />
+                            <h3>{label!.date}</h3>
+                            <span className="photo-day-wd">{label!.weekday}</span>
+                            <small>
+                              {section.shots.length} {plural(section.shots.length, "фото", "фото", "фото")}
+                            </small>
+                          </div>
+                        ) : section.key === NO_DATE ? (
+                          <div className="photo-day">
+                            <i className="fa-solid fa-images" aria-hidden="true" />
+                            <h3>Без даты</h3>
+                            <small>
+                              {section.shots.length} {plural(section.shots.length, "фото", "фото", "фото")}
+                            </small>
+                          </div>
+                        ) : null}
+                        <div className="photo-grid">
+                          {section.shots.map((shot, shotIndex) => (
+                            <figure
+                              key={shot.url}
+                              className={shotIndex === 0 && section.shots.length > 2 ? "is-hero" : undefined}
+                            >
+                              <button
+                                type="button"
+                                className="photo-open"
+                                onClick={() => setView({ shots: section.shots, index: shotIndex })}
+                                aria-label={`Открыть фото: ${shot.place}`}
+                              >
+                                <img src={shot.url} alt={shot.place} loading="lazy" />
+                              </button>
+                              {shot.photoId && !isReadOnly && (
+                                <button
+                                  type="button"
+                                  className="photo-delete"
+                                  onClick={() => void removePhoto(shot)}
+                                  aria-label="Удалить фото"
+                                >
+                                  <i className="fa-solid fa-trash-can" />
+                                </button>
+                              )}
+                              <figcaption>
+                                <i className={KIND_ICON[shot.kind]} aria-hidden="true" />
+                                <span>{shot.place}</span>
+                              </figcaption>
+                            </figure>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </section>
             );
