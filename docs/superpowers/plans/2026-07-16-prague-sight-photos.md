@@ -28,7 +28,7 @@
 - Consumes: 23 Prague `Sight` records with no `photo` property.
 - Produces: selected Wikipedia image URLs in `Sight.photo` for successful lookups only.
 
-- [ ] **Step 1: Read the live Prague baseline**
+- [x] **Step 1: Read the live Prague baseline**
 
 ```sql
 select updated_at, item->>'id' id, item->>'name' name, item->>'photo' photo
@@ -40,7 +40,7 @@ order by (item->>'walkDay')::integer, (item->>'walkOrder')::integer;
 
 Expected: 23 rows with empty photos and one timestamp.
 
-- [ ] **Step 2: Resolve an image for each name**
+- [x] **Step 2: Resolve an image for each name**
 
 For each row, fetch:
 
@@ -50,7 +50,7 @@ https://ru.wikipedia.org/api/rest_v1/page/summary/<encoded sight name>
 
 Record `id`, name, endpoint URL, and selected `originalimage.source` or `thumbnail.source` in `docs/superpowers/research/2026-07-16-prague-sight-photos.md`. Record `no image` when the request is not successful or returns neither field.
 
-- [ ] **Step 3: Re-read the live timestamp**
+- [x] **Step 3: Re-read the live timestamp**
 
 ```sql
 select updated_at from public.trip_state where id = 'main';
@@ -58,7 +58,7 @@ select updated_at from public.trip_state where id = 'main';
 
 Expected: use the returned timestamp as the optimistic update guard.
 
-- [ ] **Step 4: Add only successful photos atomically**
+- [x] **Step 4: Add only successful photos atomically**
 
 Build a `values` CTE of `(id, photo_url)` for successful lookups. Rebuild `payload.data.sights` with:
 
@@ -69,7 +69,7 @@ else item || jsonb_build_object('photo', photos.photo_url) end
 
 Guard the update with `id = 'main'` and the timestamp from Step 3. Expected: one returned row; sight count remains 122.
 
-- [ ] **Step 5: Verify coverage and route preservation**
+- [x] **Step 5: Verify coverage and route preservation**
 
 ```sql
 select
@@ -83,7 +83,7 @@ where trip_state.id = 'main' and item->>'city' = 'Прага, Чехия';
 
 Expected: `prague_sights = 23`, `unexpected_photo_path = 0`. Re-run the Prague route-shape query from the prior plan and confirm day 1 remains 12 points with orders 0 through 11 and day 2 remains 11 points with orders 0 through 10.
 
-- [ ] **Step 6: Build and commit evidence**
+- [x] **Step 6: Build and commit evidence**
 
 ```bash
 npx --yes --package node@22 --call 'node --version && npm run build'
