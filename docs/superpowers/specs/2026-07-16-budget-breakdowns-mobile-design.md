@@ -7,7 +7,7 @@ Keep expanded budget breakdowns easy to scan on phone screens without stretching
 ## Responsive Behavior
 
 - At widths above `600px`, retain the current behavior: an expanded breakdown appears inside its summary card.
-- At widths up to `600px`, render the selected breakdown as a full-width block immediately below the three summary cards.
+- At widths up to `600px`, render the selected breakdown as a full-width block immediately below its summary card.
 - The selected summary card remains expanded and rotates its chevron; the other card's state remains independent.
 - The full-width mobile block uses the same expense labels, calculated values, selected currency, and accent color as the desktop breakdown.
 
@@ -15,7 +15,7 @@ Keep expanded budget breakdowns easy to scan on phone screens without stretching
 
 - Add semantic class names to the summary grid, interactive summary cards, and mobile breakdown block.
 - On mobile, force the summary grid to one column and hide the in-card details.
-- Show one full-width mobile detail block when either summary card is expanded. If both are expanded, show both blocks in card order: family, then day.
+- Show one full-width mobile detail block immediately after each expanded card. If both are expanded, each follows its own card.
 
 ## Verification
 
