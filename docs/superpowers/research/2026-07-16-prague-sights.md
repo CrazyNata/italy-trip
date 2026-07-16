@@ -25,8 +25,23 @@
 | 5 | Вышеград | 14.41750, 50.06460 |
 | 6 | Базилика Святых Петра и Павла | 14.41830, 50.06360 |
 
+## Expanded Route Additions
+
+| Day | Name | Coordinates |
+| ---: | --- | --- |
+| 1 | Пороховая башня | 14.42710, 50.08760 |
+| 1 | Общественный дом | 14.42900, 50.08780 |
+| 1 | Остров Кампа | 14.40580, 50.08480 |
+| 1 | Петршинские сады | 14.39500, 50.08380 |
+| 2 | Старое еврейское кладбище | 14.42110, 50.09050 |
+| 2 | Испанская синагога | 14.42490, 50.09020 |
+| 2 | Францисканский сад | 14.42660, 50.08050 |
+| 2 | Набережная Наплавка | 14.41600, 50.07270 |
+
 ## Persistence Verification
 
 - Saved 15 Prague sights at `2026-07-16 09:34:56.225245+00`.
 - Day 1 has eight points with walk orders 0 through 7; day 2 has seven points with walk orders 0 through 6.
 - All 15 sights have coordinates; the total sight count increased from 99 to 114.
+- Expanded routes were saved at `2026-07-16 09:46:41.60542+00`; Prague now has 12 ordered points on day 1 and 11 on day 2, and the total sight count is 122.
+- Post-update verification found 23 Prague sights and 99 non-Prague sights; `days`, `lodging`, and `expenses` remain JSON arrays.

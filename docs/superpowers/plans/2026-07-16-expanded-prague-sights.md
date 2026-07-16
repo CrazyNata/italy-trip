@@ -27,7 +27,7 @@
 - Consumes: 15 existing Prague `Sight` records and the live `updated_at` timestamp.
 - Produces: 23 Prague `Sight` records arranged into two contiguous walking routes.
 
-- [ ] **Step 1: Capture the live timestamp and Prague baseline**
+- [x] **Step 1: Capture the live timestamp and Prague baseline**
 
 ```sql
 select updated_at, item->>'id' id, item->>'walkDay' walk_day, item->>'walkOrder' walk_order
@@ -39,7 +39,7 @@ order by (item->>'walkDay')::integer, (item->>'walkOrder')::integer;
 
 Expected: 15 rows and one timestamp.
 
-- [ ] **Step 2: Append the eight researched sights**
+- [x] **Step 2: Append the eight researched sights**
 
 Append these records with the same field shape used by existing Prague sights:
 
@@ -56,15 +56,15 @@ Append these records with the same field shape used by existing Prague sights:
 ]
 ```
 
-- [ ] **Step 3: Reassign existing walk orders in the same update**
+- [x] **Step 3: Reassign existing walk orders in the same update**
 
 Set these existing IDs to the following orders: day 1: `s_prague_old_town=0`, `s_prague_klementinum=3`, `s_prague_charles_bridge=4`, `s_prague_lesser_town=5`, `s_prague_st_nicholas=7`, `s_prague_castle=8`, `s_prague_st_vitus=9`, `s_prague_golden_lane=10`; day 2: `s_prague_jewish_quarter=0`, `s_prague_old_new_synagogue=1`, `s_prague_wenceslas=4`, `s_prague_national_museum=6`, `s_prague_dancing_house=7`, `s_prague_vysehrad=9`, `s_prague_st_peter_paul=10`.
 
-- [ ] **Step 4: Apply one timestamp-guarded update**
+- [x] **Step 4: Apply one timestamp-guarded update**
 
 Append the Step 2 array and modify only the listed `walkOrder` fields in one `jsonb_set` update guarded by the timestamp from Step 1. Expected: one returned row and the total sight count increases from 114 to 122.
 
-- [ ] **Step 5: Verify both route shapes**
+- [x] **Step 5: Verify both route shapes**
 
 ```sql
 select item->>'walkDay' walk_day, count(*) sights,
@@ -79,7 +79,7 @@ order by walk_day;
 
 Expected: day 1 has 12 points with `{0,1,2,3,4,5,6,7,8,9,10,11}`; day 2 has 11 points with `{0,1,2,3,4,5,6,7,8,9,10}`; `located` equals each count.
 
-- [ ] **Step 6: Build and commit**
+- [x] **Step 6: Build and commit**
 
 ```bash
 npx --yes --package node@22 --call 'node --version && npm run build'
