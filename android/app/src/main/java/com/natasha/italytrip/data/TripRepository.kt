@@ -4,8 +4,10 @@ import android.content.Intent
 import android.content.Context
 import android.net.Uri
 import io.github.jan.supabase.auth.Auth
+import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.handleDeeplinks
+import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
 import io.github.jan.supabase.createSupabaseClient
@@ -16,7 +18,10 @@ import io.github.jan.supabase.storage.storage
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.util.UUID
@@ -58,6 +63,7 @@ class TripRepository(context: Context) {
         install(Auth) {
             scheme = "italytrip"
             host = "login-callback"
+            flowType = FlowType.PKCE
         }
         install(Postgrest)
         install(Storage)
@@ -74,6 +80,12 @@ class TripRepository(context: Context) {
         preferences.edit().putBoolean("remember_login", remember).apply()
     }
 
+    fun backgroundHex(): String = preferences.getString("background_hex", "#F7F2EB") ?: "#F7F2EB"
+
+    fun setBackgroundHex(hex: String) {
+        preferences.edit().putString("background_hex", hex).apply()
+    }
+
     suspend fun signIn(email: String, password: String) {
         client.auth.signInWith(Email) {
             this.email = email
@@ -88,9 +100,32 @@ class TripRepository(context: Context) {
         }
     }
 
+    suspend fun signInWithGoogle() = client.auth.signInWith(Google)
+
     suspend fun signOut() = client.auth.signOut()
 
-    fun handleDeeplink(intent: Intent) = client.handleDeeplinks(intent)
+    suspend fun changePassword(password: String) {
+        client.auth.updateUser { this.password = password }
+    }
+
+    fun avatarUrl(): String? = client.auth.currentUserOrNull()
+        ?.userMetadata?.get("avatar_url")?.jsonPrimitive?.contentOrNull
+        ?.takeIf { it.isNotBlank() }
+
+    suspend fun uploadAvatar(uri: Uri): String {
+        val user = client.auth.currentUserOrNull() ?: error("Пользователь не авторизован")
+        val image = ImageProcessor(preferencesContext).prepare(uri)
+        val path = "avatars/${user.id}_${System.currentTimeMillis()}.jpg"
+        val bucket = client.storage["place-photos"]
+        bucket.upload(path, image.thumbnail) { upsert = true }
+        val publicUrl = bucket.publicUrl(path)
+        client.auth.updateUser { data = JsonObject(mapOf("avatar_url" to JsonPrimitive(publicUrl))) }
+        return publicUrl
+    }
+
+    fun handleDeeplink(intent: Intent, onSuccess: () -> Unit) {
+        client.handleDeeplinks(intent) { onSuccess() }
+    }
 
     fun cachedTrip(): JsonObject? = runCatching {
         preferences.getString("payload", null)?.let { Json.parseToJsonElement(it).jsonObject }

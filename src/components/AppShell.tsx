@@ -1,10 +1,9 @@
-import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent, type TouchEvent } from "react";
-import { NavLink, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { lazy, Suspense, useEffect, useRef, useState, type TouchEvent } from "react";
+import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { useTripData } from "../trip/TripDataContext";
-// Overview is the landing tab, so keep it eager; lazy-load the rest so the first
-// paint on mobile only downloads and parses the shell + overview, not every tab.
 import { Overview } from "../features/overview/Overview";
+
 const Itinerary = lazy(() => import("../features/itinerary/Itinerary").then((m) => ({ default: m.Itinerary })));
 const Lodging = lazy(() => import("../features/lodging/Lodging").then((m) => ({ default: m.Lodging })));
 const Sights = lazy(() => import("../features/sights/Sights").then((m) => ({ default: m.Sights })));
@@ -13,41 +12,40 @@ const Photos = lazy(() => import("../features/photos/Photos").then((m) => ({ def
 const Restaurants = lazy(() => import("../features/restaurants/Restaurants").then((m) => ({ default: m.Restaurants })));
 
 const tabs = [
-  { path: "overview", label: "Обзор", icon: "fa-solid fa-compass" },
-  { path: "route", label: "Маршрут", icon: "fa-solid fa-route" },
-  { path: "lodging", label: "Жильё", icon: "fa-solid fa-bed" },
-  { path: "cancellation", label: "Отмена", icon: "fa-solid fa-calendar-xmark" },
-  { path: "places", label: "Достопримечательности", icon: "fa-solid fa-location-dot" },
-  { path: "restaurants", label: "Рестораны", icon: "fa-solid fa-utensils" },
-  { path: "budget", label: "Бюджет", icon: "fa-solid fa-wallet" },
-  { path: "photos", label: "Фото", icon: "fa-solid fa-images" },
+  { path: "overview", label: "Обзор", icon: "fa-solid fa-compass", eyebrow: "Италия · осень 2026" },
+  { path: "route", label: "Маршрут", icon: "fa-solid fa-route", eyebrow: "18 дней · 9 городов" },
+  { path: "lodging", label: "Жильё", icon: "fa-solid fa-bed", eyebrow: "6 адресов · 5 городов" },
+  { path: "cancellation", label: "Отмена", icon: "fa-solid fa-calendar-xmark", eyebrow: "Сроки бесплатной отмены" },
+  { path: "places", label: "Места", icon: "fa-solid fa-location-dot", eyebrow: "Пеший маршрут" },
+  { path: "restaurants", label: "Рестораны", icon: "fa-solid fa-utensils", eyebrow: "Где поесть" },
+  { path: "budget", label: "Бюджет", icon: "fa-solid fa-wallet", eyebrow: "Расходы поездки" },
+  { path: "photos", label: "Фото", icon: "fa-solid fa-images", eyebrow: "Альбом поездки" },
 ] as const;
 
 export function AppShell() {
-  const { data, loading, error, usingCache, syncState, refresh, retrySave } =
-    useTripData();
+  const { data, loading, error, usingCache, syncState, refresh, retrySave } = useTripData();
   const location = useLocation();
-  const navigate = useNavigate();
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const tabRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const toastTimer = useRef<number | null>(null);
-  const swipeRef = useRef<{ x: number; y: number; valid: boolean } | null>(null);
-  const activeIndex = Math.max(
-    0,
-    tabs.findIndex((tab) => location.pathname === `/${tab.path}`),
-  );
+  const swipeRef = useRef<{ x: number; y: number; canOpen: boolean } | null>(null);
+  const active = tabs.find((tab) => location.pathname === `/${tab.path}`) ?? tabs[0];
+  const isOverview = active.path === "overview";
+
+  useEffect(() => setDrawerOpen(false), [location.pathname]);
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const close = (event: KeyboardEvent) => { if (event.key === "Escape") setDrawerOpen(false); };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", close);
+    return () => { document.body.style.overflow = ""; window.removeEventListener("keydown", close); };
+  }, [drawerOpen]);
+
   useEffect(() => {
     const show = (event: Event) => {
-      setToast(
-        event instanceof CustomEvent && typeof event.detail === "string"
-          ? event.detail
-          : "Режим просмотра: изменения доступны только владельцу",
-      );
+      setToast(event instanceof CustomEvent && typeof event.detail === "string" ? event.detail : "Режим просмотра: изменения доступны только владельцу");
       if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
-      toastTimer.current = window.setTimeout(() => {
-        setToast(null);
-        toastTimer.current = null;
-      }, 2200);
+      toastTimer.current = window.setTimeout(() => { setToast(null); toastTimer.current = null; }, 2200);
     };
     window.addEventListener("trip:readonly", show);
     window.addEventListener("trip:toast", show);
@@ -58,184 +56,69 @@ export function AppShell() {
     };
   }, []);
 
-  // Keep the active tab in view when the tab bar scrolls horizontally on mobile.
-  useEffect(() => {
-    tabRefs.current[activeIndex]?.scrollIntoView({ inline: "center", block: "nearest" });
-  }, [activeIndex]);
-
-  // Mobile: a horizontal swipe across the page flips to the neighbouring tab.
-  // Ignored on maps (they pan) and photo carousels (marked .no-swipe), on any
-  // open dialog, on multi-touch, and on wide screens.
-  function onContentTouchStart(event: TouchEvent<HTMLElement>) {
-    if (event.touches.length !== 1 || window.innerWidth > 600) {
-      swipeRef.current = null;
-      return;
-    }
-    const target = event.target as HTMLElement;
-    const blocked = !!target.closest('.mapboxgl-map, .no-swipe, .restaurant-editor-backdrop, [role="dialog"]');
+  function onTouchStart(event: TouchEvent<HTMLElement>) {
+    if (event.touches.length !== 1) return;
     const touch = event.touches[0];
-    swipeRef.current = { x: touch.clientX, y: touch.clientY, valid: !blocked };
+    swipeRef.current = { x: touch.clientX, y: touch.clientY, canOpen: touch.clientX < 28 };
   }
-  function onContentTouchEnd(event: TouchEvent<HTMLElement>) {
+
+  function onTouchEnd(event: TouchEvent<HTMLElement>) {
     const start = swipeRef.current;
     swipeRef.current = null;
-    if (!start || !start.valid) return;
+    if (!start) return;
     const touch = event.changedTouches[0];
     const dx = touch.clientX - start.x;
     const dy = touch.clientY - start.y;
-    // Needs a decisive mostly-horizontal swipe so it never fires on a vertical scroll.
-    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.6) return;
-    const nextIndex = activeIndex + (dx < 0 ? 1 : -1);
-    if (nextIndex < 0 || nextIndex >= tabs.length) return;
-    navigate(`/${tabs[nextIndex].path}`);
-  }
-
-  function handleTabKeyDown(event: KeyboardEvent, index: number) {
-    let nextIndex: number | undefined;
-
-    if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
-    if (event.key === "ArrowLeft")
-      nextIndex = (index - 1 + tabs.length) % tabs.length;
-    if (event.key === "Home") nextIndex = 0;
-    if (event.key === "End") nextIndex = tabs.length - 1;
-
-    if (nextIndex !== undefined) {
-      event.preventDefault();
-      navigate(`/${tabs[nextIndex].path}`);
-      tabRefs.current[nextIndex]?.focus();
-    }
+    if (Math.abs(dx) < 65 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    if (!drawerOpen && start.canOpen && dx > 0) setDrawerOpen(true);
+    if (drawerOpen && dx < 0) setDrawerOpen(false);
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
-      <header className="app-header">
-        <div className="flex flex-wrap items-end justify-between gap-5">
-          <div>
-            <p className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--ac)]">
-              <span className="h-px w-6 bg-current" aria-hidden="true" />
-              Италия · осень 2026
-            </p>
-            <h1 className="app-title">
-              Отпуск с семьёй
-              <br />в Италии <span aria-hidden="true">🍋</span>
-            </h1>
-            <p className="trip-intro">
-              25 сентября — 12 октября · выезжаем из Праги вдвоём с 2 собаками.
-              В Риме встречаем родственников — и нас становится 4 человека и 2
-              собаки. Планируем маршрут, жильё, места и бюджет.
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <div className="count-card">
-              <strong className="text-[var(--ac)]">
-                {Math.max(
-                  0,
-                  Math.ceil(
-                    (new Date("2026-09-25T00:00:00").getTime() - Date.now()) /
-                      86400000,
-                  ),
-                )}
-              </strong>
-              <span>
-                дней до выезда
-              </span>
-            </div>
-            <div className="count-card">
-              <strong className="text-[var(--ol)]">
-                17
-              </strong>
-              <span>
-                ночей
-              </span>
-            </div>
-          </div>
+    <div className="app-shell min-h-screen bg-[var(--bg)] text-[var(--ink)]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <button className={`drawer-backdrop ${drawerOpen ? "is-open" : ""}`} aria-label="Закрыть меню" onClick={() => setDrawerOpen(false)} />
+      <aside className={`app-drawer ${drawerOpen ? "is-open" : ""}`} aria-hidden={!drawerOpen}>
+        <div className="drawer-trip">
+          <span><i className="fa-solid fa-plane-departure" /></span>
+          <div><strong>Италия 2026</strong><small>25 сен — 12 окт · 17 ночей</small></div>
         </div>
-
-        <nav
-          className="tabbar"
-          aria-label="Разделы поездки"
-          role="tablist"
-        >
-          {tabs.map((tab, index) => (
-            <NavLink
-              aria-selected={index === activeIndex}
-              key={tab.path}
-              to={`/${tab.path}`}
-              onKeyDown={(event) => handleTabKeyDown(event, index)}
-              ref={(element) => {
-                tabRefs.current[index] = element;
-              }}
-              role="tab"
-              tabIndex={index === activeIndex ? 0 : -1}
-            >
-              <i className={tab.icon} aria-hidden="true" />{tab.label}
-            </NavLink>
-          ))}
+        <nav aria-label="Разделы поездки">
+          {tabs.map((tab) => <NavLink key={tab.path} to={`/${tab.path}`}><i className={tab.icon} /><span>{tab.label}</span></NavLink>)}
         </nav>
+        <button className="drawer-settings" onClick={() => { setDrawerOpen(false); window.dispatchEvent(new Event("trip:account-menu")); }}><i className="fa-solid fa-gear" /><span>Настройки</span></button>
+      </aside>
+
+      <header className={isOverview ? "overview-header" : "section-header"}>
+        {isOverview && <><img src={`${import.meta.env.BASE_URL}images/hero-rome.webp`} alt="Рим" /><div className="overview-shade" /></>}
+        <div className="header-controls">
+          <button aria-label="Открыть меню" onClick={() => setDrawerOpen(true)}><i className="fa-solid fa-bars" /></button>
+        </div>
+        {isOverview ? <div className="overview-heading"><p>Италия · осень 2026</p><h1>Отпуск<br />в Италии</h1></div> : <div className="section-heading-main"><p>{active.eyebrow}</p><h1>{active.label}</h1></div>}
       </header>
 
-      <main className="app-main" onTouchStart={onContentTouchStart} onTouchEnd={onContentTouchEnd}>
-        {(loading || error || usingCache || syncState !== "clean") && (
-          <div
-            className={`mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm ${error || syncState === "failed" ? "border-[#d8a08d] bg-[#fff2ed] text-[#7f3524]" : "border-[var(--line)] bg-[var(--soft)] text-[var(--muted)]"}`}
-            role="status"
-          >
-            <span>
-              {loading
-                ? "Загружаем актуальный план…"
-                : (error ??
-                  (syncState === "dirty"
-                    ? "Есть несохранённые изменения…"
-                    : syncState === "saving"
-                      ? "Сохраняем изменения…"
-                         : usingCache
-                         ? "Показана локальная копия плана."
-                          : ""))}
-            </span>
-            {syncState === "failed" ? (
-              <button
-                className="rounded-lg border border-current px-2.5 py-1 font-semibold"
-                onClick={() => void retrySave()}
-              >
-                Повторить сохранение
-              </button>
-            ) : (
-              error && (
-                <button
-                  className="rounded-lg border border-current px-2.5 py-1 font-semibold"
-                  onClick={() => void refresh()}
-                >
-                  Повторить загрузку
-                </button>
-              )
-            )}
-          </div>
-        )}
+      <main className={`app-main ${isOverview ? "overview-main" : ""}`}>
+        {(loading || error || usingCache || syncState !== "clean") && <div className={`sync-status ${error || syncState === "failed" ? "is-error" : ""}`} role="status">
+          <span>{loading ? "Загружаем актуальный план…" : error ?? (syncState === "dirty" ? "Есть несохранённые изменения…" : syncState === "saving" ? "Сохраняем изменения…" : usingCache ? "Показана локальная копия плана." : "")}</span>
+          {syncState === "failed" ? <button onClick={() => void retrySave()}>Повторить сохранение</button> : error && <button onClick={() => void refresh()}>Повторить загрузку</button>}
+        </div>}
         <section className="animate-[fadeUp_.4s_ease_both]" role="tabpanel" tabIndex={0}>
-          {data && (
-            <Suspense fallback={<div className="grid place-items-center py-16" role="status" aria-label="Загружаем раздел"><div className="size-7 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--ac)]" /></div>}>
-              <Routes>
-                <Route index element={<Navigate to="/overview" replace />} />
-                <Route path="overview" element={<Overview />} />
-                <Route path="route" element={<Itinerary />} />
-                <Route path="lodging" element={<Lodging />} />
-                <Route path="cancellation" element={<Lodging cancellation />} />
-                <Route path="places" element={<Sights />} />
-                <Route path="restaurants" element={<Restaurants />} />
-                <Route path="budget" element={<Budget />} />
-                <Route path="photos" element={<Photos />} />
-                <Route path="*" element={<Navigate to="/overview" replace />} />
-              </Routes>
-            </Suspense>
-          )}
+          {data && <Suspense fallback={<div className="grid place-items-center py-16" role="status"><div className="size-7 animate-spin rounded-full border-2 border-[var(--line)] border-t-[var(--ac)]" /></div>}>
+            <Routes>
+              <Route index element={<Navigate to="/overview" replace />} />
+              <Route path="overview" element={<Overview />} />
+              <Route path="route" element={<Itinerary />} />
+              <Route path="lodging" element={<Lodging />} />
+              <Route path="cancellation" element={<Lodging cancellation />} />
+              <Route path="places" element={<Sights />} />
+              <Route path="restaurants" element={<Restaurants />} />
+              <Route path="budget" element={<Budget />} />
+              <Route path="photos" element={<Photos />} />
+              <Route path="*" element={<Navigate to="/overview" replace />} />
+            </Routes>
+          </Suspense>}
         </section>
       </main>
-      {toast && (
-        <div className="fixed bottom-6 left-1/2 z-[20000] max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-full bg-[var(--ink)] px-5 py-3 text-center text-sm font-bold text-[var(--card)] shadow-xl" role="status">
-          {toast}
-        </div>
-      )}
+      {toast && <div className="trip-toast" role="status">{toast}</div>}
     </div>
   );
 }

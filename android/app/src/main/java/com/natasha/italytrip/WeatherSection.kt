@@ -1,6 +1,7 @@
 package com.natasha.italytrip
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -22,13 +24,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -43,46 +47,49 @@ import java.net.URL
 
 private data class WeatherCity(val city: String, val lat: Double, val lng: Double, val image: String, val iso: String?)
 private data class WeatherValue(val high: Double, val low: Double, val code: Int)
+private val WeatherDisplayFont = FontFamily(Font(R.font.playfair_display_600, FontWeight.SemiBold))
 
 @Composable
 fun WeatherSection(data: JsonObject) {
-    var tripMode by remember { mutableStateOf(false) }
+    var tripMode by remember { mutableStateOf(true) }
     val cities = remember(data) { weatherCities(data) }
     val weather by produceState<Map<String, WeatherValue?>>(emptyMap(), cities, tripMode) {
         value = withContext(Dispatchers.IO) { cities.associate { city -> city.city to loadWeather(city, tripMode) } }
     }
     Column {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("Погода", fontSize = 22.sp, color = Color(0xFF173A3D))
-                Text(if (tripMode) "На даты поездки по прошлому году" else "Текущая погода в городах маршрута", color = Color(0xFF5F7C7E), fontSize = 12.sp)
-            }
-            Row {
-                if (!tripMode) Button(onClick = { tripMode = false }, shape = RoundedCornerShape(9.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 11.dp, vertical = 5.dp)) { Text("Сейчас", fontSize = 11.sp) }
-                else TextButton(onClick = { tripMode = false }) { Text("Сейчас", fontSize = 11.sp) }
-                if (tripMode) Button(onClick = { tripMode = true }, shape = RoundedCornerShape(9.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 11.dp, vertical = 5.dp)) { Text("В поездке", fontSize = 11.sp) }
-                else TextButton(onClick = { tripMode = true }) { Text("В поездке", fontSize = 11.sp) }
+            Text("Погода", Modifier.weight(1f), fontFamily = WeatherDisplayFont, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF26221D))
+            Row(Modifier.background(Color(0xFFECE4D6), RoundedCornerShape(11.dp)).padding(4.dp)) {
+                WeatherMode("В поездке", tripMode) { tripMode = true }
+                WeatherMode("Сейчас", !tripMode) { tripMode = false }
             }
         }
-        cities.chunked(2).forEach { rowCities ->
-            Row(Modifier.fillMaxWidth().padding(top = 9.dp), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-                rowCities.forEach { city ->
-                    val current = weather[city.city]
-                    Box(Modifier.weight(1f).height(135.dp).clip(RoundedCornerShape(16.dp))) {
-                        AsyncImage(model = "https://crazynata.github.io/italy-trip/images/hero-${city.image}.webp", contentDescription = city.city, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-                        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = .2f), Color.Black.copy(alpha = .75f)))))
-                        Text(if (current == null) "…" else "${current.high.toInt()}° / ${current.low.toInt()}°", Modifier.align(Alignment.TopStart).padding(10.dp), color = Color.White, fontSize = 13.sp)
-                        Column(Modifier.align(Alignment.BottomStart).padding(10.dp)) {
-                            Text(city.city, color = Color.White, fontSize = 13.sp, maxLines = 1)
-                            Text(current?.let { weatherLabel(it.code) } ?: "загрузка…", color = Color.White.copy(alpha = .78f), fontSize = 10.sp)
-                        }
-                    }
+        Row(Modifier.fillMaxWidth().padding(top = 10.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            cities.forEach { city ->
+                val current = weather[city.city]
+                Column(
+                    Modifier.width(112.dp).height(104.dp).background(Color(0xFFFCFAF5), RoundedCornerShape(16.dp)).border(1.dp, Color(0xFFE5DDD0), RoundedCornerShape(16.dp)).padding(12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text(weatherSymbol(current?.code), color = if (current?.code == 0) Color(0xFFD99A4E) else Color(0xFF8A8479), fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                    Text(city.city.substringBefore(','), Modifier.padding(top = 4.dp), color = Color(0xFF26221D), fontWeight = FontWeight.Bold, fontSize = 14.sp, maxLines = 1)
+                    Text(if (current == null) "…" else "${current.high.toInt()}° / ${current.low.toInt()}°", color = Color(0xFF8A8479), fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                 }
-                if (rowCities.size == 1) Box(Modifier.weight(1f))
             }
         }
     }
 }
+
+@Composable
+private fun WeatherMode(label: String, selected: Boolean, click: () -> Unit) {
+    Text(
+        label,
+        Modifier.background(if (selected) Color(0xFFB5623C) else Color.Transparent, RoundedCornerShape(8.dp)).clickable(onClick = click).padding(horizontal = 14.dp, vertical = 8.dp),
+        color = if (selected) Color.White else Color(0xFF9A9284), fontSize = 13.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+    )
+}
+
+private fun weatherSymbol(code: Int?): String = when (code) { 0 -> "☀"; in 1..3 -> "☁"; in 51..82 -> "☂"; else -> "☀" }
 
 private fun weatherCities(data: JsonObject): List<WeatherCity> {
     val coords = mapOf(

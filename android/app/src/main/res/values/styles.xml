@@ -1,9 +1,9 @@
 <resources>
     <style name="Theme.ItalyTrip" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#2A7089</item>
-        <item name="android:navigationBarColor">#F7F9F8</item>
+        <item name="android:colorAccent">#B5623C</item>
+        <item name="android:navigationBarColor">#F1EBE0</item>
         <item name="android:windowLightStatusBar">true</item>
-        <item name="android:statusBarColor">#F7F9F8</item>
+        <item name="android:statusBarColor">#F7F3EC</item>
     </style>
 </resources>

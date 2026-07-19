@@ -77,7 +77,7 @@ export function Budget() {
   );
 
   return <div style={{ animation: "fadeUp .4s ease both" }}>
-    <div style={{ position: "relative", overflow: "hidden", borderRadius: "var(--r-5)", padding: 24, background: "linear-gradient(125deg,var(--ac,#2a7089),#195866)", color: "#fff", marginBottom: 18 }}>
+    <div style={{ position: "relative", overflow: "hidden", borderRadius: "var(--r-5)", padding: 24, background: "linear-gradient(125deg,var(--ac,#b5623c),#8f4227)", color: "#fff", marginBottom: 18 }}>
       <div style={{ position: "absolute", right: -38, top: -54, width: 180, height: 180, border: "1px solid rgba(255,255,255,.18)", borderRadius: "50%" }} />
       <div style={{ position: "absolute", right: 30, bottom: -70, width: 150, height: 150, border: "1px solid rgba(255,255,255,.12)", borderRadius: "50%" }} />
       <div style={{ position: "relative", display: "flex", justifyContent: "space-between", gap: 18, alignItems: "flex-end", flexWrap: "wrap" }}>

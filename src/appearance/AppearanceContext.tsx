@@ -3,12 +3,12 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 export type ThemeName = 'Терракота' | 'Охра' | 'Олива'
 
 const themes: Record<ThemeName, Record<string, string>> = {
-  Терракота: { '--ac': '#2a7089', '--ac2': '#d99a4e', '--bg': '#eaf1f1' },
-  Охра: { '--ac': '#d99a4e', '--ac2': '#2a7089', '--bg': '#f4efe2' },
-  Олива: { '--ac': '#5f8a6a', '--ac2': '#2a7089', '--bg': '#e9f1ec' },
+  Терракота: { '--ac': '#b5623c', '--ac2': '#d99a4e', '--bg': '#f7f3ec' },
+  Охра: { '--ac': '#c1873e', '--ac2': '#b5623c', '--bg': '#f7f3ec' },
+  Олива: { '--ac': '#6b7355', '--ac2': '#b5623c', '--bg': '#f7f3ec' },
 }
 
-const lightPalette = { '--ink': '#173a3d', '--card': '#ffffff', '--line': '#d5e2e1', '--muted': '#5f7c7e', '--soft': '#f1f7f6', '--track': '#dbeae8', '--paper': '#f4faf9' }
+const lightPalette = { '--ink': '#26221d', '--card': '#fcfaf5', '--line': '#e5ddd0', '--muted': '#8a8479', '--soft': '#f1ebe0', '--track': '#ece4d6', '--paper': '#fcfaf5', '--ol': '#6b7355' }
 const darkPalette = { '--card': '#2c2721', '--line': '#3d362c', '--ink': '#ece4d6', '--muted': '#a99d89', '--soft': '#241f1a', '--track': '#38322b', '--bg': '#1e1a16', '--paper': '#342e27' }
 
 interface AppearanceContextValue { theme: ThemeName; dark: boolean; setTheme: (theme: ThemeName) => void; toggleDark: () => void }
@@ -16,7 +16,7 @@ const AppearanceContext = createContext<AppearanceContextValue | null>(null)
 
 function initialTheme(): ThemeName {
   try { const value = localStorage.getItem('italy_theme'); if (value && value in themes) return value as ThemeName } catch { /* Use default. */ }
-  return 'Олива'
+  return 'Терракота'
 }
 
 export function AppearanceProvider({ children }: { children: ReactNode }) {

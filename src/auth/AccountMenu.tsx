@@ -19,9 +19,15 @@ export function AccountMenu() {
     return () => { document.removeEventListener('mousedown', close); document.removeEventListener('keydown', escape) }
   }, [])
 
+  useEffect(() => {
+    const show = () => setOpen(true)
+    window.addEventListener('trip:account-menu', show)
+    return () => window.removeEventListener('trip:account-menu', show)
+  }, [])
+
   if (!user) return null
-  return <><div className="fixed right-3.5 top-3 z-[9998]" ref={container}>
-    <button aria-expanded={open} aria-label="Аккаунт" className="grid size-[46px] place-items-center overflow-hidden rounded-full border-2 border-white bg-[#b95c3f] p-0 text-[15px] font-bold text-white shadow-[0_3px_12px_rgba(59,50,40,.28)]" onClick={() => setOpen(!open)} title={user.email}>{avatarUrl ? <img alt="" className="size-full object-cover" src={avatarUrl} /> : user.email?.[0]?.toUpperCase() ?? '?'}</button>
+  return <><div className="account-menu fixed right-[max(18px,calc((100vw-1120px)/2+24px))] top-[18px] z-[9998]" ref={container}>
+    <button aria-expanded={open} aria-label="Аккаунт" className="grid size-10 place-items-center overflow-hidden rounded-full border border-white/30 bg-white/20 p-0 text-sm font-bold text-white shadow-[0_3px_12px_rgba(59,50,40,.2)] backdrop-blur-md" onClick={() => setOpen(!open)} title={user.email}>{avatarUrl ? <img alt="" className="size-full object-cover" src={avatarUrl} /> : user.email?.[0]?.toUpperCase() ?? '?'}</button>
     {open && <div className="absolute right-0 top-12 w-[min(82vw,250px)] rounded-[14px] border border-[#e7dcc7] bg-white px-[15px] py-[13px] text-[#3b3228] shadow-[0_14px_38px_rgba(59,50,40,.22)]">
       <div className="text-[11px] uppercase tracking-[.06em] text-[#a2937c]">Вы вошли как</div><div className="break-all text-[13px] font-semibold leading-snug">{user.email}</div>
        <div className={`mt-1 text-[12.5px] font-semibold ${!isReadOnly ? 'text-[#2f7d4f]' : 'text-[#8a7d6b]'}`}><i className={`fa-solid ${!isReadOnly ? 'fa-pen' : 'fa-eye'} mr-1.5 text-[11px]`} />{!isReadOnly ? 'редактор' : 'только просмотр'}</div>

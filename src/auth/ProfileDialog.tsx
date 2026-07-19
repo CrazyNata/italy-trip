@@ -3,7 +3,7 @@ import { useState, type ChangeEvent } from 'react'
 import { useAppearance, type ThemeName } from '../appearance/AppearanceContext'
 import { useAuth } from './AuthContext'
 
-const swatches: Array<{ name: ThemeName; color: string }> = [{ name: 'Терракота', color: '#2a7089' }, { name: 'Охра', color: '#d99a4e' }, { name: 'Олива', color: '#5f8a6a' }]
+const swatches: Array<{ name: ThemeName; color: string }> = [{ name: 'Терракота', color: '#b5623c' }, { name: 'Охра', color: '#c1873e' }, { name: 'Олива', color: '#6b7355' }]
 const MAX_AVATAR_BYTES = 10 * 1024 * 1024
 const MAX_AVATAR_DIMENSION = 12000
 const MAX_AVATAR_PIXELS = 40_000_000
