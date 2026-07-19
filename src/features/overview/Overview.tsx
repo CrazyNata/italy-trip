@@ -195,27 +195,31 @@ export function Overview() {
   if (!data) return null;
 
   const routeUrl = `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent("U Vlachovky 8, Praha, Česko")}&destination=${encodeURIComponent("U Vlachovky 8, Praha, Česko")}&waypoints=${data.lodging.map((lodge) => encodeURIComponent(lodge.city)).join("%7C")}&travelmode=driving`;
-  const headingStyle = { fontFamily: "'Playfair Display',serif", fontWeight: 600, fontSize: 22, margin: "34px 0 4px" } as const;
+  const startAt = new Date(`${data.trip.start}T00:00:00`).getTime();
+  const endAt = new Date(`${data.trip.end}T00:00:00`).getTime();
+  const nights = Number.isFinite(startAt) && Number.isFinite(endAt) ? Math.max(0, Math.round((endAt - startAt) / 86400000)) : 0;
+  const cities = new Set(data.days.flatMap((day) => day.city.split("→").map((city) => city.trim()).filter(Boolean))).size;
+  const headingStyle = { fontFamily: "'Unbounded',sans-serif", fontWeight: 600, fontSize: 22, margin: "34px 0 4px" } as const;
   const noteStyle = { margin: "0 0 16px", fontSize: 13, color: "var(--muted,#8a7d6b)" } as const;
   return <div style={{ animation: "fadeUp .4s ease both" }}>
     <div className="overview-stats">
-      <div><strong>{Math.max(0, Math.ceil((new Date("2026-09-25T00:00:00").getTime() - Date.now()) / 86400000))}</strong><span>дней до выезда</span></div>
-      <div><strong>17</strong><span>ночей в пути</span></div>
-      <div><strong>9</strong><span>городов</span></div>
+      <div><strong>{Math.max(0, Math.ceil((startAt - Date.now()) / 86400000))}</strong><span>дней до выезда</span></div>
+      <div><strong>{nights}</strong><span>ночей в пути</span></div>
+      <div><strong>{cities}</strong><span>городов</span></div>
     </div>
     <div className="no-swipe overview-carousel" onClick={() => setLightbox(true)} style={{ position: "relative", borderRadius: "var(--r-5)", overflow: "hidden", minHeight: 340, border: "1px solid var(--line,#e7dcc7)", cursor: "zoom-in" }}>
       {slides.map((slide, slideIndex) => <div key={slide[0]} style={{ position: "absolute", inset: 0, opacity: slideIndex === index ? 1 : 0, transition: "opacity .6s ease", zIndex: slideIndex === index ? 2 : 1 }}>
         <img src={imageUrl(`hero-${slide[0]}.webp`)} alt={slide[1]} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
         <div style={{ position: "absolute", left: 0, bottom: 0, right: 0, padding: 24, background: "linear-gradient(to top,rgba(45,36,26,.72),transparent)", pointerEvents: "none" }}>
           <div style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,.16)", backdropFilter: "blur(4px)", color: "#fff", fontSize: 11, letterSpacing: ".12em", textTransform: "uppercase", fontWeight: 600, padding: "4px 11px", borderRadius: "var(--r-2)" }}>{slide[2]}</div>
-          <div style={{ color: "#fff", fontFamily: "'Playfair Display',serif", fontSize: 30, fontWeight: 600, marginTop: 8 }}>{slide[3]}</div>
+          <div style={{ color: "#fff", fontFamily: "'Unbounded',sans-serif", fontSize: 26, fontWeight: 600, marginTop: 8 }}>{slide[3]}</div>
           <div style={{ color: "rgba(255,255,255,.85)", fontSize: 13, marginTop: 2 }}>{slide[4]}</div>
         </div>
       </div>)}
       <img src={imageUrl("hero-salzburg.webp")} alt="" aria-hidden="true" style={{ width: "100%", minHeight: 340, objectFit: "cover", display: "block", visibility: "hidden" }} />
       <button onClick={(event) => { event.stopPropagation(); shift(-1); }} title="Назад" style={{ position: "absolute", top: "50%", left: 12, transform: "translateY(-50%)", width: 38, height: 38, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 15, display: "grid", placeItems: "center", zIndex: 5 }}><i className="fa-solid fa-chevron-left" /></button>
       <button onClick={(event) => { event.stopPropagation(); shift(1); }} title="Вперёд" style={{ position: "absolute", top: "50%", right: 12, transform: "translateY(-50%)", width: 38, height: 38, border: "none", borderRadius: "50%", background: "rgba(24,18,12,.5)", color: "#fff", cursor: "pointer", fontSize: 15, display: "grid", placeItems: "center", zIndex: 5 }}><i className="fa-solid fa-chevron-right" /></button>
-      <div style={{ position: "absolute", top: 16, right: 16, display: "flex", gap: 6, zIndex: 5 }}>{slides.map((slide, i) => <span key={slide[0]} style={{ width: 8, height: 8, borderRadius: "50%", background: i === index ? "#fff" : "rgba(255,255,255,.5)", boxShadow: "0 0 3px rgba(0,0,0,.5)" }} />)}</div>
+      <div className="carousel-count">{index + 1} / {slides.length}</div>
     </div>
 
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap", margin: "34px 0 4px" }}>
