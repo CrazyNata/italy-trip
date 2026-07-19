@@ -1,7 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState, type TouchEvent } from "react";
 import { NavLink, Navigate, Route, Routes, useLocation } from "react-router-dom";
 
-import { useAuth } from "../auth";
 import { useTripData } from "../trip/TripDataContext";
 import { Overview } from "../features/overview/Overview";
 
@@ -25,7 +24,6 @@ const tabs = [
 
 export function AppShell() {
   const { data, loading, error, usingCache, syncState, refresh, retrySave } = useTripData();
-  const { user } = useAuth();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -33,13 +31,6 @@ export function AppShell() {
   const swipeRef = useRef<{ x: number; y: number; canOpen: boolean } | null>(null);
   const active = tabs.find((tab) => location.pathname === `/${tab.path}`) ?? tabs[0];
   const isOverview = active.path === "overview";
-  const moreActive = ["cancellation", "restaurants", "budget", "photos"].includes(active.path);
-  const userInitial = user?.email?.[0]?.toUpperCase() ?? "П";
-  const tripStart = data?.trip.start ? new Date(`${data.trip.start}T00:00:00`) : null;
-  const tripEnd = data?.trip.end ? new Date(`${data.trip.end}T00:00:00`) : null;
-  const shortDate = (date: Date | null) => date && Number.isFinite(date.getTime()) ? date.toLocaleDateString("ru-RU", { day: "numeric", month: "short" }).replace(".", "") : "—";
-  const longDate = (date: Date | null) => date && Number.isFinite(date.getTime()) ? date.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" }) : "даты уточняются";
-  const tripNights = tripStart && tripEnd ? Math.max(0, Math.round((tripEnd.getTime() - tripStart.getTime()) / 86400000)) : 0;
 
   useEffect(() => setDrawerOpen(false), [location.pathname]);
   useEffect(() => {
@@ -86,27 +77,23 @@ export function AppShell() {
   return (
     <div className="app-shell min-h-screen bg-[var(--bg)] text-[var(--ink)]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       <button className={`drawer-backdrop ${drawerOpen ? "is-open" : ""}`} aria-label="Закрыть меню" onClick={() => setDrawerOpen(false)} />
-      <aside className={`app-drawer ${drawerOpen ? "is-open" : ""}`}>
-        <div className="drawer-brand"><span>О</span><strong>Одиссея</strong><button aria-label="Закрыть меню" onClick={() => setDrawerOpen(false)}><i className="fa-solid fa-xmark" /></button></div>
+      <aside className={`app-drawer ${drawerOpen ? "is-open" : ""}`} aria-hidden={!drawerOpen}>
         <div className="drawer-trip">
           <span><i className="fa-solid fa-plane-departure" /></span>
-          <div><strong>Италия 2026</strong><small>{shortDate(tripStart)} — {shortDate(tripEnd)} · {tripNights} ночей</small></div>
+          <div><strong>Италия 2026</strong><small>25 сен — 12 окт · 17 ночей</small></div>
         </div>
-        <p className="drawer-label">Путешествие</p>
         <nav aria-label="Разделы поездки">
           {tabs.map((tab) => <NavLink key={tab.path} to={`/${tab.path}`}><i className={tab.icon} /><span>{tab.label}</span></NavLink>)}
         </nav>
-        <button className="drawer-settings" onClick={() => { setDrawerOpen(false); window.dispatchEvent(new Event("trip:account-menu")); }}>
-          <span className="drawer-avatar">{userInitial}</span><span><b>{user?.email ?? "Личный кабинет"}</b><small>Профиль и настройки</small></span><i className="fa-solid fa-gear" />
-        </button>
+        <button className="drawer-settings" onClick={() => { setDrawerOpen(false); window.dispatchEvent(new Event("trip:account-menu")); }}><i className="fa-solid fa-gear" /><span>Настройки</span></button>
       </aside>
 
-      <div className="app-workspace">
       <header className={isOverview ? "overview-header" : "section-header"}>
+        {isOverview && <><img src={`${import.meta.env.BASE_URL}images/hero-rome.webp`} alt="Рим" /><div className="overview-shade" /></>}
         <div className="header-controls">
           <button aria-label="Открыть меню" onClick={() => setDrawerOpen(true)}><i className="fa-solid fa-bars" /></button>
         </div>
-        {isOverview ? <div className="overview-heading"><p>Италия · осень 2026</p><div><h1>Отпуск в Италии</h1><span>● Планирование</span></div><small>{longDate(tripStart)} — {longDate(tripEnd)} · семейное путешествие</small></div> : <div className="section-heading-main"><p>{active.eyebrow}</p><h1>{active.label}</h1></div>}
+        {isOverview ? <div className="overview-heading"><p>Италия · осень 2026</p><h1>Отпуск<br />в Италии</h1></div> : <div className="section-heading-main"><p>{active.eyebrow}</p><h1>{active.label}</h1></div>}
       </header>
 
       <main className={`app-main ${isOverview ? "overview-main" : ""}`}>
@@ -131,11 +118,6 @@ export function AppShell() {
           </Suspense>}
         </section>
       </main>
-      </div>
-      <nav className="bottom-nav" aria-label="Основная навигация">
-        {tabs.filter((tab) => ["overview", "route", "lodging", "places"].includes(tab.path)).map((tab) => <NavLink key={tab.path} to={`/${tab.path}`}><i className={tab.icon} /><span>{tab.label}</span></NavLink>)}
-        <button className={moreActive ? "is-active" : ""} onClick={() => setDrawerOpen(true)}><i className="fa-solid fa-ellipsis" /><span>Ещё</span></button>
-      </nav>
       {toast && <div className="trip-toast" role="status">{toast}</div>}
     </div>
   );
